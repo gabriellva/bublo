@@ -1,0 +1,64 @@
+name: CI - Bublo
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: bublo
+          POSTGRES_USER: bublo
+          POSTGRES_PASSWORD: bublo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bublo -d bublo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Variáveis de ambiente (arquivo .env de teste)
+        run: |
+          cat > .env <<EOF
+          DB_NAME=bublo
+          DB_USERNAME=bublo
+          DB_PASSWORD=bublo
+          DB_PORT=5432
+          DB_URL=jdbc:postgresql://localhost:5432/bublo
+          SERVER_PORT=8080
+          ADMIN_USERNAME=admin
+          ADMIN_PASSWORD=Bublo@2024Demo
+          DEMO_DATA_ENABLED=true
+          EOF
+
+      - name: Compilar projeto
+        run: mvn -B -q compile
+
+      - name: Executar testes unitários
+        run: mvn -B -q test
+
+      - name: Verificar ausência de segredos no código
+        run: |
+          if grep -RIlE 'ADMIN_PASSWORD|senha|password|token|secret' --include='*.java' --include='*.yaml' --include='*.yml' --include='*.properties' src/ | grep -v '.env.example'; then
+            echo "Possíveis credenciais encontradas no código-fonte!";
+            exit 1;
+          fi
+          echo "Nenhuma credencial exposta no código."
