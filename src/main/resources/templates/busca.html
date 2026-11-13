@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Busca', 'busca', ~{::conteudo}, ~{})}">
+<head><title>Busca</title></head>
+<body>
+<th:block th:fragment="conteudo" class="busca-pagina">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Resultados da busca</h1>
+      <p class="pagina-sub" th:if="${#strings.length(termo) >= 2}">Para “<strong th:text="${termo}">termo</strong>”, no acervo, nos leitores e nos empréstimos.</p>
+      <p class="pagina-sub" th:unless="${#strings.length(termo) >= 2}">Digite ao menos 2 caracteres no campo de busca do topo.</p>
+    </div>
+  </div>
+
+  <th:block th:if="${#strings.length(termo) >= 2}">
+    <section class="painel mb-4">
+      <div class="painel-cabeca"><h2>Acervo <span class="badge-b st-sem-icone st-vinho" th:text="${#lists.size(acervo)}">0</span></h2><a class="btn btn-link btn-sm" th:href="@{/acervo(termo=${termo})}">Abrir no acervo</a></div>
+      <div class="painel-lista mt-2">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(acervo)}"><h3>Nada no acervo</h3></div>
+        <a class="item-lista" th:each="i : ${acervo}" th:href="@{/acervo/{id}(id=${i.id})}">
+          <span class="capa-mini"><img th:src="@{'/images/capa-' + ${#strings.toLowerCase(i.tipo)} + '.svg'}" alt="" /></span>
+          <span class="info"><strong th:text="${i.titulo}">Título</strong><span th:text="${i.autoresNomes.empty ? i.categoriaNome : #strings.listJoin(i.autoresNomes, ', ')}">Autor</span></span>
+          <span class="badge-b" th:classappend="${i.exemplaresDisponiveis > 0} ? 'st-ok' : 'st-erro'" th:text="${i.exemplaresDisponiveis > 0 ? i.exemplaresDisponiveis + ' disponível(is)' : 'Indisponível'}">Disp.</span>
+        </a>
+      </div>
+    </section>
+    <section class="painel mb-4">
+      <div class="painel-cabeca"><h2>Leitores <span class="badge-b st-sem-icone st-vinho" th:text="${#lists.size(leitores)}">0</span></h2><a class="btn btn-link btn-sm" th:href="@{/leitores(termo=${termo})}">Abrir em leitores</a></div>
+      <div class="painel-lista mt-2">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(leitores)}"><h3>Nenhum leitor</h3></div>
+        <a class="item-lista" th:each="l : ${leitores}" th:href="@{/leitores/{id}(id=${l.id})}">
+          <span class="info"><strong th:text="${l.nome}">Nome</strong><span th:text="${l.matricula + ' · ' + l.email}">Matrícula</span></span>
+          <span class="badge-b" th:classappend="${l.ativo} ? 'st-ok' : 'st-neutro'" th:text="${l.ativo ? 'Ativo' : 'Inativo'}">Ativo</span>
+        </a>
+      </div>
+    </section>
+    <section class="painel">
+      <div class="painel-cabeca"><h2>Empréstimos <span class="badge-b st-sem-icone st-vinho" th:text="${#lists.size(emprestimos)}">0</span></h2><a class="btn btn-link btn-sm" th:href="@{/emprestimos(termo=${termo})}">Abrir em empréstimos</a></div>
+      <div class="painel-lista mt-2">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(emprestimos)}"><h3>Nenhum empréstimo</h3></div>
+        <a class="item-lista" th:each="e : ${emprestimos}" th:href="@{/emprestimos(termo=${e.id})}">
+          <span class="info"><strong th:text="${'#' + e.id + ' · ' + e.titulo}">Título</strong><span th:text="${e.leitorNome + ' · ' + e.tombamento}">Leitor</span></span>
+          <span class="badge-b" th:classappend="${e.atrasado} ? 'st-erro' : (${e.status == 'ATIVO'} ? 'st-info' : 'st-neutro')" th:text="${e.atrasado ? 'Em atraso' : (e.status == 'ATIVO' ? 'Ativo' : (e.status == 'DEVOLVIDO' ? 'Devolvido' : 'Cancelado'))}">Ativo</span>
+        </a>
+      </div>
+    </section>
+  </th:block>
+</th:block>
+</body>
+</html>

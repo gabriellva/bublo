@@ -1,47 +1,53 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="sidebar(modulo)">
-  <aside class="sidebar" id="sidebar">
-    <div class="marca">
-      <span class="simbolo"><i class="bi bi-book"></i></span>
-      <span th:text="${nomeInstituicao ?: 'Bublo'}">Bublo</span>
-    </div>
-    <nav>
-      <a class="nav-item" th:classappend="${modulo == 'dashboard'} ? 'ativo'" th:href="@{/dashboard}">
-        <span class="icone"><i class="bi bi-speedometer2"></i></span>Dashboard
+  <aside class="app-sidebar" id="sidebar" aria-label="Navegação principal">
+    <a class="sidebar-marca" th:href="@{/dashboard}">
+      <svg th:replace="~{layout/componentes :: marca}"></svg>
+      <span class="marca-nome" th:text="${nomeInstituicao ?: 'Bublo'}">Bublo</span>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-grupo">Visão geral</div>
+      <a class="nav-item-b" th:classappend="${modulo == 'dashboard'} ? 'ativo'" th:attr="aria-current=${modulo == 'dashboard'} ? 'page'" th:href="@{/dashboard}" title="Dashboard">
+        <i class="bi bi-grid-1x2"></i><span class="rotulo">Dashboard</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'acervo'} ? 'ativo'" th:href="@{/acervo}">
-        <span class="icone"><i class="bi bi-book-half"></i></span>Acervo
+      <div class="sidebar-grupo">Acervo e pessoas</div>
+      <a class="nav-item-b" th:classappend="${modulo == 'acervo'} ? 'ativo'" th:attr="aria-current=${modulo == 'acervo'} ? 'page'" th:href="@{/acervo}" title="Acervo">
+        <i class="bi bi-book"></i><span class="rotulo">Acervo</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'leitores'} ? 'ativo'" th:href="@{/leitores}">
-        <span class="icone"><i class="bi bi-people"></i></span>Leitores
+      <a class="nav-item-b" th:classappend="${modulo == 'leitores'} ? 'ativo'" th:attr="aria-current=${modulo == 'leitores'} ? 'page'" th:href="@{/leitores}" title="Leitores">
+        <i class="bi bi-people"></i><span class="rotulo">Leitores</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'emprestimos'} ? 'ativo'" th:href="@{/emprestimos}">
-        <span class="icone"><i class="bi bi-box-arrow-right"></i></span>Empréstimos
+      <div class="sidebar-grupo">Circulação</div>
+      <a class="nav-item-b" th:classappend="${modulo == 'emprestimos'} ? 'ativo'" th:attr="aria-current=${modulo == 'emprestimos'} ? 'page'" th:href="@{/emprestimos}" title="Empréstimos">
+        <i class="bi bi-arrow-up-right-square"></i><span class="rotulo">Empréstimos</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'devolucoes'} ? 'ativo'" th:href="@{/devolucoes}">
-        <span class="icone"><i class="bi bi-box-arrow-left"></i></span>Devoluções
+      <a class="nav-item-b" th:classappend="${modulo == 'devolucoes'} ? 'ativo'" th:attr="aria-current=${modulo == 'devolucoes'} ? 'page'" th:href="@{/devolucoes}" title="Devoluções">
+        <i class="bi bi-arrow-down-left-square"></i><span class="rotulo">Devoluções</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'reservas'} ? 'ativo'" th:href="@{/reservas}">
-        <span class="icone"><i class="bi bi-calendar-check"></i></span>Reservas
+      <a class="nav-item-b" th:classappend="${modulo == 'reservas'} ? 'ativo'" th:attr="aria-current=${modulo == 'reservas'} ? 'page'" th:href="@{/reservas}" title="Reservas">
+        <i class="bi bi-bookmark"></i><span class="rotulo">Reservas</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'multas'} ? 'ativo'" th:href="@{/multas}">
-        <span class="icone"><i class="bi bi-currency-dollar"></i></span>Multas
+      <a class="nav-item-b" th:classappend="${modulo == 'multas'} ? 'ativo'" th:attr="aria-current=${modulo == 'multas'} ? 'page'" th:href="@{/multas}" title="Multas">
+        <i class="bi bi-receipt"></i><span class="rotulo">Multas</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'relatorios'} ? 'ativo'" th:href="@{/relatorios}">
-        <span class="icone"><i class="bi bi-file-earmark-bar-graph"></i></span>Relatórios
+      <div class="sidebar-grupo">Gestão</div>
+      <a class="nav-item-b" th:classappend="${modulo == 'relatorios'} ? 'ativo'" th:attr="aria-current=${modulo == 'relatorios'} ? 'page'" th:href="@{/relatorios}" title="Relatórios">
+        <i class="bi bi-bar-chart-line"></i><span class="rotulo">Relatórios</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'notificacoes'} ? 'ativo'" th:href="@{/notificacoes}">
-        <span class="icone"><i class="bi bi-bell"></i></span>Notificações
+      <a class="nav-item-b" th:classappend="${modulo == 'notificacoes'} ? 'ativo'" th:attr="aria-current=${modulo == 'notificacoes'} ? 'page'" th:href="@{/notificacoes}" title="Notificações">
+        <i class="bi bi-bell"></i><span class="rotulo">Notificações</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'configuracoes'} ? 'ativo'" th:href="@{/configuracoes}">
-        <span class="icone"><i class="bi bi-gear"></i></span>Configurações
+      <a class="nav-item-b" th:classappend="${modulo == 'auditoria'} ? 'ativo'" th:attr="aria-current=${modulo == 'auditoria'} ? 'page'" th:href="@{/auditoria}" title="Auditoria">
+        <i class="bi bi-clipboard-check"></i><span class="rotulo">Auditoria</span>
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'auditoria'} ? 'ativo'" th:href="@{/auditoria}">
-        <span class="icone"><i class="bi bi-journal-text"></i></span>Auditoria
+      <a class="nav-item-b" th:classappend="${modulo == 'configuracoes'} ? 'ativo'" th:attr="aria-current=${modulo == 'configuracoes'} ? 'page'" th:href="@{/configuracoes}" title="Configurações">
+        <i class="bi bi-sliders"></i><span class="rotulo">Configurações</span>
       </a>
     </nav>
-    <div class="rodape">
-      <strong th:text="${usuario ?: 'Administrador'}"></strong><br/>
-      <span>Biblioteca Acadêmica</span>
+    <div class="sidebar-rodape">
+      <button type="button" class="sidebar-recolher" id="btn-recolher" aria-label="Recolher menu">
+        <i class="bi bi-chevron-bar-left"></i><span class="rotulo">Recolher menu</span>
+      </button>
     </div>
   </aside>
+  <div class="sidebar-fundo" id="sidebar-fundo"></div>
 </th:block>

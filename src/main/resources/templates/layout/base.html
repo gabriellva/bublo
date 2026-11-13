@@ -3,25 +3,34 @@
 <head>
   <th:block th:fragment="head">
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}" />
     <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}" />
     <script>
       (function () {
-        var tema = null;
-        try { tema = localStorage.getItem('bublo:tema'); } catch (e) {}
+        var tema = null, menu = null;
+        try { tema = localStorage.getItem('bublo:tema'); menu = localStorage.getItem('bublo:menu'); } catch (e) {}
         if (tema !== 'claro' && tema !== 'escuro') {
           tema = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro';
         }
         var raiz = document.documentElement;
         raiz.setAttribute('data-tema', tema);
         raiz.setAttribute('data-bs-theme', tema === 'escuro' ? 'dark' : 'light');
+        if (menu === 'recolhido') raiz.classList.add('sidebar-recolhida');
       })();
     </script>
+    <link rel="preload" th:href="@{/css/fonts/newsreader-latin-wght-normal.woff2}" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" th:href="@{/css/fonts/source-sans-3-latin-wght-normal.woff2}" as="font" type="font/woff2" crossorigin />
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}" />
     <link rel="stylesheet" th:href="@{/lib/bootstrap/css/bootstrap.min.css}" />
-    <link rel="stylesheet" th:href="@{/css/design-system.css}" />
     <link rel="stylesheet" th:href="@{/lib/bootstrap-icons/font/bootstrap-icons.css}" />
+    <link rel="stylesheet" th:href="@{/css/fonts.css}" />
+    <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+    <link rel="stylesheet" th:href="@{/css/design-system.css}" />
+    <link rel="stylesheet" th:href="@{/css/shell.css}" />
+    <link rel="stylesheet" th:href="@{/css/components.css}" />
+    <link rel="stylesheet" th:href="@{/css/pages.css}" />
   </th:block>
 </head>
 <body>
@@ -29,7 +38,7 @@
     <div id="flash-data" hidden
          th:attr="data-sucesso=${sucesso}, data-erro=${erro}, data-aviso=${aviso}"></div>
     <script th:src="@{/lib/bootstrap/js/bootstrap.bundle.min.js}"></script>
-    <script th:src="@{/js/bublo.js}"></script>
+    <script type="module" th:src="@{/js/app.js}"></script>
   </th:block>
 </body>
 </html>

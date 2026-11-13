@@ -1,36 +1,54 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="topbar">
   <header class="topbar" id="topbar">
-    <div class="topbar-esquerda">
-      <button type="button" class="btn-toggle-tema btn-menu" id="btn-menu" aria-label="Abrir menu">
-        <i class="bi bi-list"></i>
+    <button type="button" class="btn-icone btn-menu" id="btn-menu" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false">
+      <i class="bi bi-list"></i>
+    </button>
+    <form class="busca-global" id="busca-global" th:action="@{/busca}" method="get" role="search" autocomplete="off">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <label class="sr-only" for="busca-termo">Buscar no sistema</label>
+      <input type="search" id="busca-termo" name="termo" class="form-control" placeholder="Buscar títulos, leitores, empréstimos…"
+             aria-autocomplete="list" aria-controls="busca-resultados" aria-expanded="false" th:value="${#strings.isEmpty(buscaTermo) ? '' : buscaTermo}" />
+      <button type="button" class="btn-icone busca-limpar" id="busca-limpar" aria-label="Limpar busca"><i class="bi bi-x-lg"></i></button>
+      <div class="busca-resultados" id="busca-resultados" role="listbox" aria-label="Resultados da busca"></div>
+    </form>
+    <div class="topbar-acoes">
+      <button type="button" class="btn-icone" id="btn-tema" title="Alternar tema" aria-label="Alternar tema">
+        <i class="bi bi-moon-stars"></i>
       </button>
-      <div class="titulo-app" th:text="${nomeInstituicao ?: 'Bublo'}">Bublo</div>
-    </div>
-    <div class="actions">
-      <button type="button" class="btn-toggle-tema" id="btn-tema" title="Alternar tema" aria-label="Alternar tema">
-        <i class="bi bi-moon-stars-fill"></i>
-      </button>
-      <div class="notificacoes-wrap">
-        <button type="button" id="btn-notificacoes" class="btn-toggle-tema" title="Notificações" aria-label="Notificações">
+      <div class="dropdown sino">
+        <button type="button" id="btn-notificacoes" class="btn-icone" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="Notificações" title="Notificações">
           <i class="bi bi-bell"></i>
-          <span id="contador-notificacoes" class="contador" th:text="${naoLidas ?: 0}" th:style="${(naoLidas ?: 0) gt 0} ? '' : 'display:none'">0</span>
+          <span id="contador-notificacoes" class="contador" th:text="${naoLidas ?: 0}" th:hidden="${(naoLidas ?: 0) le 0}">0</span>
         </button>
-        <div class="dropdown-notificacoes" id="dropdown-notificacoes">
-          <div class="cabecalho">Notificações</div>
-          <div id="lista-notificacoes">
-            <div class="item item-vazio">Carregando…</div>
+        <div class="dropdown-menu dropdown-menu-end painel-notificacoes" id="dropdown-notificacoes">
+          <div class="cabeca"><span>Notificações</span>
+            <form th:action="@{/notificacoes/ler-todas}" method="post" class="m-0">
+              <button type="submit" class="btn btn-link btn-sm p-0" style="min-height:0" data-sem-estado>Marcar todas como lidas</button>
+            </form>
           </div>
-          <a class="rodape-dropdown" th:href="@{/notificacoes}">Ver todas</a>
+          <div id="lista-notificacoes" aria-live="polite">
+            <div class="vazio compacto"><span class="carregando-livro"><i class="bi bi-book fs-3"></i></span></div>
+          </div>
+          <a class="pe" th:href="@{/notificacoes}">Ver central de notificações</a>
         </div>
       </div>
-      <div class="usuario">
-        <i class="bi bi-person-circle"></i>
-        <span th:text="${usuario ?: 'Administrador'}">Administrador</span>
+      <div class="dropdown">
+        <button type="button" class="btn-usuario" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu do administrador">
+          <span class="avatar" aria-hidden="true">A</span>
+          <span class="nome">Administrador</span>
+          <i class="bi bi-chevron-down small" aria-hidden="true"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li class="px-3 py-2"><strong>Administrador</strong><div class="texto-fraco small" th:text="${usuario ?: 'admin'}">admin</div></li>
+          <li><hr class="dropdown-divider" /></li>
+          <li><a class="dropdown-item" th:href="@{/conta}"><i class="bi bi-key"></i>Trocar senha</a></li>
+          <li>
+            <form th:action="@{/logout}" method="post" class="m-0">
+              <button type="submit" class="dropdown-item" data-sem-estado><i class="bi bi-box-arrow-right"></i>Sair</button>
+            </form>
+          </li>
+        </ul>
       </div>
-      <a class="btn-bublo btn-sm btn-contorno" th:href="@{/conta}">Minha conta</a>
-      <form th:action="@{/logout}" method="post" class="form-inline">
-        <button type="submit" class="btn-bublo btn-sm btn-contorno"><i class="bi bi-box-arrow-right"></i> Sair</button>
-      </form>
     </div>
   </header>
 </th:block>
