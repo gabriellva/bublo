@@ -2,11 +2,22 @@ package com.gabriel.bublo.controller;
 
 import com.gabriel.bublo.dto.ItemAcervoDTO;
 import com.gabriel.bublo.dto.Paginacao;
+import com.gabriel.bublo.model.Autor;
 import com.gabriel.bublo.model.TipoMaterial;
+import com.gabriel.bublo.security.AuthUtil;
 import com.gabriel.bublo.service.AcervoService;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -29,10 +40,11 @@ public class AcervoController {
                          @RequestParam(required = false) TipoMaterial tipo,
                          @RequestParam(required = false) Boolean disponivel,
                          @RequestParam(defaultValue = "0") int pagina,
-                         @RequestParam(defaultValue = "10") int tamanho,
+                         @RequestParam(defaultValue = "12") int tamanho,
                          @RequestParam(defaultValue = "ia.titulo ASC") String ordenacao,
                          Model model) {
-        Paginacao<ItemAcervoDTO> resultado = acervoService.buscar(termo, categoria, tipo, disponivel, pagina, tamanho, ordenacao);
+        Paginacao<ItemAcervoDTO> resultado = acervoService.buscar(termo, categoria, tipo, disponivel,
+            Math.max(pagina, 0), Math.min(Math.max(tamanho, 1), 100), ordenacao);
         model.addAttribute("resultado", resultado);
         model.addAttribute("termo", termo);
         model.addAttribute("categoria", categoria);
@@ -40,65 +52,99 @@ public class AcervoController {
         model.addAttribute("disponivel", disponivel);
         model.addAttribute("ordenacao", ordenacao);
         model.addAttribute("tipos", TipoMaterial.values());
-        model.addAttribute("categorias", listarCategorias());
+        model.addAttribute("categorias", acervoService.listarCategorias());
         return "acervo/listar";
     }
 
     @GetMapping("/novo")
     public String novo(Model model) {
-        model.addAttribute("item", new ItemAcervoDTO());
-        model.addAttribute("tipos", TipoMaterial.values());
-        model.addAttribute("categorias", listarCategorias());
+        ItemAcervoDTO item = new ItemAcervoDTO();
+        item.setTipo(TipoMaterial.LIVRO.name());
+        item.setIdioma("Português");
+        model.addAttribute("item", item);
+        carregarFormulario(model);
+        return "acervo/formulario";
+    }
+
+    @GetMapping("/{id}/editar")
+    public String editar(@PathVariable Long id, Model model, RedirectAttributes redirect) {
+        ItemAcervoDTO item = acervoService.buscarDTO(id);
+        if (item == null) {
+            redirect.addFlashAttribute("erro", "Material não encontrado.");
+            return "redirect:/acervo";
+        }
+        item.setNovosAutores(item.getAutoresNomes());
+        model.addAttribute("item", item);
+        carregarFormulario(model);
         return "acervo/formulario";
     }
 
     @GetMapping("/{id}")
-    public String detalhes(@PathVariable Long id, Model model) {
+    public String detalhes(@PathVariable Long id, Model model, RedirectAttributes redirect) {
         ItemAcervoDTO item = acervoService.buscarDTO(id);
-        if (item == null) return "redirect:/acervo";
+        if (item == null) {
+            redirect.addFlashAttribute("erro", "Material não encontrado.");
+            return "redirect:/acervo";
+        }
         model.addAttribute("item", item);
-        model.addAttribute("exemplares", acervoService.buscarPorId(id) != null ? java.util.Collections.emptyList() : java.util.Collections.emptyList());
+        model.addAttribute("exemplares", acervoService.listarExemplares(id));
         return "acervo/detalhes";
     }
 
     @PostMapping
-    public String salvar(@ModelAttribute ItemAcervoDTO item, Model model) {
-        try {
-            acervoService.salvar(item, "admin");
-            return "redirect:/acervo?sucesso=1";
-        } catch (Exception e) {
-            model.addAttribute("erro", e.getMessage());
-            model.addAttribute("tipos", TipoMaterial.values());
-            model.addAttribute("categorias", listarCategorias());
+    public String salvar(@Valid @ModelAttribute("item") ItemAcervoDTO item,
+                         BindingResult result,
+                         Model model,
+                         RedirectAttributes redirect) {
+        if (result.hasErrors()) {
+            model.addAttribute("erro", "Verifique os campos destacados.");
+            carregarFormulario(model);
             return "acervo/formulario";
         }
+        try {
+            acervoService.salvar(item, AuthUtil.usuarioAtual());
+        } catch (IllegalStateException e) {
+            model.addAttribute("erro", e.getMessage());
+            carregarFormulario(model);
+            return "acervo/formulario";
+        }
+        redirect.addFlashAttribute("sucesso", "Material salvo com sucesso.");
+        return "redirect:/acervo";
     }
 
     @PostMapping("/{id}/exemplar")
-    public String addExemplar(@PathVariable Long id, @RequestParam(defaultValue = "1") int quantidade) {
-        if (quantidade == 1) {
-            acervoService.cadastrarExemplar(id, "admin");
-        } else {
-            acervoService.cadastrarExemplaresLote(id, quantidade, "admin");
+    public String addExemplar(@PathVariable Long id,
+                              @RequestParam(defaultValue = "1") int quantidade,
+                              RedirectAttributes redirect) {
+        try {
+            acervoService.cadastrarExemplaresLote(id, quantidade, AuthUtil.usuarioAtual());
+            redirect.addFlashAttribute("sucesso", quantidade + " exemplar(es) cadastrado(s) com sucesso.");
+        } catch (IllegalStateException e) {
+            redirect.addFlashAttribute("erro", e.getMessage());
         }
         return "redirect:/acervo/" + id;
     }
 
     @PostMapping("/{id}/excluir")
-    public String excluir(@PathVariable Long id) {
-        acervoService.excluir(id, "admin", null);
-        return "redirect:/acervo?excluido=1";
+    public String excluir(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            acervoService.excluir(id, AuthUtil.usuarioAtual(), null);
+            redirect.addFlashAttribute("sucesso", "Material excluído com sucesso.");
+        } catch (IllegalStateException e) {
+            redirect.addFlashAttribute("erro", e.getMessage());
+            return "redirect:/acervo/" + id;
+        }
+        return "redirect:/acervo";
     }
 
     @GetMapping("/sugestoes-autores")
     @ResponseBody
     public List<String> sugestoesAutores(@RequestParam String termo) {
-        return acervoService.sugestoesAutores(termo).stream()
-            .map(com.gabriel.bublo.model.Autor::getNome).toList();
+        return acervoService.sugestoesAutores(termo).stream().map(Autor::getNome).toList();
     }
 
-    private List<com.gabriel.bublo.model.Categoria> listarCategorias() {
-        // retornar categorias ativas - simplificado via repositorio direto não exposto; usar lista vazia por enquanto
-        return java.util.Collections.emptyList();
+    private void carregarFormulario(Model model) {
+        model.addAttribute("tipos", TipoMaterial.values());
+        model.addAttribute("categorias", acervoService.listarCategorias());
     }
 }

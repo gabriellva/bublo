@@ -32,13 +32,6 @@ public class GlobalModelAdvice {
         model.addAttribute("usuario", usuario);
 
         try {
-            var temaCfg = configuracaoService.buscar("tema_usuario");
-            model.addAttribute("temaUsuario", temaCfg != null ? temaCfg.getValor() : "claro");
-        } catch (Exception e) {
-            model.addAttribute("temaUsuario", "claro");
-        }
-
-        try {
             model.addAttribute("naoLidas", notificacaoRepository.contarNaoLidas());
         } catch (Exception e) {
             model.addAttribute("naoLidas", 0);
