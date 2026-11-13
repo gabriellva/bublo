@@ -45,7 +45,11 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
             TextMessage message = new TextMessage(json);
             sessions.forEach(s -> {
                 try {
-                    if (s.isOpen()) s.sendMessage(message);
+                    if (s.isOpen()) {
+                        synchronized (s) {
+                            s.sendMessage(message);
+                        }
+                    }
                 } catch (IOException ignored) {}
             });
         } catch (IOException ignored) {}

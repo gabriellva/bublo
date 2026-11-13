@@ -22,8 +22,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(handler, "/ws/notificacoes")
-            .setAllowedOrigins("*")
-            .withSockJS(); // fallback polling e reconexão automática
+        registry.addHandler(handler, "/ws/notificacoes");
     }
 }
