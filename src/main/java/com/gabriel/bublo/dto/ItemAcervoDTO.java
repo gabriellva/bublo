@@ -55,7 +55,20 @@ public class ItemAcervoDTO {
     // Novos nomes de autores digitados durante o preenchimento
     private java.util.List<String> novosAutores;
 
+    private String categoriaNome;
+    private java.util.List<String> autoresNomes = new java.util.ArrayList<>();
+    private long totalExemplares;
+    private long exemplaresDisponiveis;
+
     // Getters e setters
+    public String getCategoriaNome() { return categoriaNome; }
+    public void setCategoriaNome(String categoriaNome) { this.categoriaNome = categoriaNome; }
+    public java.util.List<String> getAutoresNomes() { return autoresNomes; }
+    public void setAutoresNomes(java.util.List<String> autoresNomes) { this.autoresNomes = autoresNomes; }
+    public long getTotalExemplares() { return totalExemplares; }
+    public void setTotalExemplares(long totalExemplares) { this.totalExemplares = totalExemplares; }
+    public long getExemplaresDisponiveis() { return exemplaresDisponiveis; }
+    public void setExemplaresDisponiveis(long exemplaresDisponiveis) { this.exemplaresDisponiveis = exemplaresDisponiveis; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getTipo() { return tipo; }

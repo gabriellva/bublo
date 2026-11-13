@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,14 +82,12 @@ public class LeitorService {
         leitorRepository.salvar(l);
     }
 
-    @Transactional
     public ImportacaoResultadoDTO importarCSV(MultipartFile arquivo, String adminUsuario) {
         ImportacaoResultadoDTO resultado = new ImportacaoResultadoDTO();
         List<LinhaErroDTO> erros = new ArrayList<>();
         int importados = 0;
 
-        try (CSVReader reader = new CSVReader(new InputStreamReader(
-                arquivo.getInputStream(), StandardCharsets.UTF_8))) {
+        try (CSVReader reader = abrirLeitorCsv(arquivo)) {
             String[] linha;
             int numeroLinha = 1;
             boolean cabecalho = true;
@@ -115,8 +112,10 @@ public class LeitorService {
                     dto.setAtivo(true);
                     salvar(dto, adminUsuario);
                     importados++;
-                } catch (Exception e) {
+                } catch (IllegalArgumentException | IllegalStateException e) {
                     erros.add(new LinhaErroDTO(numeroLinha, e.getMessage()));
+                } catch (RuntimeException e) {
+                    erros.add(new LinhaErroDTO(numeroLinha, "Não foi possível gravar esta linha."));
                 }
             }
         } catch (CsvValidationException | java.io.IOException e) {
@@ -127,6 +126,16 @@ public class LeitorService {
         resultado.setRejeitados(erros.size());
         resultado.setErros(erros);
         return resultado;
+    }
+
+    private CSVReader abrirLeitorCsv(MultipartFile arquivo) throws java.io.IOException {
+        String texto = new String(arquivo.getBytes(), StandardCharsets.UTF_8);
+        if (texto.startsWith("\uFEFF")) texto = texto.substring(1);
+        String primeiraLinha = texto.lines().findFirst().orElse("");
+        char separador = primeiraLinha.contains(";") && !primeiraLinha.contains(",") ? ';' : ',';
+        return new com.opencsv.CSVReaderBuilder(new java.io.StringReader(texto))
+            .withCSVParser(new com.opencsv.CSVParserBuilder().withSeparator(separador).build())
+            .build();
     }
 
     private void validarLinha(String[] linha) {

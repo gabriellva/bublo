@@ -17,6 +17,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -24,6 +26,9 @@ import java.time.format.DateTimeFormatter;
  */
 @Service
 public class RelatorioService {
+
+    private static final char BOM_UTF8 = '\uFEFF';
+    private static final String FORMULA_PREFIXOS = "=+-@";
 
     private final EmprestimoRepository emprestimoRepository;
     private final MultaRepository multaRepository;
@@ -51,6 +56,7 @@ public class RelatorioService {
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=emprestimos.csv");
         try (PrintWriter out = new PrintWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8))) {
+            out.print(BOM_UTF8);
             out.println("Id;Leitor;Exemplar/Tombamento;Data empréstimo;Prevista;Status");
             var lista = emprestimoRepository.buscar(termo, status, 0, 10000, "data_emprestimo DESC").getConteudo();
             for (var e : lista) {
@@ -66,10 +72,12 @@ public class RelatorioService {
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=multas.csv");
         try (PrintWriter out = new PrintWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8))) {
+            out.print(BOM_UTF8);
             out.println("Id;Leitor;Valor;Pago;Saldo;Status;Data geração");
             var lista = multaRepository.buscar(termo, status, 0, 10000, "data_geracao ASC").getConteudo();
+            Map<Long, String> nomes = new HashMap<>();
             for (var m : lista) {
-                out.println(csv(m.getId()) + ";" + csv(m.getLeitorId()) + ";" + csv(m.getValor()) + ";"
+                out.println(csv(m.getId()) + ";" + csv(nomeDoLeitor(m.getLeitorId(), nomes)) + ";" + csv(m.getValor()) + ";"
                     + csv(m.getValorPago()) + ";" + csv(m.getSaldoPendente()) + ";" + csv(m.getStatus()) + ";"
                     + csv(fmt(m.getDataGeracao())));
             }
@@ -80,6 +88,7 @@ public class RelatorioService {
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=leitores.csv");
         try (PrintWriter out = new PrintWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8))) {
+            out.print(BOM_UTF8);
             out.println("Matrícula;Nome;Tipo;E-mail;CPF;Endereço;Telefone;Curso/Dept.;Ativo");
             var lista = leitorRepository.buscar(termo, null, null, 0, 10000, "nome ASC").getConteudo();
             for (var l : lista) {
@@ -94,6 +103,7 @@ public class RelatorioService {
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=reservas.csv");
         try (PrintWriter out = new PrintWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8))) {
+            out.print(BOM_UTF8);
             out.println("Id;Leitor;Material;Posição;Prazo retirada;Status");
             var lista = reservaRepository.buscar(termo, status, 0, 10000, "posicao ASC").getConteudo();
             for (var r : lista) {
@@ -109,6 +119,7 @@ public class RelatorioService {
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=materiais.csv");
         try (PrintWriter out = new PrintWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8))) {
+            out.print(BOM_UTF8);
             out.println("Título;Tipo;Editora;Ano;Categoria;ISBN/ISSN");
             var lista = itemAcervoRepository.listarTodos();
             for (var m : lista) {
@@ -152,10 +163,11 @@ public class RelatorioService {
             Row row = sheet.createRow(0);
             for (int i = 0; i < cabecalho.length; i++) row.createCell(i).setCellValue(cabecalho[i]);
             int r = 1;
+            Map<Long, String> nomes = new HashMap<>();
             for (var m : lista) {
                 Row linha = sheet.createRow(r++);
                 linha.createCell(0).setCellValue(m.getId() != null ? m.getId() : 0);
-                linha.createCell(1).setCellValue(m.getLeitorId() != null ? m.getLeitorId() : 0);
+                linha.createCell(1).setCellValue(nomeDoLeitor(m.getLeitorId(), nomes));
                 linha.createCell(2).setCellValue(m.getValor() != null ? m.getValor().doubleValue() : 0);
                 linha.createCell(3).setCellValue(m.getValorPago() != null ? m.getValorPago().doubleValue() : 0);
                 linha.createCell(4).setCellValue(m.getSaldoPendente() != null ? m.getSaldoPendente().doubleValue() : 0);
@@ -170,9 +182,18 @@ public class RelatorioService {
     }
 
     // ===================== Helpers =====================
+    private String nomeDoLeitor(Long leitorId, Map<Long, String> cache) {
+        if (leitorId == null) return "";
+        return cache.computeIfAbsent(leitorId,
+            id -> leitorRepository.buscarPorId(id).map(l -> l.getNome()).orElse(""));
+    }
+
     private String csv(Object v) {
         if (v == null) return "";
         String s = v.toString();
+        if (!s.isEmpty() && FORMULA_PREFIXOS.indexOf(s.charAt(0)) >= 0) {
+            s = "'" + s;
+        }
         if (s.contains(";") || s.contains("\"") || s.contains("\n")) {
             return "\"" + s.replace("\"", "\"\"") + "\"";
         }

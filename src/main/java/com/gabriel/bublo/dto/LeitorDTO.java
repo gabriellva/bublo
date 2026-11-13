@@ -12,6 +12,7 @@ public class LeitorDTO {
     private Long id;
 
     @NotBlank(message = "Tipo de leitor é obrigatório")
+    @jakarta.validation.constraints.Pattern(regexp = "ALUNO|PROFESSOR", message = "Tipo de leitor inválido")
     private String tipo; // ALUNO, PROFESSOR
 
     @NotBlank(message = "Nome completo é obrigatório")

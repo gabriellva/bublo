@@ -1,6 +1,7 @@
 package com.gabriel.bublo.service;
 
 import com.gabriel.bublo.dto.Paginacao;
+import com.gabriel.bublo.dto.ReservaDTO;
 import com.gabriel.bublo.model.Reserva;
 import com.gabriel.bublo.model.ItemAcervo;
 import com.gabriel.bublo.repository.ReservaRepository;
@@ -62,6 +63,22 @@ public class ReservaService {
 
     @Transactional
     public ReservaDTO criar(Long leitorId, Long itemId, LocalDateTime prazoRetirada, String adminUsuario) {
+        var leitor = leitorRepository.buscarPorId(leitorId)
+            .orElseThrow(() -> new IllegalStateException("Leitor não encontrado"));
+        if (!Boolean.TRUE.equals(leitor.getAtivo())) {
+            throw new IllegalStateException("Leitor inativo. Não é possível registrar reservas.");
+        }
+        var item = itemAcervoRepository.buscarPorId(itemId)
+            .orElseThrow(() -> new IllegalStateException("Material não encontrado"));
+        if (item.getTipo() == com.gabriel.bublo.model.TipoMaterial.DIGITAL) {
+            throw new IllegalStateException("Publicações digitais não podem ser reservadas.");
+        }
+        if (prazoRetirada == null || prazoRetirada.toLocalDate().isBefore(java.time.LocalDate.now())) {
+            throw new IllegalStateException("O prazo de retirada não pode ser anterior a hoje.");
+        }
+        if (!exemplarRepository.buscarDisponiveisPorItem(itemId).isEmpty()) {
+            throw new IllegalStateException("Este material possui exemplares disponíveis. Registre um empréstimo em vez de uma reserva.");
+        }
         Reserva r = reservaRepository.criar(leitorId, itemId, prazoRetirada);
         notificacaoRepository.salvar(new com.gabriel.bublo.model.Notificacao(
             null, "RESERVA", "INFORMATIVO", "Nova reserva",
@@ -72,6 +89,11 @@ public class ReservaService {
 
     @Transactional
     public void cancelar(Long reservaId, String adminUsuario) {
+        Reserva reserva = reservaRepository.buscarPorId(reservaId)
+            .orElseThrow(() -> new IllegalStateException("Reserva não encontrada"));
+        if (!"AGUARDANDO".equals(reserva.getStatus())) {
+            throw new IllegalStateException("Somente reservas aguardando retirada podem ser canceladas.");
+        }
         reservaRepository.cancelar(reservaId);
         notificacaoRepository.salvar(new com.gabriel.bublo.model.Notificacao(
             null, "RESERVA", "INFORMATIVO", "Reserva cancelada",
@@ -92,32 +114,12 @@ public class ReservaService {
         ReservaDTO dto = new ReservaDTO();
         dto.setId(r.getId());
         dto.setLeitorId(r.getLeitor() != null ? r.getLeitor().getId() : null);
+        dto.setLeitorNome(r.getLeitor() != null ? r.getLeitor().getNome() : null);
         dto.setItemId(r.getItemAcervo() != null ? r.getItemAcervo().getId() : null);
+        dto.setItemTitulo(r.getItemAcervo() != null ? r.getItemAcervo().getTitulo() : null);
         dto.setPosicao(r.getPosicao());
         dto.setPrazoRetirada(r.getPrazoRetirada());
         dto.setStatus(r.getStatus());
         return dto;
     }
-}
-
-// DTO local
-class ReservaDTO {
-    private Long id;
-    private Long leitorId;
-    private Long itemId;
-    private Integer posicao;
-    private java.time.LocalDateTime prazoRetirada;
-    private String status;
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Long getLeitorId() { return leitorId; }
-    public void setLeitorId(Long leitorId) { this.leitorId = leitorId; }
-    public Long getItemId() { return itemId; }
-    public void setItemId(Long itemId) { this.itemId = itemId; }
-    public Integer getPosicao() { return posicao; }
-    public void setPosicao(Integer posicao) { this.posicao = posicao; }
-    public java.time.LocalDateTime getPrazoRetirada() { return prazoRetirada; }
-    public void setPrazoRetirada(java.time.LocalDateTime prazoRetirada) { this.prazoRetirada = prazoRetirada; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
 }
