@@ -1,3 +1,50 @@
 spring:
   application:
     name: bublo
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/bublo}
+    username: ${DB_USERNAME:bublo}
+    password: ${DB_PASSWORD:bublo}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    cache: false
+    encoding: UTF-8
+  resources:
+    static-locations: classpath:/static/
+  messages:
+    basename: messages/messages
+    encoding: UTF-8
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      cookie:
+        name: BUBLO_SESSION
+        http-only: true
+        same-site: LAX
+      timeout: 0
+
+# Configurações próprias do Bublo (senhas do administrador via variáveis de ambiente)
+bublo:
+  admin:
+    username: ${ADMIN_USERNAME:}
+    password: ${ADMIN_PASSWORD:}
+  demo:
+    data:
+      enabled: ${DEMO_DATA_ENABLED:true}
+
+logging:
+  level:
+    com.gabriel.bublo: INFO
+    org.springframework.web.socket: INFO
+    org.flywaydb: INFO
