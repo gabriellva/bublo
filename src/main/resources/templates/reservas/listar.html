@@ -1,79 +1,63 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Reservas - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Reservas', 'reservas', ~{::conteudo}, ~{})}">
+<head><title>Reservas</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('reservas')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header cabecalho-pagina">
-        <div>
-          <h1>Reservas</h1>
-          <p class="subtitulo">Fila FIFO por material</p>
-        </div>
-        <a th:href="@{/reservas/novo}" class="btn-bublo"><i class="bi bi-plus-lg"></i> Nova reserva</a>
-      </div>
-
-      <div class="card-bublo p-3 mb-3">
-        <form th:action="@{/reservas}" method="get" class="form-grid" style="align-items:end;">
-          <div>
-            <label class="form-label" for="termo">Buscar (leitor ou material)</label>
-            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
-          </div>
-          <div>
-            <label class="form-label" for="status">Situação</label>
-            <select id="status" name="status" class="form-control">
-              <option value="">Todas</option>
-              <option value="AGUARDANDO" th:selected="${status == 'AGUARDANDO'}">Aguardando</option>
-              <option value="ATENDIDA" th:selected="${status == 'ATENDIDA'}">Atendidas</option>
-              <option value="CANCELADA" th:selected="${status == 'CANCELADA'}">Canceladas</option>
-              <option value="EXPIRADA" th:selected="${status == 'EXPIRADA'}">Expiradas</option>
-            </select>
-          </div>
-          <div class="acoes-linha">
-            <button type="submit" class="btn-bublo">Filtrar</button>
-            <a th:href="@{/reservas}" class="btn-bublo btn-contorno">Limpar</a>
-          </div>
-        </form>
-      </div>
-
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
-          <thead>
-            <tr><th>#</th><th>Leitor</th><th>Material</th><th>Posição</th><th>Prazo retirada</th><th>Situação</th><th>Ações</th></tr>
-          </thead>
-          <tbody>
-            <tr th:each="r : ${resultado.conteudo}">
-              <td th:text="${r.id}">-</td>
-              <td th:text="${r.leitorNome ?: '-'}">Leitor</td>
-              <td th:text="${r.itemTitulo ?: '-'}">Material</td>
-              <td th:text="${r.posicao}">-</td>
-              <td th:text="${#temporals.format(r.prazoRetirada, 'dd/MM/yyyy')}">-</td>
-              <td><span class="badge-bublo" th:classappend="${r.status == 'AGUARDANDO'} ? 'badge-pendente' : (${r.status == 'ATENDIDA'} ? 'badge-ativo' : 'badge-neutro')"
-                        th:text="${r.status == 'AGUARDANDO'} ? 'Aguardando' : (${r.status == 'ATENDIDA'} ? 'Atendida' : (${r.status == 'CANCELADA'} ? 'Cancelada' : 'Expirada'))">Aguardando</span></td>
-              <td>
-                <form th:action="@{/reservas/{id}/cancelar(id=${r.id})}" method="post" class="form-inline" th:if="${r.status == 'AGUARDANDO'}"
-                      data-confirmar="Cancelar esta reserva?" data-confirmar-titulo="Cancelar reserva">
-                  <button type="submit" class="btn-bublo btn-acao btn-contorno perigo">Cancelar</button>
-                </form>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
-        <div class="simbolo"><i class="bi bi-calendar-check"></i></div>
-        <h3>Nenhuma reserva encontrada</h3>
-        <p>Reservas são feitas para materiais sem exemplares disponíveis.</p>
-      </div>
-      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/reservas')}"></th:block>
-    </main>
+<th:block th:fragment="conteudo" th:with="temFiltro=${(status != null and !#strings.isEmpty(status)) or (termo != null and !#strings.isEmpty(termo))}">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Reservas</h1>
+      <p class="pagina-sub">A fila de cada material segue a ordem de chegada. Quando um exemplar volta, o primeiro da fila tem o prazo de retirada abaixo.</p>
+    </div>
+    <div class="pagina-acoes"><a th:href="@{/reservas/novo}" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Nova reserva</a></div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <form th:action="@{/reservas}" method="get" class="barra-ferramentas">
+    <input type="hidden" name="status" th:if="${status != null and !#strings.isEmpty(status)}" th:value="${status}" />
+    <div class="busca">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <label class="sr-only" for="termo">Buscar reservas</label>
+      <input type="search" id="termo" name="termo" class="form-control" th:value="${termo}" placeholder="Leitor ou material" />
+    </div>
+    <button type="submit" class="btn btn-outline-secondary">Buscar</button>
+    <span class="espaco"></span>
+    <nav class="segmentado" aria-label="Filtrar por situação">
+      <a th:href="@{/reservas(termo=${termo})}" th:classappend="${#strings.isEmpty(status)} ? 'ativo'">Todas</a>
+      <a th:href="@{/reservas(termo=${termo}, status='AGUARDANDO')}" th:classappend="${status == 'AGUARDANDO'} ? 'ativo'">Aguardando</a>
+      <a th:href="@{/reservas(termo=${termo}, status='ATENDIDA')}" th:classappend="${status == 'ATENDIDA'} ? 'ativo'">Atendidas</a>
+      <a th:href="@{/reservas(termo=${termo}, status='CANCELADA')}" th:classappend="${status == 'CANCELADA'} ? 'ativo'">Canceladas</a>
+      <a th:href="@{/reservas(termo=${termo}, status='EXPIRADA')}" th:classappend="${status == 'EXPIRADA'} ? 'ativo'">Expiradas</a>
+    </nav>
+  </form>
+
+  <div th:if="${resultado.conteudo.empty}">
+    <div th:replace="~{layout/componentes :: vazio(${temFiltro} ? 'Nenhuma reserva encontrada' : 'Nenhuma reserva na fila', ${temFiltro} ? 'Nada corresponde à busca ou à situação escolhida.' : 'Reservas são feitas para materiais sem exemplar disponível.', ${temFiltro} ? 'Limpar filtros' : 'Nova reserva', ${temFiltro} ? '/reservas' : '/reservas/novo')}"></div>
+  </div>
+
+  <div class="tabela-wrap cartoes" th:unless="${resultado.conteudo.empty}">
+    <table class="tabela tabela-cartoes">
+      <thead><tr><th>Nº</th><th>Leitor</th><th>Material</th><th>Posição na fila</th><th>Retirar até</th><th>Situação</th><th></th></tr></thead>
+      <tbody>
+        <tr th:each="r : ${resultado.conteudo}">
+          <td data-rotulo="Nº" class="numero" th:text="${r.id}">1</td>
+          <td data-rotulo="Leitor" class="principal" th:text="${r.leitorNome ?: '—'}">Leitor</td>
+          <td data-rotulo="Material" th:text="${r.itemTitulo ?: '—'}">Material</td>
+          <td data-rotulo="Posição" class="numero" th:text="${r.status == 'AGUARDANDO' ? r.posicao + 'º' : '—'}">1º</td>
+          <td data-rotulo="Retirar até" class="numero" th:text="${#temporals.format(r.prazoRetirada, 'dd/MM/yyyy')}">01/01/2026</td>
+          <td data-rotulo="Situação"><span class="badge-b" th:classappend="${r.status == 'AGUARDANDO'} ? 'st-aviso' : (${r.status == 'ATENDIDA'} ? 'st-ok' : 'st-neutro')"
+                th:text="${r.status == 'AGUARDANDO' ? 'Aguardando' : (r.status == 'ATENDIDA' ? 'Atendida' : (r.status == 'CANCELADA' ? 'Cancelada' : 'Expirada'))}">Aguardando</span></td>
+          <td class="acoes">
+            <form th:action="@{/reservas/{id}/cancelar(id=${r.id})}" method="post" th:if="${r.status == 'AGUARDANDO'}"
+                  data-confirmar="A reserva sai da fila e os próximos leitores avançam uma posição."
+                  th:attr="data-confirmar-registro=${r.itemTitulo + ' — ' + r.leitorNome}" data-confirmar-titulo="Cancelar reserva" data-confirmar-rotulo="Cancelar reserva" data-confirmar-perigo>
+              <button type="submit" class="btn btn-outline-danger btn-sm">Cancelar</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/reservas')}"></th:block>
+</th:block>
 </body>
 </html>

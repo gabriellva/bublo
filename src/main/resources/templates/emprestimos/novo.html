@@ -1,97 +1,80 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Novo empréstimo - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Novo empréstimo', 'emprestimos', ~{::conteudo}, ~{::scripts})}">
+<head><title>Novo empréstimo</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('emprestimos')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1>Novo empréstimo</h1>
-        <p class="subtitulo">Selecione o leitor, os exemplares e a data prevista de devolução</p>
-      </div>
-
-      <form th:action="@{/emprestimos}" method="post" novalidate id="formEmprestimo" th:attr="data-prazo-aluno=${prazoAlunos}, data-prazo-professor=${prazoProfessores}">
-        <div class="form-grid">
-          <div>
-            <label class="form-label" for="leitorId">Leitor</label>
-            <select id="leitorId" name="leitorId" class="form-control" required>
-              <option value="">Selecione…</option>
-              <option th:each="l : ${leitores}" th:value="${l.id}" th:data-tipo="${l.tipo}"
-                      th:text="${l.matricula + ' — ' + l.nome}" th:selected="${leitorId != null and leitorId == l.id}">Leitor</option>
-            </select>
-            <small id="statusBloqueio" class="texto-ajuda d-block" aria-live="polite"></small>
-          </div>
-          <div>
-            <label class="form-label" for="dataPrevista">Data prevista de devolução</label>
-            <input type="date" id="dataPrevista" name="dataPrevista" class="form-control" required
-                   th:min="${hoje}" th:value="${dataSelecionada}" />
-          </div>
-        </div>
-
-        <div class="mt-3">
-          <label class="form-label" for="exemplares">Exemplares disponíveis</label>
-          <select id="exemplares" name="exemplares" class="form-control" size="8" multiple required>
-            <option th:each="x : ${exemplaresDisponiveis}" th:value="${x.id}" th:text="${x.rotulo}"
-                    th:selected="${exemplaresSelecionados != null and exemplaresSelecionados.contains(x.id)}">BA-000001 — Título</option>
-          </select>
-          <p class="texto-ajuda">Segure Ctrl (ou Cmd) para selecionar vários. Somente exemplares livres aparecem aqui.</p>
-          <p class="texto-ajuda" th:if="${exemplaresDisponiveis.empty}">Não há exemplares disponíveis no momento.</p>
-        </div>
-
-        <div class="acoes-linha mt-4">
-          <button type="submit" class="btn-bublo" id="btnConfirmar">Confirmar empréstimo</button>
-          <a th:href="@{/emprestimos}" class="btn-bublo btn-contorno">Cancelar</a>
-        </div>
-      </form>
-    </main>
+<th:block th:fragment="conteudo">
+  <div class="migalhas"><a th:href="@{/emprestimos}">Empréstimos</a><i class="bi bi-chevron-right small"></i><span>Novo</span></div>
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Novo empréstimo</h1>
+      <p class="pagina-sub">Quatro passos: escolha o leitor, os exemplares, o prazo e confirme.</p>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const form = document.getElementById('formEmprestimo');
-      const leitor = document.getElementById('leitorId');
-      const data = document.getElementById('dataPrevista');
-      const status = document.getElementById('statusBloqueio');
-      const confirmar = document.getElementById('btnConfirmar');
+  <ol class="passos" id="passos" aria-label="Etapas do empréstimo">
+    <li class="atual">Leitor</li><li>Exemplares</li><li>Prazo</li><li>Confirmação</li>
+  </ol>
 
-      function sugerirData() {
-        if (data.value || !leitor.value) return;
-        const tipo = leitor.selectedOptions[0].dataset.tipo;
-        const dias = parseInt(tipo === 'PROFESSOR' ? form.dataset.prazoProfessor : form.dataset.prazoAluno, 10);
-        const previsao = new Date();
-        previsao.setDate(previsao.getDate() + dias);
-        data.value = previsao.toISOString().slice(0, 10);
-      }
+  <form th:action="@{/emprestimos}" method="post" novalidate id="formEmprestimo" data-proteger-alteracoes
+        th:attr="data-prazo-aluno=${prazoAlunos}, data-prazo-professor=${prazoProfessores}, data-com-erro=${erro != null}">
 
-      function verificarRestricao() {
-        status.textContent = '';
-        confirmar.disabled = false;
-        if (!leitor.value) return;
-        sugerirData();
-        fetch('/emprestimos/restricao/' + encodeURIComponent(leitor.value), { credentials: 'same-origin' })
-          .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-          .then((d) => {
-            if (d.bloqueado) {
-              status.textContent = 'Leitor bloqueado: possui multa pendente.';
-              status.style.color = 'var(--bublo-perigo)';
-              confirmar.disabled = true;
-              return;
-            }
-            status.textContent = 'Sem pendências. Empréstimos ativos: ' + d.ativos + '.';
-            status.style.color = 'var(--bublo-sucesso)';
-          })
-          .catch(() => { Bublo.Toasts.atencao('Não foi possível verificar as pendências do leitor.'); });
-      }
+    <section class="painel passo-painel atual" data-passo="1" aria-labelledby="t-passo1">
+      <div class="painel-corpo form-estreito">
+        <h2 id="t-passo1">Quem está retirando?</h2>
+        <p class="secao-sub">Escolha um leitor ativo. Leitores com multa pendente ficam bloqueados.</p>
+        <label class="form-label" for="filtroLeitor">Buscar leitor</label>
+        <input type="search" id="filtroLeitor" class="form-control mb-3" placeholder="Nome ou matrícula" autocomplete="off" />
+        <label class="form-label" for="leitorId">Leitor</label>
+        <select id="leitorId" name="leitorId" class="form-select" required>
+          <option value="">Selecione…</option>
+          <option th:each="l : ${leitores}" th:value="${l.id}" th:data-tipo="${l.tipo}" th:data-nome="${l.nome}"
+                  th:text="${l.matricula + ' — ' + l.nome}" th:selected="${leitorId != null and leitorId == l.id}">Leitor</option>
+        </select>
+        <div class="estado-leitor" id="statusBloqueio" aria-live="polite"></div>
+        <div class="passo-nav"><a th:href="@{/emprestimos}" class="btn btn-outline-secondary">Cancelar</a><button type="button" class="btn btn-primary" data-ir="2">Continuar<i class="bi bi-arrow-right"></i></button></div>
+      </div>
+    </section>
 
-      leitor.addEventListener('change', () => { data.value = ''; verificarRestricao(); });
-      verificarRestricao();
-    });
-  </script>
+    <section class="painel passo-painel" data-passo="2" aria-labelledby="t-passo2">
+      <div class="painel-corpo form-estreito">
+        <h2 id="t-passo2">Quais exemplares?</h2>
+        <p class="secao-sub">Somente exemplares livres aparecem aqui. Busque por título, autor ou tombamento.</p>
+        <label class="form-label" for="filtroExemplar">Buscar exemplar</label>
+        <input type="search" id="filtroExemplar" class="form-control mb-3" placeholder="Ex.: Dom Casmurro ou BA-000001" autocomplete="off" />
+        <div class="lista-selecao" id="listaExemplares" role="group" aria-label="Exemplares disponíveis"></div>
+        <p class="ajuda-campo" id="contagemExemplares" aria-live="polite"></p>
+        <select id="exemplares" name="exemplares" multiple hidden aria-hidden="true">
+          <option th:each="x : ${exemplaresDisponiveis}" th:value="${x.id}" th:text="${x.rotulo}" th:data-tomb="${x.tombamento}" th:data-titulo="${x.titulo}"
+                  th:selected="${exemplaresSelecionados != null and exemplaresSelecionados.contains(x.id)}">BA-000001 — Título</option>
+        </select>
+        <div class="passo-nav"><button type="button" class="btn btn-outline-secondary" data-ir="1"><i class="bi bi-arrow-left"></i>Voltar</button><button type="button" class="btn btn-primary" data-ir="3">Continuar<i class="bi bi-arrow-right"></i></button></div>
+      </div>
+    </section>
+
+    <section class="painel passo-painel" data-passo="3" aria-labelledby="t-passo3">
+      <div class="painel-corpo form-estreito">
+        <h2 id="t-passo3">Até quando?</h2>
+        <p class="secao-sub">O prazo sugerido segue a regra do tipo de leitor e vale para todos os exemplares deste empréstimo.</p>
+        <label class="form-label" for="dataPrevista">Data prevista de devolução</label>
+        <input type="date" id="dataPrevista" name="dataPrevista" class="form-control" style="max-width:220px" required th:min="${hoje}" th:value="${dataSelecionada}" />
+        <p class="ajuda-campo" id="ajudaPrazo"></p>
+        <div class="passo-nav"><button type="button" class="btn btn-outline-secondary" data-ir="2"><i class="bi bi-arrow-left"></i>Voltar</button><button type="button" class="btn btn-primary" data-ir="4">Revisar<i class="bi bi-arrow-right"></i></button></div>
+      </div>
+    </section>
+
+    <section class="painel passo-painel" data-passo="4" aria-labelledby="t-passo4">
+      <div class="painel-corpo form-estreito">
+        <h2 id="t-passo4">Confira e confirme</h2>
+        <p class="secao-sub">Nada é registrado antes de você confirmar.</p>
+        <ul class="resumo-lista" id="resumo" aria-live="polite"></ul>
+        <div class="passo-nav"><button type="button" class="btn btn-outline-secondary" data-ir="3"><i class="bi bi-arrow-left"></i>Voltar</button><button type="submit" class="btn btn-primary btn-lg" id="btnConfirmar"><i class="bi bi-check2-circle"></i>Confirmar empréstimo</button></div>
+      </div>
+    </section>
+  </form>
+</th:block>
+<th:block th:fragment="scripts">
+  <script type="module" th:src="@{/js/pages/emprestimo-novo.js}"></script>
+</th:block>
 </body>
 </html>

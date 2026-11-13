@@ -1,89 +1,75 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Empréstimos - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Empréstimos', 'emprestimos', ~{::conteudo}, ~{})}">
+<head><title>Empréstimos</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('emprestimos')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header cabecalho-pagina">
-        <div>
-          <h1>Empréstimos</h1>
-          <p class="subtitulo">Controle de empréstimos ativos e histórico</p>
-        </div>
-        <a th:href="@{/emprestimos/novo}" class="btn-bublo"><i class="bi bi-plus-lg"></i> Novo empréstimo</a>
-      </div>
-
-      <div class="card-bublo p-3 mb-3">
-        <form th:action="@{/emprestimos}" method="get" class="form-grid" style="align-items:end;">
-          <div>
-            <label class="form-label" for="termo">Buscar (leitor, matrícula, tombamento ou nº)</label>
-            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
-          </div>
-          <div>
-            <label class="form-label" for="status">Situação</label>
-            <select id="status" name="status" class="form-control">
-              <option value="">Todas</option>
-              <option value="ATIVO" th:selected="${status == 'ATIVO'}">Ativos</option>
-              <option value="ATRASADO" th:selected="${status == 'ATRASADO'}">Em atraso</option>
-              <option value="DEVOLVIDO" th:selected="${status == 'DEVOLVIDO'}">Devolvidos</option>
-              <option value="CANCELADO" th:selected="${status == 'CANCELADO'}">Cancelados</option>
-            </select>
-          </div>
-          <div class="acoes-linha">
-            <button type="submit" class="btn-bublo">Filtrar</button>
-            <a th:href="@{/emprestimos}" class="btn-bublo btn-contorno">Limpar</a>
-          </div>
-        </form>
-      </div>
-
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
-          <thead>
-            <tr><th>#</th><th>Leitor</th><th>Material</th><th>Tombamento</th><th>Data</th><th>Prevista</th><th>Situação</th><th>Ações</th></tr>
-          </thead>
-          <tbody>
-            <tr th:each="e : ${resultado.conteudo}">
-              <td th:text="${e.id}">-</td>
-              <td><a th:href="@{/leitores/{id}(id=${e.leitorId})}" th:text="${e.leitorNome ?: '-'}">Leitor</a></td>
-              <td th:text="${e.titulo ?: '-'}">Material</td>
-              <td th:text="${e.tombamento ?: '-'}">BA-000001</td>
-              <td th:text="${#temporals.format(e.dataEmprestimo, 'dd/MM/yyyy')}">-</td>
-              <td th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
-              <td>
-                <span class="badge-bublo"
-                      th:classappend="${e.atrasado} ? 'badge-atrasado' : (${e.status == 'ATIVO'} ? 'badge-ativo' : 'badge-neutro')"
-                      th:text="${e.atrasado} ? 'Em atraso' : (${e.status == 'ATIVO'} ? 'Ativo' : (${e.status == 'DEVOLVIDO'} ? 'Devolvido' : 'Cancelado'))">Ativo</span>
-              </td>
-              <td>
-                <div class="acoes-linha" th:if="${e.status == 'ATIVO'}">
-                  <form th:action="@{/emprestimos/{id}/renovar(id=${e.id})}" method="post" class="form-inline">
-                    <button type="submit" class="btn-bublo btn-acao" th:disabled="${e.renovacoes != null and e.renovacoes >= 1}">Renovar</button>
-                  </form>
-                  <form th:action="@{/emprestimos/{id}/cancelar(id=${e.id})}" method="post" class="form-inline"
-                        data-confirmar="Cancelar este empréstimo? O exemplar voltará a ficar disponível."
-                        data-confirmar-titulo="Cancelar empréstimo">
-                    <button type="submit" class="btn-bublo btn-acao btn-contorno perigo">Cancelar</button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
-        <div class="simbolo"><i class="bi bi-book"></i></div>
-        <h3>Sem empréstimos</h3>
-        <p>Inicie um novo empréstimo selecionando um leitor e exemplares disponíveis.</p>
-      </div>
-      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/emprestimos')}"></th:block>
-    </main>
+<th:block th:fragment="conteudo" th:with="temFiltro=${(status != null and !#strings.isEmpty(status)) or (termo != null and !#strings.isEmpty(termo))}">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Empréstimos</h1>
+      <p class="pagina-sub">Do mais recente ao mais antigo. Renove ou cancele direto na linha.</p>
+    </div>
+    <div class="pagina-acoes">
+      <a th:href="@{/devolucoes}" class="btn btn-outline-secondary"><i class="bi bi-arrow-down-left-square"></i>Registrar devolução</a>
+      <a th:href="@{/emprestimos/novo}" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Novo empréstimo</a>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <form th:action="@{/emprestimos}" method="get" class="barra-ferramentas">
+    <input type="hidden" name="status" th:if="${status != null and !#strings.isEmpty(status)}" th:value="${status}" />
+    <input type="hidden" name="tamanho" th:if="${param.tamanho != null}" th:value="${param.tamanho[0]}" />
+    <div class="busca">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <label class="sr-only" for="termo">Buscar empréstimos</label>
+      <input type="search" id="termo" name="termo" class="form-control" th:value="${termo}" placeholder="Leitor, matrícula, tombamento ou número" />
+    </div>
+    <button type="submit" class="btn btn-outline-secondary">Buscar</button>
+    <span class="espaco"></span>
+    <nav class="segmentado" aria-label="Filtrar por situação">
+      <a th:href="@{/emprestimos(termo=${termo})}" th:classappend="${#strings.isEmpty(status)} ? 'ativo'">Todos</a>
+      <a th:href="@{/emprestimos(termo=${termo}, status='ATIVO')}" th:classappend="${status == 'ATIVO'} ? 'ativo'">Ativos</a>
+      <a th:href="@{/emprestimos(termo=${termo}, status='ATRASADO')}" th:classappend="${status == 'ATRASADO'} ? 'ativo'">Em atraso</a>
+      <a th:href="@{/emprestimos(termo=${termo}, status='DEVOLVIDO')}" th:classappend="${status == 'DEVOLVIDO'} ? 'ativo'">Devolvidos</a>
+      <a th:href="@{/emprestimos(termo=${termo}, status='CANCELADO')}" th:classappend="${status == 'CANCELADO'} ? 'ativo'">Cancelados</a>
+    </nav>
+  </form>
+
+  <div th:if="${resultado.conteudo.empty}">
+    <div th:replace="~{layout/componentes :: vazio(${temFiltro} ? 'Nenhum empréstimo encontrado' : 'Nenhum empréstimo ainda', ${temFiltro} ? 'Nada corresponde à busca ou à situação escolhida.' : 'Registre o primeiro empréstimo escolhendo um leitor e os exemplares.', ${temFiltro} ? 'Limpar filtros' : 'Novo empréstimo', ${temFiltro} ? '/emprestimos' : '/emprestimos/novo')}"></div>
+  </div>
+
+  <div class="tabela-wrap cartoes" th:unless="${resultado.conteudo.empty}">
+    <table class="tabela tabela-cartoes">
+      <thead><tr><th>Nº</th><th>Leitor</th><th>Material</th><th>Retirada</th><th>Prevista</th><th>Situação</th><th></th></tr></thead>
+      <tbody>
+        <tr th:each="e : ${resultado.conteudo}">
+          <td data-rotulo="Nº" class="numero" th:text="${e.id}">1</td>
+          <td data-rotulo="Leitor"><a class="principal" th:href="@{/leitores/{id}(id=${e.leitorId})}" th:text="${e.leitorNome ?: '—'}">Leitor</a><span class="secundario" th:text="${e.leitorMatricula}">ALU-00001</span></td>
+          <td data-rotulo="Material"><span class="principal" th:text="${e.titulo ?: '—'}">Material</span><span class="secundario tombo" th:text="${e.tombamento}">BA-000001</span></td>
+          <td data-rotulo="Retirada" class="numero" th:text="${#temporals.format(e.dataEmprestimo, 'dd/MM/yyyy')}">01/01/2026</td>
+          <td data-rotulo="Prevista" class="numero" th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">08/01/2026</td>
+          <td data-rotulo="Situação">
+            <span class="badge-b" th:classappend="${e.atrasado} ? 'st-erro' : (${e.status == 'ATIVO'} ? 'st-info' : (${e.status == 'DEVOLVIDO'} ? 'st-ok' : 'st-neutro'))"
+                  th:text="${e.atrasado ? 'Em atraso' : (e.status == 'ATIVO' ? 'Ativo' : (e.status == 'DEVOLVIDO' ? 'Devolvido' : 'Cancelado'))}">Ativo</span>
+          </td>
+          <td class="acoes">
+            <div class="acoes-linha" th:if="${e.status == 'ATIVO'}">
+              <form th:action="@{/emprestimos/{id}/renovar(id=${e.id})}" method="post">
+                <button type="submit" class="btn btn-outline-secondary btn-sm" th:disabled="${e.renovacoes != null and e.renovacoes >= 1}"
+                        th:title="${e.renovacoes != null and e.renovacoes >= 1} ? 'Limite de renovações atingido'">Renovar</button>
+              </form>
+              <form th:action="@{/emprestimos/{id}/cancelar(id=${e.id})}" method="post"
+                    data-confirmar="O empréstimo será cancelado e o exemplar voltará a ficar disponível. Use apenas para registros lançados por engano."
+                    th:attr="data-confirmar-registro=${'Empréstimo #' + e.id + ' — ' + e.titulo + ' (' + e.leitorNome + ')'}" data-confirmar-titulo="Cancelar empréstimo" data-confirmar-rotulo="Cancelar empréstimo" data-confirmar-perigo>
+                <button type="submit" class="btn btn-outline-danger btn-sm">Cancelar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/emprestimos')}"></th:block>
+</th:block>
 </body>
 </html>

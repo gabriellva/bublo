@@ -1,51 +1,42 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Nova reserva - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Nova reserva', 'reservas', ~{::conteudo}, ~{})}">
+<head><title>Nova reserva</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('reservas')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1>Nova reserva</h1>
-        <p class="subtitulo">Reservar material sem exemplares disponíveis</p>
-      </div>
-
-      <form th:action="@{/reservas}" method="post" novalidate>
-        <div class="form-grid">
-          <div>
-            <label class="form-label" for="leitorId">Leitor</label>
-            <select id="leitorId" name="leitorId" class="form-control" required>
-              <option value="">Selecione…</option>
-              <option th:each="l : ${leitores}" th:value="${l.id}" th:text="${l.matricula + ' — ' + l.nome}"
-                      th:selected="${leitorSelecionado != null and leitorSelecionado == l.id}">Leitor</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" for="itemId">Material</label>
-            <select id="itemId" name="itemId" class="form-control" required>
-              <option value="">Selecione…</option>
-              <option th:each="a : ${acervo}" th:value="${a.id}" th:text="${a.titulo + ' (' + a.exemplaresDisponiveis + '/' + a.totalExemplares + ' disp.)'}"
-                      th:selected="${itemSelecionado != null and itemSelecionado == a.id}">Material</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" for="prazo">Prazo para retirada</label>
-            <input type="date" id="prazo" name="prazo" class="form-control" required th:min="${hoje}" th:value="${prazoSelecionado}" />
-          </div>
-        </div>
-        <div class="acoes-linha mt-4">
-          <button type="submit" class="btn-bublo">Criar reserva</button>
-          <a th:href="@{/reservas}" class="btn-bublo btn-contorno">Cancelar</a>
-        </div>
-      </form>
-    </main>
+<th:block th:fragment="conteudo">
+  <div class="migalhas"><a th:href="@{/reservas}">Reservas</a><i class="bi bi-chevron-right small"></i><span>Nova</span></div>
+  <div class="pagina-cabeca">
+    <div><h1>Nova reserva</h1><p class="pagina-sub">Reserve um material que está sem exemplar disponível. O leitor entra no fim da fila.</p></div>
   </div>
-
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <form th:action="@{/reservas}" method="post" novalidate data-proteger-alteracoes class="form-estreito">
+    <section class="painel secao-form"><div class="painel-corpo">
+      <div class="grade-form">
+        <div class="largo">
+          <label class="form-label" for="leitorId">Leitor</label>
+          <select id="leitorId" name="leitorId" class="form-select" required>
+            <option value="">Selecione…</option>
+            <option th:each="l : ${leitores}" th:value="${l.id}" th:text="${l.matricula + ' — ' + l.nome}" th:selected="${leitorSelecionado != null and leitorSelecionado == l.id}">Leitor</option>
+          </select>
+        </div>
+        <div class="largo">
+          <label class="form-label" for="itemId">Material</label>
+          <select id="itemId" name="itemId" class="form-select" required>
+            <option value="">Selecione…</option>
+            <option th:each="a : ${acervo}" th:value="${a.id}" th:text="${a.titulo + ' (' + a.exemplaresDisponiveis + ' de ' + a.totalExemplares + ' disponíveis)'}" th:selected="${itemSelecionado != null and itemSelecionado == a.id}">Material</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="prazo">Prazo para retirada</label>
+          <input type="date" id="prazo" name="prazo" class="form-control" required th:min="${hoje}" th:value="${prazoSelecionado}" />
+          <p class="ajuda-campo">Depois desta data a reserva expira.</p>
+        </div>
+      </div>
+    </div></section>
+    <div class="rodape-form">
+      <button type="submit" class="btn btn-primary">Criar reserva</button>
+      <a th:href="@{/reservas}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</th:block>
 </body>
 </html>
