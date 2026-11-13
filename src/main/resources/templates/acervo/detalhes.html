@@ -1,75 +1,82 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Detalhes do material - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell(${item.titulo}, 'acervo', ~{::conteudo}, ~{})}">
+<head><title>Material</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('acervo')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header cabecalho-pagina">
-        <div>
-          <h1 th:text="${item.titulo}">Título do material</h1>
-          <p class="subtitulo" th:text="${item.tipo}">Tipo</p>
-        </div>
-        <div class="acoes-linha">
-          <a th:href="@{/acervo/{id}/editar(id=${item.id})}" class="btn-bublo btn-contorno"><i class="bi bi-pencil"></i> Editar</a>
-          <form th:action="@{/acervo/{id}/excluir(id=${item.id})}" method="post" class="form-inline"
-                data-confirmar="Excluir este material do acervo? Materiais com empréstimos ou reservas ativas não podem ser excluídos."
-                data-confirmar-titulo="Excluir material">
-            <button type="submit" class="btn-bublo btn-contorno perigo"><i class="bi bi-trash"></i> Excluir</button>
-          </form>
-          <a th:href="@{/acervo}" class="btn-bublo btn-contorno">Voltar</a>
-        </div>
-      </div>
-
-      <div class="card-bublo p-4">
-        <table class="tabela">
-          <tr><th style="width:160px;">Tipo</th><td th:text="${item.tipo}">Livro</td></tr>
-          <tr><th>Editora</th><td th:text="${item.editora ?: '-'}">-</td></tr>
-          <tr><th>Ano</th><td th:text="${item.ano ?: '-'}">-</td></tr>
-          <tr><th>Idioma</th><td th:text="${item.idioma ?: '-'}">-</td></tr>
-          <tr><th>Categoria</th><td th:text="${item.categoriaNome ?: '-'}">-</td></tr>
-          <tr th:if="${item.isbn}"><th>ISBN</th><td th:text="${item.isbn}">-</td></tr>
-          <tr th:if="${item.issn}"><th>ISSN</th><td th:text="${item.issn}">-</td></tr>
-          <tr th:if="${item.doi}"><th>DOI</th><td th:text="${item.doi}">-</td></tr>
-          <tr th:if="${item.descricao}"><th>Descrição</th><td th:text="${item.descricao}">-</td></tr>
-          <tr th:unless="${item.autoresNomes.empty}"><th>Autores</th><td><span th:each="nome : ${item.autoresNomes}" th:text="${nome}" class="chip">Autor</span></td></tr>
-        </table>
-      </div>
-
-      <div class="card-bublo p-4 mt-4">
-        <div class="cabecalho-pagina mb-3">
-          <h3 class="m-0">Exemplares <span class="texto-ajuda" th:text="${'(' + item.exemplaresDisponiveis + ' de ' + item.totalExemplares + ' disponíveis)'}"></span></h3>
-          <form th:action="@{/acervo/{id}/exemplar(id=${item.id})}" method="post" class="d-flex gap-2 align-items-center" th:unless="${item.tipo == 'DIGITAL'}">
-            <label class="sr-only" for="quantidade">Quantidade</label>
-            <input type="number" id="quantidade" name="quantidade" value="1" min="1" max="100" class="form-control" style="width:90px;" />
-            <button type="submit" class="btn-bublo btn-sm">+ Cadastrar exemplar(es)</button>
-          </form>
-        </div>
-        <div class="estado-vazio" style="padding:1.5rem;" th:if="${exemplares.empty}">
-          <div class="simbolo"><i class="bi bi-box-seam"></i></div>
-          <h4>Nenhum exemplar cadastrado</h4>
-          <p th:text="${item.tipo == 'DIGITAL' ? 'Publicações digitais não possuem exemplares físicos.' : 'Cadastre o primeiro exemplar para permitir empréstimos físicos.'}">Cadastre o primeiro exemplar.</p>
-        </div>
-        <div class="tabela-bloco" th:unless="${exemplares.empty}">
-          <table class="tabela">
-            <thead><tr><th>Tombamento</th><th>Situação</th></tr></thead>
-            <tbody>
-              <tr th:each="ex : ${exemplares}">
-                <td th:text="${ex.tombamento}">BA-000001</td>
-                <td><span class="badge-bublo" th:classappend="${ex.disponivel} ? 'badge-disponivel' : 'badge-indisponivel'" th:text="${ex.disponivel ? 'Disponível' : 'Emprestado'}">Disponível</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
+<th:block th:fragment="conteudo">
+  <div class="migalhas"><a th:href="@{/acervo}">Acervo</a><i class="bi bi-chevron-right small"></i><span th:text="${item.titulo}">Material</span></div>
+  <div class="pagina-cabeca">
+    <div>
+      <h1 th:text="${item.titulo}">Título do material</h1>
+      <p class="pagina-sub"><span class="badge-b st-vinho st-sem-icone" th:text="${T(com.gabriel.bublo.model.TipoMaterial).valueOf(item.tipo).label}">Livro</span>
+        <span th:if="${!item.autoresNomes.empty}" th:text="${' · ' + #strings.listJoin(item.autoresNomes, ', ')}"></span></p>
+    </div>
+    <div class="pagina-acoes">
+      <a th:href="@{/reservas/novo}" class="btn btn-outline-secondary" th:if="${item.exemplaresDisponiveis == 0 and item.totalExemplares > 0}"><i class="bi bi-bookmark"></i>Reservar</a>
+      <a th:href="@{/acervo/{id}/editar(id=${item.id})}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i>Editar</a>
+      <form th:action="@{/acervo/{id}/excluir(id=${item.id})}" method="post" class="m-0"
+            data-confirmar="Esta ação remove o material do acervo. Materiais com empréstimos ou reservas ativas não podem ser excluídos."
+            th:attr="data-confirmar-registro=${item.titulo}" data-confirmar-titulo="Excluir material" data-confirmar-rotulo="Excluir material" data-confirmar-perigo>
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i>Excluir</button>
+      </form>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <div class="detalhe-grade">
+    <div class="detalhe-capa"><img th:src="@{'/images/capa-' + ${#strings.toLowerCase(item.tipo)} + '.svg'}" alt="" /></div>
+    <div>
+      <div class="indicadores-mini">
+        <div class="indicador-mini"><span class="v" th:text="${item.totalExemplares}">0</span><span class="k">Exemplares</span></div>
+        <div class="indicador-mini"><span class="v" th:text="${item.exemplaresDisponiveis}">0</span><span class="k">Disponíveis</span></div>
+        <div class="indicador-mini"><span class="v" th:text="${item.totalExemplares - item.exemplaresDisponiveis}">0</span><span class="k">Emprestados</span></div>
+      </div>
+      <section class="painel mb-4">
+        <div class="painel-cabeca"><h2>Ficha do material</h2></div>
+        <div class="painel-corpo">
+          <table class="tabela tabela-chave">
+            <tr><th>Editora</th><td th:text="${item.editora ?: '—'}">—</td></tr>
+            <tr><th>Ano</th><td th:text="${item.ano ?: '—'}">—</td></tr>
+            <tr><th>Idioma</th><td th:text="${item.idioma ?: '—'}">—</td></tr>
+            <tr><th>Categoria</th><td th:text="${item.categoriaNome ?: '—'}">—</td></tr>
+            <tr th:if="${item.isbn}"><th>ISBN</th><td class="numero" th:text="${item.isbn}">—</td></tr>
+            <tr th:if="${item.issn}"><th>ISSN</th><td class="numero" th:text="${item.issn}">—</td></tr>
+            <tr th:if="${item.duracaoMinutos}"><th>Duração</th><td th:text="${item.duracaoMinutos + ' min'}">—</td></tr>
+            <tr th:if="${item.doi}"><th>DOI</th><td th:text="${item.doi}">—</td></tr>
+            <tr th:if="${item.urlExterna}"><th>Endereço</th><td><a th:href="${item.urlExterna}" rel="noopener noreferrer" target="_blank" th:text="${item.urlExterna}">url</a></td></tr>
+            <tr th:if="${item.descricao}"><th>Descrição</th><td th:text="${item.descricao}">—</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="painel">
+        <div class="painel-cabeca">
+          <h2>Exemplares<span class="sub" th:text="${item.exemplaresDisponiveis + ' de ' + item.totalExemplares + ' disponíveis'}">1 de 2</span></h2>
+          <form th:action="@{/acervo/{id}/exemplar(id=${item.id})}" method="post" class="d-flex gap-2 align-items-center m-0" th:unless="${item.tipo == 'DIGITAL'}">
+            <label class="sr-only" for="quantidade">Quantidade de exemplares</label>
+            <input type="number" id="quantidade" name="quantidade" value="1" min="1" max="100" class="form-control" style="width:84px;" />
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i>Cadastrar</button>
+          </form>
+        </div>
+        <div class="painel-corpo">
+          <div class="vazio compacto" th:if="${exemplares.empty}">
+            <h3>Nenhum exemplar cadastrado</h3>
+            <p th:text="${item.tipo == 'DIGITAL' ? 'Publicações digitais não possuem exemplares físicos.' : 'Cadastre o primeiro exemplar para permitir empréstimos.'}">Cadastre.</p>
+          </div>
+          <div class="tabela-wrap" th:unless="${exemplares.empty}">
+            <table class="tabela">
+              <thead><tr><th>Tombamento</th><th>Situação</th></tr></thead>
+              <tbody>
+                <tr th:each="ex : ${exemplares}">
+                  <td class="tombo" th:text="${ex.tombamento}">BA-000001</td>
+                  <td><span class="badge-b" th:classappend="${ex.disponivel} ? 'st-ok' : 'st-aviso'" th:text="${ex.disponivel ? 'Disponível' : 'Emprestado'}">Disponível</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</th:block>
 </body>
 </html>

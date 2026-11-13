@@ -1,201 +1,106 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Material - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell(${item.id != null ? 'Editar material' : 'Cadastrar material'}, 'acervo', ~{::conteudo}, ~{::scripts})}">
+<head><title>Material</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('acervo')}"></th:block>
+<th:block th:fragment="conteudo">
+  <div class="migalhas"><a th:href="@{/acervo}">Acervo</a><i class="bi bi-chevron-right small"></i><span th:text="${item.id != null ? 'Editar' : 'Novo'}">Novo</span></div>
+  <div class="pagina-cabeca">
+    <div>
+      <h1 th:text="${item.id != null} ? 'Editar material' : 'Cadastrar material'">Cadastrar material</h1>
+      <p class="pagina-sub">Os exemplares físicos são cadastrados na página do material, depois de salvar.</p>
+    </div>
+  </div>
 
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1 th:text="${item.id != null} ? 'Editar material' : 'Cadastrar material'">Cadastrar material</h1>
-        <p class="subtitulo">Item do acervo bibliográfico</p>
-      </div>
+  <form th:action="@{/acervo}" th:object="${item}" method="post" novalidate data-proteger-alteracoes class="form-estreito">
+    <input type="hidden" th:field="*{id}" />
 
-      <form th:action="@{/acervo}" th:object="${item}" method="post" novalidate>
-        <input type="hidden" th:field="*{id}" />
-
-        <div class="form-grid">
-          <div>
-            <label class="form-label" for="tipoMaterial">Tipo de material</label>
-            <select th:field="*{tipo}" id="tipoMaterial" class="form-control" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" required>
-              <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.label}">Livro</option>
-            </select>
-            <small class="erro-campo" th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}">Erro</small>
-          </div>
-          <div>
-            <label class="form-label" for="titulo">Título</label>
-            <input type="text" th:field="*{titulo}" class="form-control" th:classappend="${#fields.hasErrors('titulo')} ? 'is-invalid'" required />
-            <small class="erro-campo" th:if="${#fields.hasErrors('titulo')}" th:errors="*{titulo}">Erro</small>
-          </div>
-          <div>
-            <label class="form-label" for="editora">Editora</label>
-            <input type="text" th:field="*{editora}" class="form-control" th:classappend="${#fields.hasErrors('editora')} ? 'is-invalid'" />
-            <small class="erro-campo" th:if="${#fields.hasErrors('editora')}" th:errors="*{editora}">Erro</small>
-          </div>
-          <div>
-            <label class="form-label" for="ano">Ano</label>
-            <input type="number" th:field="*{ano}" class="form-control" min="1000" max="2100" />
-          </div>
-          <div>
-            <label class="form-label" for="idioma">Idioma</label>
-            <input type="text" th:field="*{idioma}" class="form-control" placeholder="Português" />
-            <small class="erro-campo" th:if="${#fields.hasErrors('idioma')}" th:errors="*{idioma}">Erro</small>
-          </div>
-          <div>
-            <label class="form-label" for="categoriaId">Categoria</label>
-            <select th:field="*{categoriaId}" class="form-control">
-              <option value="">Nenhuma</option>
-              <option th:each="c : ${categorias}" th:value="${c.id}" th:text="${c.nome}">Ficção</option>
-            </select>
-          </div>
+    <section class="painel secao-form"><div class="painel-corpo">
+      <h2>Dados gerais</h2><p class="secao-sub">O que identifica o material no catálogo.</p>
+      <div class="grade-form">
+        <div>
+          <label class="form-label" for="tipoMaterial">Tipo de material</label>
+          <select th:field="*{tipo}" id="tipoMaterial" class="form-select" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" required>
+            <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.label}">Livro</option>
+          </select>
+          <small class="erro-campo" th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}">Erro</small>
         </div>
-
-        <div class="mt-3">
-          <label class="form-label" for="descricao">Descrição</label>
+        <div>
+          <label class="form-label" for="categoriaId">Categoria</label>
+          <select th:field="*{categoriaId}" class="form-select">
+            <option value="">Sem categoria</option>
+            <option th:each="c : ${categorias}" th:value="${c.id}" th:text="${c.nome}">Ficção</option>
+          </select>
+        </div>
+        <div class="largo">
+          <label class="form-label" for="titulo">Título</label>
+          <input type="text" th:field="*{titulo}" class="form-control" th:classappend="${#fields.hasErrors('titulo')} ? 'is-invalid'" required />
+          <small class="erro-campo" th:if="${#fields.hasErrors('titulo')}" th:errors="*{titulo}">Erro</small>
+        </div>
+        <div>
+          <label class="form-label" for="editora">Editora <span class="opcional">(opcional)</span></label>
+          <input type="text" th:field="*{editora}" class="form-control" th:classappend="${#fields.hasErrors('editora')} ? 'is-invalid'" />
+          <small class="erro-campo" th:if="${#fields.hasErrors('editora')}" th:errors="*{editora}">Erro</small>
+        </div>
+        <div>
+          <label class="form-label" for="ano">Ano <span class="opcional">(opcional)</span></label>
+          <input type="number" th:field="*{ano}" class="form-control" min="1000" max="2100" />
+        </div>
+        <div>
+          <label class="form-label" for="idioma">Idioma</label>
+          <input type="text" th:field="*{idioma}" class="form-control" placeholder="Português" />
+          <small class="erro-campo" th:if="${#fields.hasErrors('idioma')}" th:errors="*{idioma}">Erro</small>
+        </div>
+        <div class="largo">
+          <label class="form-label" for="descricao">Descrição <span class="opcional">(opcional)</span></label>
           <textarea th:field="*{descricao}" class="form-control" rows="3"></textarea>
           <small class="erro-campo" th:if="${#fields.hasErrors('descricao')}" th:errors="*{descricao}">Erro</small>
         </div>
+      </div>
+    </div></section>
 
-        <div class="form-grid mt-3 campos-tipo" data-tipo="LIVRO">
-          <div>
-            <label class="form-label" for="isbn">ISBN</label>
-            <input type="text" th:field="*{isbn}" class="form-control" />
-            <small class="erro-campo" th:if="${#fields.hasErrors('isbn')}" th:errors="*{isbn}">Erro</small>
-          </div>
-        </div>
-        <div class="form-grid mt-3 campos-tipo" data-tipo="REVISTA">
-          <div>
-            <label class="form-label" for="issn">ISSN</label>
-            <input type="text" th:field="*{issn}" class="form-control" />
-            <small class="erro-campo" th:if="${#fields.hasErrors('issn')}" th:errors="*{issn}">Erro</small>
-          </div>
-          <div>
-            <label class="form-label" for="volume">Volume</label>
-            <input type="number" th:field="*{volume}" class="form-control" min="1" />
-          </div>
-        </div>
-        <div class="form-grid mt-3 campos-tipo" data-tipo="DVD">
-          <div>
-            <label class="form-label" for="duracaoMinutos">Duração (min)</label>
-            <input type="number" th:field="*{duracaoMinutos}" class="form-control" min="1" />
-          </div>
-        </div>
-        <div class="form-grid mt-3 campos-tipo" data-tipo="DIGITAL">
-          <div>
-            <label class="form-label" for="doi">DOI</label>
-            <input type="text" th:field="*{doi}" class="form-control" />
-            <small class="erro-campo" th:if="${#fields.hasErrors('doi')}" th:errors="*{doi}">Erro</small>
-          </div>
-          <div>
-            <label class="form-label" for="urlExterna">URL externa</label>
-            <input type="url" th:field="*{urlExterna}" class="form-control" />
-            <small class="erro-campo" th:if="${#fields.hasErrors('urlExterna')}" th:errors="*{urlExterna}">Erro</small>
-          </div>
-        </div>
+    <section class="painel secao-form"><div class="painel-corpo">
+      <h2>Identificação do tipo</h2><p class="secao-sub">Campos que dependem do tipo de material escolhido.</p>
+      <div class="grade-form campos-tipo" data-tipo="LIVRO">
+        <div><label class="form-label" for="isbn">ISBN</label><input type="text" th:field="*{isbn}" class="form-control" />
+          <small class="erro-campo" th:if="${#fields.hasErrors('isbn')}" th:errors="*{isbn}">Erro</small></div>
+      </div>
+      <div class="grade-form campos-tipo" data-tipo="REVISTA">
+        <div><label class="form-label" for="issn">ISSN</label><input type="text" th:field="*{issn}" class="form-control" />
+          <small class="erro-campo" th:if="${#fields.hasErrors('issn')}" th:errors="*{issn}">Erro</small></div>
+        <div><label class="form-label" for="volume">Volume</label><input type="number" th:field="*{volume}" class="form-control" min="1" /></div>
+      </div>
+      <div class="grade-form campos-tipo" data-tipo="DVD">
+        <div><label class="form-label" for="duracaoMinutos">Duração (minutos)</label><input type="number" th:field="*{duracaoMinutos}" class="form-control" min="1" /></div>
+      </div>
+      <div class="grade-form campos-tipo" data-tipo="DIGITAL">
+        <div><label class="form-label" for="doi">DOI</label><input type="text" th:field="*{doi}" class="form-control" />
+          <small class="erro-campo" th:if="${#fields.hasErrors('doi')}" th:errors="*{doi}">Erro</small></div>
+        <div><label class="form-label" for="urlExterna">Endereço (URL)</label><input type="url" th:field="*{urlExterna}" class="form-control" />
+          <small class="erro-campo" th:if="${#fields.hasErrors('urlExterna')}" th:errors="*{urlExterna}">Erro</small></div>
+      </div>
+    </div></section>
 
-        <div class="mt-4">
-          <label class="form-label" for="novoAutor">Autores</label>
-          <p class="texto-ajuda">Digite o nome e pressione Enter ou clique em "Adicionar".</p>
-          <div class="d-flex gap-2 mb-2">
-            <input type="text" id="novoAutor" class="form-control" placeholder="Nome do autor" list="sugestoesAutores" autocomplete="off" />
-            <datalist id="sugestoesAutores"></datalist>
-            <button type="button" class="btn-bublo btn-sm" id="btnAddAutor">Adicionar</button>
-          </div>
-          <div id="listaAutores" class="d-flex flex-wrap gap-2 mb-3"></div>
-          <div id="camposAutores">
-            <input type="hidden" name="novosAutores" th:each="autor : ${item.novosAutores}" th:value="${autor}" />
-          </div>
-        </div>
+    <section class="painel secao-form"><div class="painel-corpo">
+      <h2>Autores</h2><p class="secao-sub">Digite o nome e tecle Enter. Nomes já cadastrados aparecem como sugestão; nomes novos são criados ao salvar.</p>
+      <div class="autores-campo mb-3">
+        <label class="sr-only" for="novoAutor">Nome do autor</label>
+        <input type="text" id="novoAutor" class="form-control" placeholder="Nome do autor" list="sugestoesAutores" autocomplete="off" />
+        <datalist id="sugestoesAutores"></datalist>
+        <button type="button" class="btn btn-outline-secondary" id="btnAddAutor"><i class="bi bi-plus-lg"></i>Adicionar</button>
+      </div>
+      <div id="listaAutores" class="d-flex flex-wrap gap-2" aria-live="polite"></div>
+      <div id="camposAutores">
+        <input type="hidden" name="novosAutores" th:each="autor : ${item.novosAutores}" th:value="${autor}" />
+      </div>
+    </div></section>
 
-        <div class="acoes-linha mt-4">
-          <button type="submit" class="btn-bublo">Salvar material</button>
-          <a th:href="@{/acervo}" class="btn-bublo btn-contorno">Cancelar</a>
-        </div>
-      </form>
-    </main>
-  </div>
-
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const tipo = document.getElementById('tipoMaterial');
-      const grupos = document.querySelectorAll('.campos-tipo');
-      const camposAutores = document.getElementById('camposAutores');
-      const listaAutores = document.getElementById('listaAutores');
-      const entrada = document.getElementById('novoAutor');
-
-      function mostrarCamposDoTipo() {
-        grupos.forEach((grupo) => {
-          const ativo = grupo.dataset.tipo === tipo.value;
-          grupo.hidden = !ativo;
-          grupo.querySelectorAll('input').forEach((campo) => { campo.disabled = !ativo; });
-        });
-      }
-
-      function nomesAtuais() {
-        return Array.from(camposAutores.querySelectorAll('input')).map((campo) => campo.value);
-      }
-
-      function desenharAutores() {
-        listaAutores.textContent = '';
-        nomesAtuais().forEach((nome, indice) => {
-          const chip = document.createElement('span');
-          chip.className = 'badge-bublo badge-neutro';
-          chip.textContent = nome + ' ';
-          const remover = document.createElement('button');
-          remover.type = 'button';
-          remover.className = 'btn-close ms-1';
-          remover.style.fontSize = '0.6rem';
-          remover.setAttribute('aria-label', 'Remover ' + nome);
-          remover.addEventListener('click', () => {
-            camposAutores.querySelectorAll('input')[indice].remove();
-            desenharAutores();
-          });
-          chip.appendChild(remover);
-          listaAutores.appendChild(chip);
-        });
-      }
-
-      function adicionarAutor() {
-        const nome = entrada.value.trim();
-        if (!nome || nomesAtuais().includes(nome)) return;
-        const campo = document.createElement('input');
-        campo.type = 'hidden';
-        campo.name = 'novosAutores';
-        campo.value = nome;
-        camposAutores.appendChild(campo);
-        entrada.value = '';
-        desenharAutores();
-      }
-
-      document.getElementById('btnAddAutor').addEventListener('click', adicionarAutor);
-      entrada.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); adicionarAutor(); }
-      });
-      entrada.addEventListener('input', Bublo.Utils.debounce(() => {
-        if (entrada.value.trim().length < 2) return;
-        fetch('/acervo/sugestoes-autores?termo=' + encodeURIComponent(entrada.value.trim()), { credentials: 'same-origin' })
-          .then((r) => (r.ok ? r.json() : []))
-          .then((nomes) => {
-            const lista = document.getElementById('sugestoesAutores');
-            lista.textContent = '';
-            nomes.forEach((nome) => {
-              const opcao = document.createElement('option');
-              opcao.value = nome;
-              lista.appendChild(opcao);
-            });
-          })
-          .catch(() => {});
-      }, 250));
-
-      tipo.addEventListener('change', mostrarCamposDoTipo);
-      mostrarCamposDoTipo();
-      desenharAutores();
-    });
-  </script>
+    <div class="rodape-form rodape-form-fixo">
+      <button type="submit" class="btn btn-primary">Salvar material</button>
+      <a th:href="@{/acervo}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</th:block>
+<th:block th:fragment="scripts"><script type="module" th:src="@{/js/pages/acervo-formulario.js}"></script></th:block>
 </body>
 </html>
