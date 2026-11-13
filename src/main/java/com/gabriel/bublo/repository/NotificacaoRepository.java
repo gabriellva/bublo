@@ -2,6 +2,9 @@ package com.gabriel.bublo.repository;
 
 import com.gabriel.bublo.dto.Paginacao;
 import com.gabriel.bublo.model.Notificacao;
+import com.gabriel.bublo.websocket.NotificationWebSocketHandler;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -31,7 +34,8 @@ public class NotificacaoRepository {
         n.setTitulo(rs.getString("titulo"));
         n.setMensagem(rs.getString("mensagem"));
         n.setRegistroTipo(rs.getString("registro_tipo"));
-        n.setRegistroId(rs.getObject("registro_id", Long.class));
+        long registroId = rs.getLong("registro_id");
+        n.setRegistroId(rs.wasNull() ? null : registroId);
         n.setLida(rs.getBoolean("lida"));
         n.setResolvida(rs.getBoolean("resolvida"));
         n.setDataCriacao(rs.getObject("data_criacao", LocalDateTime.class));
@@ -39,8 +43,11 @@ public class NotificacaoRepository {
         return n;
     };
 
-    public NotificacaoRepository(JdbcTemplate jdbc) {
+    private final NotificationWebSocketHandler webSocketHandler;
+
+    public NotificacaoRepository(JdbcTemplate jdbc, NotificationWebSocketHandler webSocketHandler) {
         this.jdbc = jdbc;
+        this.webSocketHandler = webSocketHandler;
     }
 
     public Notificacao salvar(Notificacao n) {
@@ -50,7 +57,22 @@ public class NotificacaoRepository {
             n.getCategoria(), n.getPrioridade(), n.getTitulo(), n.getMensagem(),
             n.getRegistroTipo(), n.getRegistroId());
         n.setId(id);
+        publicarAposCommit(id, n.getTitulo());
         return n;
+    }
+
+    private void publicarAposCommit(Long id, String titulo) {
+        Runnable envio = () -> webSocketHandler.enviar("notificacao", java.util.Map.of("id", id, "titulo", titulo));
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            envio.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                envio.run();
+            }
+        });
     }
 
     public Optional<Notificacao> buscarPorId(Long id) {
@@ -96,6 +118,10 @@ public class NotificacaoRepository {
 
     public void marcarLida(Long id) {
         jdbc.update("UPDATE notificacoes SET lida = TRUE WHERE id = ?", id);
+    }
+
+    public void marcarTodasLidas() {
+        jdbc.update("UPDATE notificacoes SET lida = TRUE WHERE lida = FALSE");
     }
 
     public void marcarVariasLidas(List<Long> ids) {

@@ -24,6 +24,9 @@ import java.util.Optional;
 @Repository
 public class LeitorRepository {
 
+    private static final java.util.Set<String> COLUNAS_ORDENAVEIS =
+        java.util.Set.of("nome", "email", "matricula", "tipo", "ativo", "data_cadastro");
+
     private final JdbcTemplate jdbc;
 
     private static final RowMapper<Leitor> LEITOR_MAPPER = (rs, rowNum) -> {
@@ -121,7 +124,7 @@ public class LeitorRepository {
         }
 
         String sql = "SELECT * FROM leitores " + where +
-            " ORDER BY " + (ordenacao != null ? ordenacao : "nome ASC") +
+            " ORDER BY " + OrdenacaoSegura.resolver(ordenacao, "", COLUNAS_ORDENAVEIS, "nome ASC") +
             " LIMIT ? OFFSET ?";
         args.add(tamanho);
         args.add((long) pagina * tamanho);
@@ -143,7 +146,7 @@ public class LeitorRepository {
         // Busca o próximo número sequencial para o tipo
         Integer prox = jdbc.queryForObject(
             "SELECT COALESCE(MAX(CAST(substring(matricula from '\\d+') AS INTEGER)), 0) + 1 " +
-            "FROM leitores WHERE tipo = ?", Integer.class, tipo.name());
+            "FROM leitores WHERE matricula LIKE ?", Integer.class, prefixo + "-%");
         return String.format("%s-%05d", prefixo, prox);
     }
 

@@ -25,6 +25,9 @@ import java.util.Optional;
 @Repository
 public class ReservaRepository {
 
+    private static final java.util.Set<String> COLUNAS_ORDENAVEIS =
+        java.util.Set.of("posicao", "data_reserva", "prazo_retirada", "status");
+
     private final JdbcTemplate jdbc;
     private final ItemAcervoRepository itemAcervoRepository;
     private final LeitorRepository leitorRepository;
@@ -89,15 +92,17 @@ public class ReservaRepository {
         List<Object> args = new ArrayList<>();
         StringBuilder where = new StringBuilder("WHERE 1=1");
         if (termo != null && !termo.isBlank()) {
-            where.append(" AND (r.id::text = ? OR r.item_acervo_id IN (SELECT id FROM item_acervo WHERE titulo ILIKE ?))");
-            args.add(termo);
-            args.add("%" + termo + "%");
+            where.append(" AND (r.id::text = ? OR r.item_acervo_id IN (SELECT id FROM item_acervo WHERE titulo ILIKE ?)" +
+                " OR r.leitor_id IN (SELECT id FROM leitores WHERE nome ILIKE ? OR matricula ILIKE ?))");
+            args.add(termo.trim());
+            String t = "%" + termo.trim() + "%";
+            args.add(t); args.add(t); args.add(t);
         }
         if (status != null && !status.isBlank()) {
             where.append(" AND r.status = ?"); args.add(status);
         }
         String sql = "SELECT * FROM reservas r " + where +
-            " ORDER BY " + (ordenacao != null ? ordenacao : "r.posicao ASC, r.data_reserva ASC") +
+            " ORDER BY " + OrdenacaoSegura.resolver(ordenacao, "r.", COLUNAS_ORDENAVEIS, "r.data_reserva DESC") +
             " LIMIT ? OFFSET ?";
         args.add(tamanho);
         args.add((long) pagina * tamanho);
@@ -142,7 +147,11 @@ public class ReservaRepository {
     }
 
     private void vincular(Reserva r) {
-        // carregado sob demanda pelo serviço
+        Long[] ids = jdbc.queryForObject(
+            "SELECT leitor_id, item_acervo_id FROM reservas WHERE id = ?",
+            (rs, rowNum) -> new Long[] {rs.getLong("leitor_id"), rs.getLong("item_acervo_id")}, r.getId());
+        r.setLeitor(leitorRepository.buscarPorId(ids[0]).orElse(null));
+        r.setItemAcervo(itemAcervoRepository.buscarPorId(ids[1]).orElse(null));
     }
 
     private Long insertReturnId(String sql, Object... args) {
