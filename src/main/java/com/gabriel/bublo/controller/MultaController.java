@@ -1,10 +1,19 @@
 package com.gabriel.bublo.controller;
 
+import com.gabriel.bublo.security.AuthUtil;
 import com.gabriel.bublo.service.MultaService;
-import com.gabriel.bublo.service.LeitorService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * Controlador de multas e pagamentos.
@@ -14,11 +23,9 @@ import org.springframework.web.bind.annotation.*;
 public class MultaController {
 
     private final MultaService multaService;
-    private final LeitorService leitorService;
 
-    public MultaController(MultaService multaService, LeitorService leitorService) {
+    public MultaController(MultaService multaService) {
         this.multaService = multaService;
-        this.leitorService = leitorService;
     }
 
     @GetMapping
@@ -27,7 +34,8 @@ public class MultaController {
                          @RequestParam(defaultValue = "0") int pagina,
                          @RequestParam(defaultValue = "10") int tamanho,
                          Model model) {
-        var resultado = multaService.listar(termo, status, pagina, tamanho, "data_geracao ASC");
+        var resultado = multaService.listar(termo, status, Math.max(pagina, 0),
+            Math.min(Math.max(tamanho, 1), 100), "data_geracao DESC");
         model.addAttribute("resultado", resultado);
         model.addAttribute("termo", termo);
         model.addAttribute("status", status);
@@ -35,9 +43,12 @@ public class MultaController {
     }
 
     @GetMapping("/{id}/pagar")
-    public String pagarForm(@PathVariable Long id, Model model) {
+    public String pagarForm(@PathVariable Long id, Model model, RedirectAttributes redirect) {
         var dto = multaService.buscarDTO(id);
-        if (dto == null) return "redirect:/multas";
+        if (dto == null) {
+            redirect.addFlashAttribute("erro", "Multa não encontrada.");
+            return "redirect:/multas";
+        }
         model.addAttribute("multa", dto);
         return "multas/pagar";
     }
@@ -46,27 +57,30 @@ public class MultaController {
     public String pagar(@PathVariable Long id,
                         @RequestParam String valor,
                         @RequestParam String forma,
-                        Model model) {
+                        Model model,
+                        RedirectAttributes redirect) {
         try {
-            multaService.pagar(id, new java.math.BigDecimal(valor), forma, "admin");
-            return "redirect:/multas?pago=1";
-        } catch (Exception e) {
+            multaService.pagar(id, parseValor(valor), forma, AuthUtil.usuarioAtual());
+        } catch (IllegalStateException e) {
             model.addAttribute("erro", e.getMessage());
             model.addAttribute("multa", multaService.buscarDTO(id));
             return "multas/pagar";
         }
-    }
-
-    @PostMapping("/{id}/estornar")
-    public String estornar(@PathVariable Long id, @RequestParam String justificativa) {
-        // estornar o último pagamento da multa
-        // simplificado: redireciona
-        return "redirect:/multas?estornado=1";
+        redirect.addFlashAttribute("sucesso", "Pagamento registrado com sucesso.");
+        return "redirect:/multas";
     }
 
     @GetMapping("/leitor/{leitorId}/saldo")
-    public @ResponseBody Object saldo(@PathVariable Long leitorId) {
-        var saldo = multaService.saldoPendente(leitorId);
-        return java.util.Collections.singletonMap("saldo", saldo);
+    @ResponseBody
+    public Map<String, BigDecimal> saldo(@PathVariable Long leitorId) {
+        return Map.of("saldo", multaService.saldoPendente(leitorId));
+    }
+
+    private BigDecimal parseValor(String texto) {
+        try {
+            return new BigDecimal(texto.trim().replace(',', '.'));
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("Valor de pagamento inválido.");
+        }
     }
 }
