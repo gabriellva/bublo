@@ -1,15 +1,35 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title th:text="${tituloPagina ?: 'Bublo'}">Bublo - Biblioteca Acadêmica</title>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link th:href="@{/lib/bootstrap/css/bootstrap.min.css}" rel="stylesheet" />
-  <link th:href="@{/css/design-system.css}" rel="stylesheet" />
-  <link th:href="@{/lib/bootstrap-icons/font/bootstrap-icons.css}" rel="stylesheet" />
-  <th:block th:fragment="head"></th:block>
+  <th:block th:fragment="head">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}" />
+    <script>
+      (function () {
+        var tema = null;
+        try { tema = localStorage.getItem('bublo:tema'); } catch (e) {}
+        if (tema !== 'claro' && tema !== 'escuro') {
+          tema = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro';
+        }
+        var raiz = document.documentElement;
+        raiz.setAttribute('data-tema', tema);
+        raiz.setAttribute('data-bs-theme', tema === 'escuro' ? 'dark' : 'light');
+      })();
+    </script>
+    <link rel="stylesheet" th:href="@{/lib/bootstrap/css/bootstrap.min.css}" />
+    <link rel="stylesheet" th:href="@{/css/design-system.css}" />
+    <link rel="stylesheet" th:href="@{/lib/bootstrap-icons/font/bootstrap-icons.css}" />
+  </th:block>
 </head>
-<body th:attr="data-tema=${temaUsuario ?: 'claro'}">
-  <th:block th:fragment="corpo"></th:block>
+<body>
+  <th:block th:fragment="scripts">
+    <div id="flash-data" hidden
+         th:attr="data-sucesso=${sucesso}, data-erro=${erro}, data-aviso=${aviso}"></div>
+    <script th:src="@{/lib/bootstrap/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/bublo.js}"></script>
+  </th:block>
 </body>
 </html>

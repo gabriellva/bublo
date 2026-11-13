@@ -1,18 +1,16 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Reservas - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='reservas')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('reservas')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
-      <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header cabecalho-pagina">
         <div>
           <h1>Reservas</h1>
           <p class="subtitulo">Fila FIFO por material</p>
@@ -20,27 +18,62 @@
         <a th:href="@{/reservas/novo}" class="btn-bublo"><i class="bi bi-plus-lg"></i> Nova reserva</a>
       </div>
 
-      <table class="tabela">
-        <thead>
-          <tr><th>#</th><th>Leitor</th><th>Material</th><th>Posição</th><th>Prazo retirada</th><th>Status</th><th>Ações</th></tr>
-        </thead>
-        <tbody>
-          <tr th:each="r : ${resultado.conteudo}">
-            <td th:text="${r.id}">-</td>
-            <td th:text="${r.leitorId}">-</td>
-            <td th:text="${r.itemId}">-</td>
-            <td th:text="${r.posicao}">-</td>
-            <td th:text="${#temporals.format(r.prazoRetirada, 'dd/MM/yyyy')}">-</td>
-            <td><span class="badge-bublo" th:text="${r.status}">Aguardando</span></td>
-            <td>
-              <form th:action="@{/reservas/{id}/cancelar(id=${r.id})}" method="post" style="display:inline;" onsubmit="return confirm('Cancelar reserva?')">
-                <button type="submit" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.8rem;background:transparent;border:1px solid #c62828;color:#c62828;">Cancelar</button>
-              </form>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="card-bublo p-3 mb-3">
+        <form th:action="@{/reservas}" method="get" class="form-grid" style="align-items:end;">
+          <div>
+            <label class="form-label" for="termo">Buscar (leitor ou material)</label>
+            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
+          </div>
+          <div>
+            <label class="form-label" for="status">Situação</label>
+            <select id="status" name="status" class="form-control">
+              <option value="">Todas</option>
+              <option value="AGUARDANDO" th:selected="${status == 'AGUARDANDO'}">Aguardando</option>
+              <option value="ATENDIDA" th:selected="${status == 'ATENDIDA'}">Atendidas</option>
+              <option value="CANCELADA" th:selected="${status == 'CANCELADA'}">Canceladas</option>
+              <option value="EXPIRADA" th:selected="${status == 'EXPIRADA'}">Expiradas</option>
+            </select>
+          </div>
+          <div class="acoes-linha">
+            <button type="submit" class="btn-bublo">Filtrar</button>
+            <a th:href="@{/reservas}" class="btn-bublo btn-contorno">Limpar</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela">
+          <thead>
+            <tr><th>#</th><th>Leitor</th><th>Material</th><th>Posição</th><th>Prazo retirada</th><th>Situação</th><th>Ações</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${resultado.conteudo}">
+              <td th:text="${r.id}">-</td>
+              <td th:text="${r.leitorNome ?: '-'}">Leitor</td>
+              <td th:text="${r.itemTitulo ?: '-'}">Material</td>
+              <td th:text="${r.posicao}">-</td>
+              <td th:text="${#temporals.format(r.prazoRetirada, 'dd/MM/yyyy')}">-</td>
+              <td><span class="badge-bublo" th:classappend="${r.status == 'AGUARDANDO'} ? 'badge-pendente' : (${r.status == 'ATENDIDA'} ? 'badge-ativo' : 'badge-neutro')"
+                        th:text="${r.status == 'AGUARDANDO'} ? 'Aguardando' : (${r.status == 'ATENDIDA'} ? 'Atendida' : (${r.status == 'CANCELADA'} ? 'Cancelada' : 'Expirada'))">Aguardando</span></td>
+              <td>
+                <form th:action="@{/reservas/{id}/cancelar(id=${r.id})}" method="post" class="form-inline" th:if="${r.status == 'AGUARDANDO'}"
+                      data-confirmar="Cancelar esta reserva?" data-confirmar-titulo="Cancelar reserva">
+                  <button type="submit" class="btn-bublo btn-acao btn-contorno perigo">Cancelar</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
+        <div class="simbolo"><i class="bi bi-calendar-check"></i></div>
+        <h3>Nenhuma reserva encontrada</h3>
+        <p>Reservas são feitas para materiais sem exemplares disponíveis.</p>
+      </div>
+      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/reservas')}"></th:block>
     </main>
   </div>
+
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

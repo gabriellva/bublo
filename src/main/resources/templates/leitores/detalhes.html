@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
+  <title>Detalhes do leitor - Bublo</title>
+</head>
+<body>
+  <th:block th:replace="~{layout/sidebar :: sidebar('leitores')}"></th:block>
+
+  <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
+    <main class="conteudo">
+      <div class="page-header cabecalho-pagina">
+        <div>
+          <h1 th:text="${leitor.nome}">Nome do leitor</h1>
+          <p class="subtitulo" th:text="${leitor.tipo == 'PROFESSOR' ? 'Professor' : 'Aluno'}">Aluno</p>
+        </div>
+        <div class="acoes-linha">
+          <a th:href="@{/leitores/{id}/editar(id=${leitor.id})}" class="btn-bublo btn-contorno"><i class="bi bi-pencil"></i> Editar</a>
+          <a th:href="@{/emprestimos/novo(leitor=${leitor.id})}" class="btn-bublo" th:if="${leitor.ativo}"><i class="bi bi-box-arrow-right"></i> Novo empréstimo</a>
+          <a th:href="@{/leitores}" class="btn-bublo btn-contorno">Voltar</a>
+        </div>
+      </div>
+
+      <div class="grid-duas-colunas">
+        <div class="card-bublo p-4">
+          <table class="tabela">
+            <tr><th style="width:160px;">Matrícula</th><td th:text="${leitor.matricula}">-</td></tr>
+            <tr><th>E-mail</th><td th:text="${leitor.email}">-</td></tr>
+            <tr><th>CPF</th><td th:text="${leitor.cpf ?: '-'}">-</td></tr>
+            <tr><th>Telefone</th><td th:text="${leitor.telefone ?: '-'}">-</td></tr>
+            <tr><th>Endereço</th><td th:text="${leitor.endereco ?: '-'}">-</td></tr>
+            <tr><th>Curso / Depto.</th><td th:text="${leitor.cursoDepartamento ?: '-'}">-</td></tr>
+            <tr><th>Situação</th><td><span class="badge-bublo" th:classappend="${leitor.ativo} ? 'badge-ativo' : 'badge-inativo'" th:text="${leitor.ativo ? 'Ativo' : 'Inativo'}">Ativo</span></td></tr>
+          </table>
+        </div>
+        <div class="card-bublo p-4" th:if="${situacao}">
+          <h3 class="mt-0">Situação na biblioteca</h3>
+          <p>Empréstimos ativos: <strong th:text="${situacao.emprestimosAtivos}">0</strong></p>
+          <p>Saldo de multas: <strong th:text="${#numbers.formatCurrency(situacao.saldoPendente)}">R$ 0,00</strong></p>
+          <span class="badge-bublo" th:classappend="${situacao.bloqueado} ? 'badge-inativo' : 'badge-ativo'" th:text="${situacao.bloqueado} ? 'Bloqueado por multa pendente' : 'Sem pendências'">Sem pendências</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

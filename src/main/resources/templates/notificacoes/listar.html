@@ -1,51 +1,82 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Notificações - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='configuracoes')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('notificacoes')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
-      <div class="page-header">
-        <h1>Notificações</h1>
-        <p class="subtitulo">Central de notificações do sistema</p>
+      <div class="page-header cabecalho-pagina">
+        <div>
+          <h1>Notificações</h1>
+          <p class="subtitulo">Central de notificações do sistema</p>
+        </div>
+        <form th:action="@{/notificacoes/ler-todas}" method="post" class="form-inline" th:if="${naoLidas gt 0}">
+          <button type="submit" class="btn-bublo btn-contorno"><i class="bi bi-check2-all"></i> Marcar todas como lidas</button>
+        </form>
       </div>
 
-      <div th:if="${naoLidas gt 0}" class="toast info" style="margin-bottom:1rem;">
-        <i class="bi bi-bell icone"></i>
-        <div class="conteudo"><div class="titulo" th:text="${naoLidas}">0</div><div class="descricao">notificação(ns) não lida(s)</div></div>
+      <div class="card-bublo p-3 mb-3">
+        <form th:action="@{/notificacoes}" method="get" class="form-grid" style="align-items:end;">
+          <div>
+            <label class="form-label" for="categoria">Categoria</label>
+            <select id="categoria" name="categoria" class="form-control">
+              <option value="">Todas</option>
+              <option value="EMPRESTIMO" th:selected="${categoria == 'EMPRESTIMO'}">Empréstimos</option>
+              <option value="RESERVA" th:selected="${categoria == 'RESERVA'}">Reservas</option>
+              <option value="MULTA" th:selected="${categoria == 'MULTA'}">Multas</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="lida">Situação</label>
+            <select id="lida" name="lida" class="form-control">
+              <option value="">Todas</option>
+              <option value="false" th:selected="${lida != null and !lida}">Não lidas</option>
+              <option value="true" th:selected="${lida != null and lida}">Lidas</option>
+            </select>
+          </div>
+          <div class="acoes-linha">
+            <button type="submit" class="btn-bublo">Filtrar</button>
+            <a th:href="@{/notificacoes}" class="btn-bublo btn-contorno">Limpar</a>
+          </div>
+        </form>
       </div>
 
-      <table class="tabela">
-        <thead>
-          <tr><th>#</th><th>Categoria</th><th>Prioridade</th><th>Título</th><th>Mensagem</th><th>Data</th><th>Status</th><th>Ação</th></tr>
-        </thead>
-        <tbody>
-          <tr th:each="n : ${resultado.conteudo}">
-            <td th:text="${n.id}">-</td>
-            <td th:text="${n.categoria}">-</td>
-            <td><span class="badge-bublo" th:text="${n.prioridade}">Info</span></td>
-            <td th:text="${n.titulo}">-</td>
-            <td th:text="${n.mensagem}">-</td>
-            <td th:text="${#temporals.format(n.dataCriacao, 'dd/MM/yyyy HH:mm')}">-</td>
-            <td>
-              <span class="badge-bublo" th:class="${n.lida} ? 'badge-ativo' : 'badge-inativo'" th:text="${n.lida ? 'Lida' : 'Não lida'}">Não lida</span>
-            </td>
-            <td>
-              <form th:action="@{/notificacoes/{id}/ler(id=${n.id})}" method="post" style="display:inline;" th:if="${!n.lida}">
-                <button type="submit" class="btn-bublo btn-sm" style="padding:0.2rem 0.5rem;font-size:0.8rem;">Ler</button>
-              </form>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela">
+          <thead>
+            <tr><th>Categoria</th><th>Prioridade</th><th>Título</th><th>Mensagem</th><th>Data</th><th>Situação</th><th>Ação</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="n : ${resultado.conteudo}">
+              <td th:text="${n.categoria}">-</td>
+              <td><span class="badge-bublo" th:classappend="${n.prioridade == 'ATENCAO'} ? 'badge-pendente' : 'badge-neutro'" th:text="${n.prioridade}">Info</span></td>
+              <td th:text="${n.titulo}">-</td>
+              <td th:text="${n.mensagem}">-</td>
+              <td th:text="${#temporals.format(n.dataCriacao, 'dd/MM/yyyy HH:mm')}">-</td>
+              <td><span class="badge-bublo" th:classappend="${n.lida} ? 'badge-neutro' : 'badge-pendente'" th:text="${n.lida ? 'Lida' : 'Não lida'}">Não lida</span></td>
+              <td>
+                <form th:action="@{/notificacoes/{id}/ler(id=${n.id})}" method="post" class="form-inline" th:unless="${n.lida}">
+                  <button type="submit" class="btn-bublo btn-acao">Marcar como lida</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
+        <div class="simbolo"><i class="bi bi-bell-slash"></i></div>
+        <h3>Nenhuma notificação</h3>
+        <p>Novas notificações de empréstimos, reservas e multas aparecerão aqui.</p>
+      </div>
+      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/notificacoes')}"></th:block>
     </main>
   </div>
+
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

@@ -1,78 +1,96 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Novo empréstimo - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='emprestimos')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('emprestimos')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
       <div class="page-header">
         <h1>Novo empréstimo</h1>
-        <p class="subtitulo">Fluxo guiado: leitor → exemplares → confirmação</p>
+        <p class="subtitulo">Selecione o leitor, os exemplares e a data prevista de devolução</p>
       </div>
 
-      <div th:if="${leitor}" class="card-bublo" style="padding:1rem;margin-bottom:1rem;">
-        <h4 style="margin:0 0 0.5rem 0;">Leitor selecionado</h4>
-        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-          <strong th:text="${leitor.nome}">Nome</strong>
-          <span class="badge-bublo" th:text="${leitor.tipo}">Aluno</span>
-          <span th:text="${leitor.matricula}">Matrícula</span>
-          <span id="statusBloqueio" style="font-size:0.85rem;font-weight:600;"></span>
+      <form th:action="@{/emprestimos}" method="post" novalidate id="formEmprestimo" th:attr="data-prazo-aluno=${prazoAlunos}, data-prazo-professor=${prazoProfessores}">
+        <div class="form-grid">
+          <div>
+            <label class="form-label" for="leitorId">Leitor</label>
+            <select id="leitorId" name="leitorId" class="form-control" required>
+              <option value="">Selecione…</option>
+              <option th:each="l : ${leitores}" th:value="${l.id}" th:data-tipo="${l.tipo}"
+                      th:text="${l.matricula + ' — ' + l.nome}" th:selected="${leitorId != null and leitorId == l.id}">Leitor</option>
+            </select>
+            <small id="statusBloqueio" class="texto-ajuda d-block" aria-live="polite"></small>
+          </div>
+          <div>
+            <label class="form-label" for="dataPrevista">Data prevista de devolução</label>
+            <input type="date" id="dataPrevista" name="dataPrevista" class="form-control" required
+                   th:min="${hoje}" th:value="${dataSelecionada}" />
+          </div>
         </div>
-      </div>
 
-      <div th:if="${erro}" class="toast erro" style="margin-bottom:1rem;">
-        <i class="bi bi-exclamation-circle-fill icone"></i>
-        <div class="conteudo"><div class="titulo" th:text="${erro}">Erro</div></div>
-      </div>
-
-      <form th:action="@{/emprestimos}" method="post" novalidate>
-        <input type="hidden" name="leitorId" th:value="${leitorId ?: ''}" />
-
-        <div style="margin-bottom:1rem;">
-          <label class="form-label">Exemplares disponíveis</label>
-          <select name="exemplares" class="form-control" size="6" multiple required>
-            <option th:each="a : ${acervo}" th:value="${a.id}" th:text="${a.titulo} + ' (tipo: ' + ${a.tipo} + ')'">Material</option>
+        <div class="mt-3">
+          <label class="form-label" for="exemplares">Exemplares disponíveis</label>
+          <select id="exemplares" name="exemplares" class="form-control" size="8" multiple required>
+            <option th:each="x : ${exemplaresDisponiveis}" th:value="${x.id}" th:text="${x.rotulo}"
+                    th:selected="${exemplaresSelecionados != null and exemplaresSelecionados.contains(x.id)}">BA-000001 — Título</option>
           </select>
-          <p class="texto-ajuda">Selecione um ou mais exemplares (Ctrl/clique para múltiplos).</p>
+          <p class="texto-ajuda">Segure Ctrl (ou Cmd) para selecionar vários. Somente exemplares livres aparecem aqui.</p>
+          <p class="texto-ajuda" th:if="${exemplaresDisponiveis.empty}">Não há exemplares disponíveis no momento.</p>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label">Data prevista de devolução</label>
-          <input type="date" name="dataPrevista" class="form-control" required />
-        </div>
-
-        <div style="display:flex;gap:0.75rem;margin-top:1.5rem;">
-          <button type="submit" class="btn-bublo">Confirmar empréstimo</button>
-          <a th:href="@{/emprestimos}" class="btn-bublo-secundario">Cancelar</a>
+        <div class="acoes-linha mt-4">
+          <button type="submit" class="btn-bublo" id="btnConfirmar">Confirmar empréstimo</button>
+          <a th:href="@{/emprestimos}" class="btn-bublo btn-contorno">Cancelar</a>
         </div>
       </form>
     </main>
   </div>
 
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      const leitorId = document.querySelector('input[name="leitorId"]');
+      const form = document.getElementById('formEmprestimo');
+      const leitor = document.getElementById('leitorId');
+      const data = document.getElementById('dataPrevista');
       const status = document.getElementById('statusBloqueio');
-      if (leitorId && leitorId.value) {
-        fetch('/emprestimos/restricao/' + leitorId.value)
-          .then(r => r.json())
-          .then(d => {
-            if (d.bloqueado) {
-              status.textContent = 'BLOQUEADO (dívida pendente)';
-              status.style.color = '#c62828';
-            } else {
-              status.textContent = 'Sem pendências';
-              status.style.color = '#2e7d32';
-            }
-          });
+      const confirmar = document.getElementById('btnConfirmar');
+
+      function sugerirData() {
+        if (data.value || !leitor.value) return;
+        const tipo = leitor.selectedOptions[0].dataset.tipo;
+        const dias = parseInt(tipo === 'PROFESSOR' ? form.dataset.prazoProfessor : form.dataset.prazoAluno, 10);
+        const previsao = new Date();
+        previsao.setDate(previsao.getDate() + dias);
+        data.value = previsao.toISOString().slice(0, 10);
       }
+
+      function verificarRestricao() {
+        status.textContent = '';
+        confirmar.disabled = false;
+        if (!leitor.value) return;
+        sugerirData();
+        fetch('/emprestimos/restricao/' + encodeURIComponent(leitor.value), { credentials: 'same-origin' })
+          .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then((d) => {
+            if (d.bloqueado) {
+              status.textContent = 'Leitor bloqueado: possui multa pendente.';
+              status.style.color = 'var(--bublo-perigo)';
+              confirmar.disabled = true;
+              return;
+            }
+            status.textContent = 'Sem pendências. Empréstimos ativos: ' + d.ativos + '.';
+            status.style.color = 'var(--bublo-sucesso)';
+          })
+          .catch(() => { Bublo.Toasts.atencao('Não foi possível verificar as pendências do leitor.'); });
+      }
+
+      leitor.addEventListener('change', () => { data.value = ''; verificarRestricao(); });
+      verificarRestricao();
     });
   </script>
 </body>

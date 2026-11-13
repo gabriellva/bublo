@@ -1,17 +1,16 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Leitores - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='leitores')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('leitores')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
-      <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header cabecalho-pagina">
         <div>
           <h1>Leitores</h1>
           <p class="subtitulo">Alunos e professores cadastrados</p>
@@ -19,70 +18,98 @@
         <a th:href="@{/leitores/novo}" class="btn-bublo"><i class="bi bi-person-plus"></i> Cadastrar leitor</a>
       </div>
 
-      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem;">
-        <a th:href="@{/leitores/modelo-csv}" class="btn-bublo btn-sm" style="background:transparent;border:1px solid var(--bublo-borda);color:var(--bublo-texto);"><i class="bi bi-download"></i> Modelo CSV</a>
-        <form th:action="@{/leitores/importar}" method="post" enctype="multipart/form-data" style="margin:0;display:flex;align-items:center;gap:0.5rem;">
-          <label style="font-size:0.85rem;color:var(--bublo-texto-suave);">Importar CSV:</label>
-          <input type="file" name="arquivo" accept=".csv" style="font-size:0.8rem;" />
+      <div class="card-bublo p-3 mb-3">
+        <form th:action="@{/leitores}" method="get" class="form-grid" style="align-items:end;">
+          <div>
+            <label class="form-label" for="termo">Buscar (nome, e-mail ou matrícula)</label>
+            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
+          </div>
+          <div>
+            <label class="form-label" for="tipo">Tipo</label>
+            <select id="tipo" name="tipo" class="form-control">
+              <option value="">Todos</option>
+              <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.name() == 'PROFESSOR' ? 'Professor' : 'Aluno'}" th:selected="${tipo != null and tipo == t}">Aluno</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="ativo">Situação</label>
+            <select id="ativo" name="ativo" class="form-control">
+              <option value="">Todas</option>
+              <option value="true" th:selected="${ativo != null and ativo}">Ativos</option>
+              <option value="false" th:selected="${ativo != null and !ativo}">Inativos</option>
+            </select>
+          </div>
+          <div class="acoes-linha">
+            <button type="submit" class="btn-bublo">Buscar</button>
+            <a th:href="@{/leitores}" class="btn-bublo btn-contorno">Limpar</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="acoes-linha mb-3">
+        <a th:href="@{/leitores/modelo-csv}" class="btn-bublo btn-sm btn-contorno"><i class="bi bi-download"></i> Modelo CSV</a>
+        <form th:action="@{/leitores/importar}" method="post" enctype="multipart/form-data" class="d-flex flex-wrap align-items-center gap-2 m-0">
+          <label class="texto-ajuda m-0" for="arquivo">Importar CSV:</label>
+          <input type="file" id="arquivo" name="arquivo" accept=".csv,text/csv" required style="font-size:0.8rem;" />
           <button type="submit" class="btn-bublo btn-sm">Importar</button>
         </form>
       </div>
 
-      <div th:if="${importacao}" class="card-bublo" style="padding:1rem;margin-bottom:1rem;">
-        <h4 style="margin:0 0 0.5rem 0;">Resultado da importação</h4>
-        <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:0.9rem;">
+      <div th:if="${importacao}" class="card-bublo p-3 mb-3">
+        <h4 class="mt-0">Resultado da importação</h4>
+        <div class="d-flex gap-3 flex-wrap">
           <span><strong>Processados:</strong> <span th:text="${importacao.totalProcessado}">0</span></span>
-          <span style="color:#2e7d32;"><strong>Importados:</strong> <span th:text="${importacao.importados}">0</span></span>
-          <span style="color:#c62828;"><strong>Rejeitados:</strong> <span th:text="${importacao.rejeitados}">0</span></span>
+          <span style="color:var(--bublo-sucesso);"><strong>Importados:</strong> <span th:text="${importacao.importados}">0</span></span>
+          <span style="color:var(--bublo-perigo);"><strong>Rejeitados:</strong> <span th:text="${importacao.rejeitados}">0</span></span>
         </div>
-        <div th:if="${!importacao.erros.empty}" style="margin-top:0.5rem;max-height:200px;overflow:auto;">
-          <table class="tabela" style="font-size:0.85rem;">
-            <tr><th>Linha</th><th>Motivo</th></tr>
-            <tr th:each="e : ${importacao.erros}"><td th:text="${e.linha}">-</td><td th:text="${e.motivo}">-</td></tr>
+        <div th:unless="${importacao.erros.empty}" class="tabela-bloco mt-2" style="max-height:220px;overflow:auto;">
+          <table class="tabela">
+            <thead><tr><th>Linha</th><th>Motivo</th></tr></thead>
+            <tbody><tr th:each="e : ${importacao.erros}"><td th:text="${e.linha}">-</td><td th:text="${e.motivo}">-</td></tr></tbody>
           </table>
         </div>
       </div>
 
-      <div th:if="${erroImportacao}" class="toast erro" style="margin-bottom:1rem;">
-        <i class="bi bi-exclamation-circle-fill icone"></i>
-        <div class="conteudo"><div class="titulo" th:text="${erroImportacao}">Erro na importação</div></div>
+      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela">
+          <thead>
+            <tr><th>Matrícula</th><th>Nome</th><th>Tipo</th><th>E-mail</th><th>Curso/Depto.</th><th>Status</th><th>Ações</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="l : ${resultado.conteudo}">
+              <td><strong th:text="${l.matricula}">-</strong></td>
+              <td th:text="${l.nome}">Nome</td>
+              <td><span class="badge-bublo badge-neutro" th:text="${l.tipo == 'PROFESSOR' ? 'Professor' : 'Aluno'}">Aluno</span></td>
+              <td th:text="${l.email}">email</td>
+              <td th:text="${l.cursoDepartamento ?: '-'}">-</td>
+              <td><span class="badge-bublo" th:classappend="${l.ativo} ? 'badge-ativo' : 'badge-inativo'" th:text="${l.ativo ? 'Ativo' : 'Inativo'}">Ativo</span></td>
+              <td>
+                <div class="acoes-linha">
+                  <a th:href="@{/leitores/{id}(id=${l.id})}" class="btn-bublo btn-acao">Ver</a>
+                  <a th:href="@{/leitores/{id}/editar(id=${l.id})}" class="btn-bublo btn-acao btn-contorno">Editar</a>
+                  <a th:href="@{/emprestimos/novo(leitor=${l.id})}" class="btn-bublo btn-acao btn-contorno" th:if="${l.ativo}">Emprestar</a>
+                  <form th:action="@{/leitores/{id}/inativar(id=${l.id})}" method="post" class="form-inline" th:if="${l.ativo}"
+                        data-confirmar="Inativar este leitor? Ele não poderá realizar novos empréstimos ou reservas."
+                        data-confirmar-titulo="Inativar leitor">
+                    <button type="submit" class="btn-bublo btn-acao btn-contorno perigo">Inativar</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <table class="tabela">
-        <thead>
-          <tr><th>Matrícula</th><th>Nome</th><th>Tipo</th><th>E-mail</th><th>Curso/Depto.</th><th>Status</th><th>Ações</th></tr>
-        </thead>
-        <tbody>
-          <tr th:each="l : ${resultado.conteudo}">
-            <td><strong th:text="${l.matricula}">-</strong></td>
-            <td th:text="${l.nome}">Nome</td>
-            <td><span class="badge-bublo" th:class="${l.tipo == 'PROFESSOR'} ? 'badge-inativo' : 'badge-ativo'" th:text="${l.tipo == 'PROFESSOR' ? 'Professor' : 'Aluno'}">Aluno</span></td>
-            <td th:text="${l.email}">email</td>
-            <td th:text="${l.cursoDepartamento ?: '-'}">-</td>
-            <td><span class="badge-bublo" th:class="${l.ativo} ? 'badge-ativo' : 'badge-inativo'" th:text="${l.ativo ? 'Ativo' : 'Inativo'}">Ativo</span></td>
-            <td>
-              <a th:href="@{/leitores/{id}(id=${l.id})}" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.8rem;">Ver</a>
-              <a th:href="@{/leitores/{id}/editar(id=${l.id})}" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.8rem;background:transparent;border:1px solid var(--bublo-borda);color:var(--bublo-texto);">Editar</a>
-              <form th:action="@{/leitores/{id}/inativar(id=${l.id})}" method="post" style="display:inline;" onsubmit="return confirm('Inativar este leitor?')">
-                <button type="submit" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.8rem;background:transparent;border:1px solid #c62828;color:#c62828;">Inativar</button>
-              </form>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div th:if="${resultado.conteudo.empty}" class="estado-vazio" style="margin-top:1rem;">
+      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
         <div class="simbolo"><i class="bi bi-people"></i></div>
-        <h3>Nenhum leitor cadastrado</h3>
-        <p>Cadastre um leitor ou importe via CSV.</p>
+        <h3>Nenhum leitor encontrado</h3>
+        <p>Cadastre um leitor, importe via CSV ou ajuste os filtros.</p>
       </div>
 
-      <div class="paginacao" th:if="${resultado.totalPaginas gt 1}">
-        <a th:each="i : ${#numbers.sequence(0, resultado.totalPaginas - 1)}" th:href="@{/leitores(pagina=${i}, tamanho=${resultado.tamanho}, termo=${termo}, tipo=${tipo}, ativo=${ativo})}" th:class="${resultado.pagina == i} ? 'ativo' : ''" th:text="${i + 1}">1</a>
-      </div>
+      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/leitores')}"></th:block>
     </main>
   </div>
 
-  <script th:src="@{/js/bublo.js"></script>
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

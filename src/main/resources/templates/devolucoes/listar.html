@@ -1,51 +1,63 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Devoluções - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='devolucoes')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('devolucoes')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
       <div class="page-header">
         <h1>Devoluções</h1>
         <p class="subtitulo">Registrar devolução de empréstimos ativos</p>
       </div>
 
-      <div style="margin-bottom:1rem;">
-        <label class="form-label">Buscar por tombamento, matrícula ou nome</label>
-        <input type="text" name="termo" class="form-control" th:value="${termo ?: ''}" placeholder="Ex: BA-000001 ou ALU-00001" />
+      <div class="card-bublo p-3 mb-3">
+        <form th:action="@{/devolucoes}" method="get" class="d-flex gap-2 flex-wrap align-items-end">
+          <div class="flex-grow-1">
+            <label class="form-label" for="termo">Buscar por tombamento, matrícula ou nome</label>
+            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" placeholder="Ex: BA-000001 ou ALU-00001" />
+          </div>
+          <button type="submit" class="btn-bublo">Buscar</button>
+          <a th:href="@{/devolucoes}" class="btn-bublo btn-contorno">Limpar</a>
+        </form>
       </div>
 
-      <table class="tabela">
-        <thead>
-          <tr><th>Empréstimo</th><th>Leitor</th><th>Material</th><th>Tombamento</th><th>Prevista</th><th>Situação</th><th>Ação</th></tr>
-        </thead>
-        <tbody>
-          <tr th:each="e : ${resultado.conteudo}">
-            <td th:text="${e.id}">-</td>
-            <td th:text="${e.leitorId}">-</td>
-            <td th:text="${e.id}">Material</td>
-            <td>-</td>
-            <td th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
-            <td><span class="badge-bublo" th:class="${e.status == 'ATRASADO'} ? 'badge-atrasado' : 'badge-ativo'" th:text="${e.status}">Ativo</span></td>
-            <td>
-              <a th:href="@{/devolucoes/{id}(id=${e.id})}" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.82rem;">Registrar devolução</a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div th:if="${resultado.conteudo.empty}" class="estado-vazio" style="margin-top:1rem;">
+      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela">
+          <thead>
+            <tr><th>Empréstimo</th><th>Leitor</th><th>Material</th><th>Tombamento</th><th>Prevista</th><th>Situação</th><th>Ação</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="e : ${resultado.conteudo}">
+              <td th:text="${e.id}">-</td>
+              <td th:text="${e.leitorNome ?: '-'}">Leitor</td>
+              <td th:text="${e.titulo ?: '-'}">Material</td>
+              <td th:text="${e.tombamento ?: '-'}">BA-000001</td>
+              <td th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
+              <td><span class="badge-bublo" th:classappend="${e.atrasado} ? 'badge-atrasado' : 'badge-ativo'" th:text="${e.atrasado} ? 'Em atraso' : 'No prazo'">No prazo</span></td>
+              <td>
+                <form th:action="@{/devolucoes/{id}/devolver(id=${e.id})}" method="post" class="form-inline"
+                      th:attr="data-confirmar=${e.atrasado} ? 'Este empréstimo está em atraso e uma multa será gerada. Registrar a devolução?' : 'Registrar a devolução deste exemplar?'"
+                      data-confirmar-titulo="Registrar devolução">
+                  <button type="submit" class="btn-bublo btn-acao">Registrar devolução</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
         <div class="simbolo"><i class="bi bi-box-arrow-left"></i></div>
         <h3>Sem empréstimos ativos</h3>
-        <p>Não há empréstimos para devolver.</p>
+        <p>Não há empréstimos para devolver com os filtros atuais.</p>
       </div>
     </main>
   </div>
+
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

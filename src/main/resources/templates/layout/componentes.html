@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+  <nav th:fragment="paginacao(resultado, url)" class="paginacao" th:if="${resultado.totalPaginas gt 1}" aria-label="Paginação">
+    <a th:each="i : ${#numbers.sequence(0, resultado.totalPaginas - 1)}"
+       th:href="@{${url}(pagina=${i}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida})}"
+       th:classappend="${resultado.pagina == i} ? 'ativo'"
+       th:text="${i + 1}">1</a>
+  </nav>
+
+</body>
+</html>

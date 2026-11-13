@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout/base :: head}"></head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
+  <title>Dashboard - Bublo</title>
+</head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='dashboard')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('dashboard')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
       <div class="page-header">
         <h1>Dashboard</h1>
@@ -15,54 +17,80 @@
 
       <div class="grid-indicadores">
         <div class="indicador" th:each="ind : ${indicadores}">
-          <div class="rotulo" th:text="${ind.rotulo}">Títulos</div>
           <div class="valor" th:text="${ind.valor}">0</div>
+          <div class="rotulo" th:text="${ind.rotulo}">Títulos</div>
           <div class="subtitulo" th:text="${ind.subtitulo}">Itens do acervo</div>
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-content:start;">
-        <div class="card-bublo" style="padding:1.5rem;">
-          <h3 style="margin-top:0;font-family:'Playfair Display',Georgia,serif;">Empréstimos ao longo do tempo</h3>
-          <canvas id="graficoLinha" height="120"></canvas>
+      <div class="grid-duas-colunas">
+        <div class="card-bublo p-4">
+          <h3 class="mt-0">Empréstimos nos últimos meses</h3>
+          <canvas id="graficoLinha" height="120" aria-label="Empréstimos por mês" role="img"></canvas>
+          <p class="texto-ajuda" th:if="${#lists.isEmpty(valoresMes)}">Ainda não há empréstimos registrados.</p>
         </div>
-        <div class="card-bublo" style="padding:1.5rem;">
-          <h3 style="margin-top:0;font-family:'Playfair Display',Georgia,serif;">Materiais por tipo</h3>
-          <canvas id="graficoPizza" height="120"></canvas>
+        <div class="card-bublo p-4">
+          <h3 class="mt-0">Materiais por tipo</h3>
+          <canvas id="graficoPizza" height="120" aria-label="Materiais por tipo" role="img"></canvas>
+          <p class="texto-ajuda" th:if="${#lists.isEmpty(valoresTipo)}">Ainda não há materiais cadastrados.</p>
         </div>
       </div>
 
-      <div class="card-bublo" style="margin-top:1.5rem;padding:1.5rem;">
-        <h3 style="margin-top:0;">Atividades recentes</h3>
-        <div class="estado-vazio" style="padding:2rem;">
+      <div class="card-bublo p-4 mt-4">
+        <h3 class="mt-0">Atividades recentes</h3>
+        <div class="estado-vazio" style="padding:2rem;" th:if="${#lists.isEmpty(atividadesRecentes)}">
           <div class="simbolo"><i class="bi bi-clock-history"></i></div>
           <h3>Sem atividades recentes</h3>
           <p>Realize empréstimos, devoluções e cadastros para ver o histórico aqui.</p>
         </div>
+        <ul class="list-unstyled mb-0" th:unless="${#lists.isEmpty(atividadesRecentes)}">
+          <li class="py-2" style="border-bottom:1px solid var(--bublo-borda);" th:each="a : ${atividadesRecentes}">
+            <strong th:text="${a.tipoOperacao}">OPERACAO</strong>
+            <span class="texto-ajuda" th:text="${a.modulo + ' · ' + a.adminUsuario + ' · ' + #temporals.format(a.dataHora, 'dd/MM/yyyy HH:mm')}">Módulo</span>
+          </li>
+        </ul>
       </div>
     </main>
   </div>
 
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
   <script th:src="@{/lib/chart.js/chart.umd.js}"></script>
-  <script th:src="@{/js/bublo.js}"></script>
-  <script>
+  <script th:inline="javascript">
     document.addEventListener('DOMContentLoaded', function () {
-      const ctxLinha = document.getElementById('graficoLinha');
-      if (ctxLinha) {
-        new Chart(ctxLinha.getContext('2d'), {
+      const dados = {
+        rotulosMes: /*[[${rotulosMes}]]*/ [],
+        valoresMes: /*[[${valoresMes}]]*/ [],
+        rotulosTipo: /*[[${rotulosTipo}]]*/ [],
+        valoresTipo: /*[[${valoresTipo}]]*/ []
+      };
+      const paleta = ['#7b1f35', '#c9a227', '#2e7d32', '#1565c0'];
+      const graficos = [];
+      const css = (nome) => getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+
+      function aplicarTema() {
+        Chart.defaults.color = css('--bublo-texto-suave');
+        Chart.defaults.borderColor = css('--bublo-borda');
+        graficos.forEach((g) => g.update());
+      }
+
+      const linha = document.getElementById('graficoLinha');
+      if (linha && dados.valoresMes.length) {
+        graficos.push(new Chart(linha, {
           type: 'line',
-          data: { labels: [], datasets: [{ label: 'Empréstimos', data: [], borderColor: '#7b1f35', tension: 0.3, fill: false }] },
-          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-        });
+          data: { labels: dados.rotulosMes, datasets: [{ label: 'Empréstimos', data: dados.valoresMes, borderColor: '#c9a227', backgroundColor: 'rgba(201,162,39,0.2)', tension: 0.3, fill: true }] },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        }));
       }
-      const ctxPizza = document.getElementById('graficoPizza');
-      if (ctxPizza) {
-        new Chart(ctxPizza.getContext('2d'), {
+      const pizza = document.getElementById('graficoPizza');
+      if (pizza && dados.valoresTipo.length) {
+        graficos.push(new Chart(pizza, {
           type: 'doughnut',
-          data: { labels: [], datasets: [{ data: [], backgroundColor: ['#7b1f35','#c9a227','#2e7d32','#1565c0'] }] },
+          data: { labels: dados.rotulosTipo, datasets: [{ data: dados.valoresTipo, backgroundColor: paleta, borderColor: css('--bublo-superficie') }] },
           options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-        });
+        }));
       }
+      aplicarTema();
+      window.addEventListener('bublo:tema:alterado', aplicarTema);
     });
   </script>
 </body>

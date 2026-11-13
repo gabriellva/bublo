@@ -1,39 +1,59 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Auditoria - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='configuracoes')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('auditoria')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
       <div class="page-header">
         <h1>Auditoria</h1>
         <p class="subtitulo">Registro cronológico de operações (somente leitura)</p>
       </div>
 
-      <table class="tabela">
-        <thead>
-          <tr><th>#</th><th>Responsável</th><th>Operação</th><th>Módulo</th><th>Registro</th><th>Data e hora</th><th>Justificativa</th></tr>
-        </thead>
-        <tbody>
-          <tr th:each="a : ${resultado.conteudo}">
-            <td th:text="${a.id}">-</td>
-            <td th:text="${a.adminUsuario}">-</td>
-            <td th:text="${a.tipoOperacao}">-</td>
-            <td th:text="${a.modulo}">-</td>
-            <td th:text="${a.registroAfectado ?: '-'}">-</td>
-            <td th:text="${#temporals.format(a.dataHora, 'dd/MM/yyyy HH:mm:ss')}">-</td>
-            <td th:text="${a.justificativa ?: '-'}">-</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="card-bublo p-3 mb-3">
+        <form th:action="@{/auditoria}" method="get" class="form-grid" style="align-items:end;">
+          <div>
+            <label class="form-label" for="termo">Buscar (usuário, módulo ou operação)</label>
+            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
+          </div>
+          <div class="acoes-linha">
+            <button type="submit" class="btn-bublo">Buscar</button>
+            <a th:href="@{/auditoria}" class="btn-bublo btn-contorno">Limpar</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela">
+          <thead>
+            <tr><th>#</th><th>Responsável</th><th>Operação</th><th>Módulo</th><th>Registro</th><th>Data e hora</th><th>Justificativa</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="a : ${resultado.conteudo}">
+              <td th:text="${a.id}">-</td>
+              <td th:text="${a.adminUsuario}">-</td>
+              <td th:text="${a.tipoOperacao}">-</td>
+              <td th:text="${a.modulo}">-</td>
+              <td th:text="${a.registroAfectado ?: '-'}">-</td>
+              <td th:text="${#temporals.format(a.dataHora, 'dd/MM/yyyy HH:mm:ss')}">-</td>
+              <td th:text="${a.justificativa ?: '-'}">-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
+        <div class="simbolo"><i class="bi bi-journal-text"></i></div>
+        <h3>Nenhum registro encontrado</h3>
+      </div>
+      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/auditoria')}"></th:block>
     </main>
   </div>
+
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

@@ -1,83 +1,68 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Configurações - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='configuracoes')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('configuracoes')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
       <div class="page-header">
         <h1>Configurações</h1>
-        <p class="subtitulo">Empréstimos, multas, reservas, notificações e dados da biblioteca</p>
-      </div>
-
-      <div th:if="${sucesso}" class="toast sucesso" style="margin-bottom:1rem;">
-        <i class="bi bi-check-circle-fill icone"></i>
-        <div class="conteudo"><div class="titulo" th:text="${sucesso}">Atualizado.</div></div>
-      </div>
-      <div th:if="${erro}" class="toast erro" style="margin-bottom:1rem;">
-        <i class="bi bi-exclamation-circle-fill icone"></i>
-        <div class="conteudo"><div class="titulo" th:text="${erro}">Erro</div></div>
+        <p class="subtitulo">Empréstimos, multas, reservas e dados da biblioteca</p>
       </div>
 
       <form th:action="@{/configuracoes/salvar}" method="post">
         <div class="form-grid">
           <div>
-            <label class="form-label">Nome da instituição</label>
-            <input type="text" name="chave" value="nome_instituicao" readonly class="form-control" style="background:#f0ece6;" />
-            <input type="text" name="valor" class="form-control" placeholder="Nome da instituição" required />
+            <label class="form-label" for="nome_instituicao">Nome da instituição</label>
+            <input type="text" id="nome_instituicao" name="nome_instituicao" class="form-control"  th:value="${valores['nome_instituicao']}" required />
           </div>
           <div>
-            <label class="form-label">Prefixo dos tombamentos</label>
-            <input type="text" name="chave" value="prefixo_tombamento" readonly class="form-control" style="background:#f0ece6;" />
-            <input type="text" name="valor" class="form-control" value="BA" required />
+            <label class="form-label" for="prefixo_tombamento">Prefixo dos tombamentos</label>
+            <input type="text" id="prefixo_tombamento" name="prefixo_tombamento" class="form-control"  th:value="${valores['prefixo_tombamento']}" required />
           </div>
           <div>
-            <label class="form-label">Limite alunos (exemplares)</label>
-            <input type="text" name="chave" value="limite_alunos" readonly class="form-control" style="background:#f0ece6;" />
-            <input type="number" name="valor" class="form-control" value="3" required />
+            <label class="form-label" for="limite_alunos">Limite de exemplares por aluno</label>
+            <input type="number" id="limite_alunos" name="limite_alunos" class="form-control" min="1" th:value="${valores['limite_alunos']}" required />
           </div>
           <div>
-            <label class="form-label">Limite professores (exemplares)</label>
-            <input type="text" name="chave" value="limite_professores" readonly class="form-control" style="background:#f0ece6;" />
-            <input type="number" name="valor" class="form-control" value="5" required />
+            <label class="form-label" for="limite_professores">Limite de exemplares por professor</label>
+            <input type="number" id="limite_professores" name="limite_professores" class="form-control" min="1" th:value="${valores['limite_professores']}" required />
           </div>
           <div>
-            <label class="form-label">Prazo alunos (dias)</label>
-            <input type="text" name="chave" value="prazo_alunos" readonly class="form-control" style="background:#f0ece6;" />
-            <input type="number" name="valor" class="form-control" value="7" required />
+            <label class="form-label" for="prazo_alunos">Prazo de devolução — alunos (dias)</label>
+            <input type="number" id="prazo_alunos" name="prazo_alunos" class="form-control" min="1" th:value="${valores['prazo_alunos']}" required />
           </div>
           <div>
-            <label class="form-label">Prazo professores (dias)</label>
-            <input type="text" name="chave" value="prazo_professores" readonly class="form-control" style="background:#f0ece6;" />
-            <input type="number" name="valor" class="form-control" value="14" required />
+            <label class="form-label" for="prazo_professores">Prazo de devolução — professores (dias)</label>
+            <input type="number" id="prazo_professores" name="prazo_professores" class="form-control" min="1" th:value="${valores['prazo_professores']}" required />
           </div>
           <div>
-            <label class="form-label">Taxa diária multa (R$)</label>
-            <input type="text" name="chave" value="taxa_diaria_multa" readonly class="form-control" style="background:#f0ece6;" />
-            <input type="number" name="valor" step="0.01" class="form-control" value="2.00" required />
+            <label class="form-label" for="taxa_diaria_multa">Taxa diária de multa (R$)</label>
+            <input type="number" id="taxa_diaria_multa" name="taxa_diaria_multa" class="form-control" min="0" step="0.01" th:value="${valores['taxa_diaria_multa']}" required />
           </div>
           <div>
-            <label class="form-label">Prazo retirada reserva (dias)</label>
-            <input type="text" name="chave" value="prazo_retirada_reserva" readonly class="form-control" style="background:#f0ece6;" />
-            <input type="number" name="valor" class="form-control" value="3" required />
+            <label class="form-label" for="prazo_retirada_reserva">Prazo de retirada da reserva (dias)</label>
+            <input type="number" id="prazo_retirada_reserva" name="prazo_retirada_reserva" class="form-control" min="1" th:value="${valores['prazo_retirada_reserva']}" required />
           </div>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Justificativa da alteração (obrigatória)</label>
-          <textarea name="justificativa" class="form-control" rows="2" required></textarea>
+        <div class="mt-3">
+          <label class="form-label" for="justificativa">Justificativa da alteração (obrigatória)</label>
+          <textarea id="justificativa" name="justificativa" class="form-control" rows="2" required></textarea>
         </div>
-        <p class="texto-ajuda">Alterações valem somente para novas operações. Não modificam empréstimos, multas ou reservas existentes.</p>
-        <button type="submit" class="btn-bublo">Salvar configurações</button>
-        <a th:href="@{/configuracoes}" class="btn-bublo-secundario" style="margin-left:0.75rem;">Voltar</a>
+        <p class="texto-ajuda">Alterações valem somente para novas operações. Não modificam empréstimos, multas ou reservas existentes. Cada alteração é registrada na auditoria.</p>
+        <div class="acoes-linha">
+          <button type="submit" class="btn-bublo">Salvar configurações</button>
+          <a th:href="@{/configuracoes}" class="btn-bublo btn-contorno">Descartar alterações</a>
+        </div>
       </form>
     </main>
   </div>
+
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

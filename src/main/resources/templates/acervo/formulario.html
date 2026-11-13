@@ -1,134 +1,200 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Cadastrar material - Bublo</title>
+  <title>Material - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='acervo')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('acervo')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
       <div class="page-header">
-        <h1>Cadastrar material</h1>
-        <p class="subtitulo">Novo item do acervo bibliográfico</p>
+        <h1 th:text="${item.id != null} ? 'Editar material' : 'Cadastrar material'">Cadastrar material</h1>
+        <p class="subtitulo">Item do acervo bibliográfico</p>
       </div>
 
-      <div th:if="${erro}" class="toast erro" style="margin-bottom:1rem;">
-        <i class="bi bi-exclamation-circle-fill icone"></i>
-        <div class="conteudo"><div class="titulo" th:text="${erro}">Erro</div></div>
-      </div>
-
-      <form th:action="@{/acervo}" method="post" novalidate>
-        <input type="hidden" name="id" th:value="${item.id ?: ''}" />
+      <form th:action="@{/acervo}" th:object="${item}" method="post" novalidate>
+        <input type="hidden" th:field="*{id}" />
 
         <div class="form-grid">
           <div>
-            <label class="form-label">Tipo de material</label>
-            <select name="tipo" class="form-control" id="tipoMaterial" required>
-              <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.label ?: t}">Livro</option>
+            <label class="form-label" for="tipoMaterial">Tipo de material</label>
+            <select th:field="*{tipo}" id="tipoMaterial" class="form-control" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" required>
+              <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.label}">Livro</option>
             </select>
+            <small class="erro-campo" th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}">Erro</small>
           </div>
           <div>
-            <label class="form-label">Título</label>
-            <input type="text" name="titulo" class="form-control" th:value="${item.titulo ?: ''}" required />
+            <label class="form-label" for="titulo">Título</label>
+            <input type="text" th:field="*{titulo}" class="form-control" th:classappend="${#fields.hasErrors('titulo')} ? 'is-invalid'" required />
+            <small class="erro-campo" th:if="${#fields.hasErrors('titulo')}" th:errors="*{titulo}">Erro</small>
           </div>
           <div>
-            <label class="form-label">Editora</label>
-            <input type="text" name="editora" class="form-control" th:value="${item.editora ?: ''}" />
+            <label class="form-label" for="editora">Editora</label>
+            <input type="text" th:field="*{editora}" class="form-control" th:classappend="${#fields.hasErrors('editora')} ? 'is-invalid'" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('editora')}" th:errors="*{editora}">Erro</small>
           </div>
           <div>
-            <label class="form-label">Ano</label>
-            <input type="number" name="ano" class="form-control" th:value="${item.ano ?: ''}" />
+            <label class="form-label" for="ano">Ano</label>
+            <input type="number" th:field="*{ano}" class="form-control" min="1000" max="2100" />
           </div>
           <div>
-            <label class="form-label">Idioma</label>
-            <input type="text" name="idioma" class="form-control" th:value="${item.idioma ?: 'Português'}" />
+            <label class="form-label" for="idioma">Idioma</label>
+            <input type="text" th:field="*{idioma}" class="form-control" placeholder="Português" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('idioma')}" th:errors="*{idioma}">Erro</small>
           </div>
           <div>
-            <label class="form-label">Categoria</label>
-            <select name="categoriaId" class="form-control">
+            <label class="form-label" for="categoriaId">Categoria</label>
+            <select th:field="*{categoriaId}" class="form-control">
               <option value="">Nenhuma</option>
               <option th:each="c : ${categorias}" th:value="${c.id}" th:text="${c.nome}">Ficção</option>
             </select>
           </div>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label">Descrição</label>
-          <textarea name="descricao" class="form-control" rows="3" th:text="${item.descricao ?: ''}"></textarea>
+        <div class="mt-3">
+          <label class="form-label" for="descricao">Descrição</label>
+          <textarea th:field="*{descricao}" class="form-control" rows="3"></textarea>
+          <small class="erro-campo" th:if="${#fields.hasErrors('descricao')}" th:errors="*{descricao}">Erro</small>
         </div>
 
-        <div id="campos-especificos"></div>
+        <div class="form-grid mt-3 campos-tipo" data-tipo="LIVRO">
+          <div>
+            <label class="form-label" for="isbn">ISBN</label>
+            <input type="text" th:field="*{isbn}" class="form-control" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('isbn')}" th:errors="*{isbn}">Erro</small>
+          </div>
+        </div>
+        <div class="form-grid mt-3 campos-tipo" data-tipo="REVISTA">
+          <div>
+            <label class="form-label" for="issn">ISSN</label>
+            <input type="text" th:field="*{issn}" class="form-control" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('issn')}" th:errors="*{issn}">Erro</small>
+          </div>
+          <div>
+            <label class="form-label" for="volume">Volume</label>
+            <input type="number" th:field="*{volume}" class="form-control" min="1" />
+          </div>
+        </div>
+        <div class="form-grid mt-3 campos-tipo" data-tipo="DVD">
+          <div>
+            <label class="form-label" for="duracaoMinutos">Duração (min)</label>
+            <input type="number" th:field="*{duracaoMinutos}" class="form-control" min="1" />
+          </div>
+        </div>
+        <div class="form-grid mt-3 campos-tipo" data-tipo="DIGITAL">
+          <div>
+            <label class="form-label" for="doi">DOI</label>
+            <input type="text" th:field="*{doi}" class="form-control" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('doi')}" th:errors="*{doi}">Erro</small>
+          </div>
+          <div>
+            <label class="form-label" for="urlExterna">URL externa</label>
+            <input type="url" th:field="*{urlExterna}" class="form-control" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('urlExterna')}" th:errors="*{urlExterna}">Erro</small>
+          </div>
+        </div>
 
-        <div style="margin-top:1.5rem;">
-          <label class="form-label">Autores</label>
+        <div class="mt-4">
+          <label class="form-label" for="novoAutor">Autores</label>
           <p class="texto-ajuda">Digite o nome e pressione Enter ou clique em "Adicionar".</p>
-          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
-            <input type="text" id="novoAutor" class="form-control" placeholder="Nome do autor" />
+          <div class="d-flex gap-2 mb-2">
+            <input type="text" id="novoAutor" class="form-control" placeholder="Nome do autor" list="sugestoesAutores" autocomplete="off" />
+            <datalist id="sugestoesAutores"></datalist>
             <button type="button" class="btn-bublo btn-sm" id="btnAddAutor">Adicionar</button>
           </div>
-          <div id="listaAutores" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;"></div>
-          <input type="hidden" name="novosAutores" id="campoAutores" />
+          <div id="listaAutores" class="d-flex flex-wrap gap-2 mb-3"></div>
+          <div id="camposAutores">
+            <input type="hidden" name="novosAutores" th:each="autor : ${item.novosAutores}" th:value="${autor}" />
+          </div>
         </div>
 
-        <div style="display:flex;gap:0.75rem;margin-top:1.5rem;">
+        <div class="acoes-linha mt-4">
           <button type="submit" class="btn-bublo">Salvar material</button>
-          <a th:href="@{/acervo}" class="btn-bublo-secundario">Cancelar</a>
+          <a th:href="@{/acervo}" class="btn-bublo btn-contorno">Cancelar</a>
         </div>
       </form>
     </main>
   </div>
 
-  <script th:src="@{/js/bublo.js"></script>
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      const tipos = document.getElementById('tipoMaterial');
-      const container = document.getElementById('campos-especificos');
-      const campoAutores = document.getElementById('campoAutores');
+      const tipo = document.getElementById('tipoMaterial');
+      const grupos = document.querySelectorAll('.campos-tipo');
+      const camposAutores = document.getElementById('camposAutores');
       const listaAutores = document.getElementById('listaAutores');
-      const autores = [];
+      const entrada = document.getElementById('novoAutor');
 
-      function renderAutores() {
-        listaAutores.innerHTML = '';
-        autores.forEach((a, i) => {
-          const el = document.createElement('span');
-          el.className = 'badge-bublo';
-          el.style.background = 'var(--bublo-vinho)';
-          el.style.color = '#fff';
-          el.innerHTML = a + ' <button type="button" style="background:none;border:none;color:#fff;margin-left:0.4rem;font-weight:700;" onclick="removerAutor(' + i + ')">×</button>';
-          listaAutores.appendChild(el);
+      function mostrarCamposDoTipo() {
+        grupos.forEach((grupo) => {
+          const ativo = grupo.dataset.tipo === tipo.value;
+          grupo.hidden = !ativo;
+          grupo.querySelectorAll('input').forEach((campo) => { campo.disabled = !ativo; });
         });
-        campoAutores.value = JSON.stringify(autores);
       }
-      window.removerAutor = function (i) { autores.splice(i, 1); renderAutores(); };
 
-      document.getElementById('btnAddAutor').addEventListener('click', function () {
-        const v = document.getElementById('novoAutor').value.trim();
-        if (v && !autores.includes(v)) { autores.push(v); renderAutores(); document.getElementById('novoAutor').value = ''; }
-      });
-      document.getElementById('novoAutor').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btnAddAutor').click(); }
-      });
-
-      function montarCampos() {
-        const t = tipos.value;
-        let html = '';
-        if (t === 'LIVRO') {
-          html = `<div class="form-grid"><div><label class="form-label">ISBN</label><input type="text" name="isbn" class="form-control" /></div></div>`;
-        } else if (t === 'REVISTA') {
-          html = `<div class="form-grid"><div><label class="form-label">ISSN</label><input type="text" name="issn" class="form-control" /></div><div><label class="form-label">Volume</label><input type="number" name="volume" class="form-control" /></div></div>`;
-        } else if (t === 'DVD') {
-          html = `<div class="form-grid"><div><label class="form-label">Duração (min)</label><input type="number" name="duracaoMinutos" class="form-control" /></div></div>`;
-        } else if (t === 'DIGITAL') {
-          html = `<div class="form-grid"><div><label class="form-label">DOI</label><input type="text" name="doi" class="form-control" /></div><div><label class="form-label">URL externa</label><input type="url" name="urlExterna" class="form-control" /></div></div>`;
-        }
-        container.innerHTML = html;
+      function nomesAtuais() {
+        return Array.from(camposAutores.querySelectorAll('input')).map((campo) => campo.value);
       }
-      tipos.addEventListener('change', montarCampos);
-      montarCampos();
+
+      function desenharAutores() {
+        listaAutores.textContent = '';
+        nomesAtuais().forEach((nome, indice) => {
+          const chip = document.createElement('span');
+          chip.className = 'badge-bublo badge-neutro';
+          chip.textContent = nome + ' ';
+          const remover = document.createElement('button');
+          remover.type = 'button';
+          remover.className = 'btn-close ms-1';
+          remover.style.fontSize = '0.6rem';
+          remover.setAttribute('aria-label', 'Remover ' + nome);
+          remover.addEventListener('click', () => {
+            camposAutores.querySelectorAll('input')[indice].remove();
+            desenharAutores();
+          });
+          chip.appendChild(remover);
+          listaAutores.appendChild(chip);
+        });
+      }
+
+      function adicionarAutor() {
+        const nome = entrada.value.trim();
+        if (!nome || nomesAtuais().includes(nome)) return;
+        const campo = document.createElement('input');
+        campo.type = 'hidden';
+        campo.name = 'novosAutores';
+        campo.value = nome;
+        camposAutores.appendChild(campo);
+        entrada.value = '';
+        desenharAutores();
+      }
+
+      document.getElementById('btnAddAutor').addEventListener('click', adicionarAutor);
+      entrada.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); adicionarAutor(); }
+      });
+      entrada.addEventListener('input', Bublo.Utils.debounce(() => {
+        if (entrada.value.trim().length < 2) return;
+        fetch('/acervo/sugestoes-autores?termo=' + encodeURIComponent(entrada.value.trim()), { credentials: 'same-origin' })
+          .then((r) => (r.ok ? r.json() : []))
+          .then((nomes) => {
+            const lista = document.getElementById('sugestoesAutores');
+            lista.textContent = '';
+            nomes.forEach((nome) => {
+              const opcao = document.createElement('option');
+              opcao.value = nome;
+              lista.appendChild(opcao);
+            });
+          })
+          .catch(() => {});
+      }, 250));
+
+      tipo.addEventListener('change', mostrarCamposDoTipo);
+      mostrarCamposDoTipo();
+      desenharAutores();
     });
   </script>
 </body>
