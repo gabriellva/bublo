@@ -1,49 +1,33 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Minha conta - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Trocar senha', 'conta', ~{::conteudo}, ~{})}">
+<head><title>Trocar senha</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('configuracoes')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1>Minha conta</h1>
-        <p class="subtitulo">Dados do administrador e alteração de senha</p>
-      </div>
-
-      <div class="formulario-card" style="max-width:560px;">
-        <div class="cabecalho-pagina mb-3">
-          <h2 class="m-0">Alterar senha</h2>
-          <span class="badge-bublo badge-ativo">Administrador</span>
-        </div>
-
-        <form th:action="@{/troca-senha}" th:object="${trocaSenhaDTO}" method="post" novalidate>
-          <div class="mb-3">
-            <label class="form-label" for="senhaAtual">Senha atual</label>
-            <input type="password" th:field="*{senhaAtual}" class="form-control" th:classappend="${#fields.hasErrors('senhaAtual')} ? 'is-invalid'" autocomplete="current-password" required />
-            <small class="erro-campo" th:if="${#fields.hasErrors('senhaAtual')}" th:errors="*{senhaAtual}">Erro</small>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="novaSenha">Nova senha (mín. 8 caracteres, com letras e números)</label>
-            <input type="password" th:field="*{novaSenha}" class="form-control" th:classappend="${#fields.hasErrors('novaSenha')} ? 'is-invalid'" autocomplete="new-password" required />
-            <small class="erro-campo" th:if="${#fields.hasErrors('novaSenha')}" th:errors="*{novaSenha}">Erro</small>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="confirmaNovaSenha">Confirmar nova senha</label>
-            <input type="password" th:field="*{confirmaNovaSenha}" class="form-control" th:classappend="${#fields.hasErrors('confirmaNovaSenha')} ? 'is-invalid'" autocomplete="new-password" required />
-            <small class="erro-campo" th:if="${#fields.hasErrors('confirmaNovaSenha')}" th:errors="*{confirmaNovaSenha}">Erro</small>
-          </div>
-          <button type="submit" class="btn-bublo w-100">Alterar senha</button>
-        </form>
-        <p class="texto-ajuda mt-3">Após a alteração, você será desconectado e deverá entrar novamente.</p>
-      </div>
-    </main>
+<th:block th:fragment="conteudo">
+  <div class="pagina-cabeca">
+    <div><h1>Trocar senha</h1><p class="pagina-sub">Conta do administrador. Depois da troca você será desconectado e entra de novo com a nova senha.</p></div>
   </div>
-
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <form th:action="@{/troca-senha}" th:object="${trocaSenhaDTO}" method="post" novalidate class="form-estreito" style="max-width:560px">
+    <section class="painel"><div class="painel-corpo">
+      <div class="mb-3">
+        <label class="form-label" for="senhaAtual">Senha atual</label>
+        <input type="password" th:field="*{senhaAtual}" class="form-control" th:classappend="${#fields.hasErrors('senhaAtual')} ? 'is-invalid'" autocomplete="current-password" required />
+        <small class="erro-campo" th:if="${#fields.hasErrors('senhaAtual')}" th:errors="*{senhaAtual}">Erro</small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="novaSenha">Nova senha</label>
+        <input type="password" th:field="*{novaSenha}" class="form-control" th:classappend="${#fields.hasErrors('novaSenha')} ? 'is-invalid'" autocomplete="new-password" required />
+        <p class="ajuda-campo">Mínimo de 8 caracteres, com letras e números.</p>
+        <small class="erro-campo" th:if="${#fields.hasErrors('novaSenha')}" th:errors="*{novaSenha}">Erro</small>
+      </div>
+      <div class="mb-4">
+        <label class="form-label" for="confirmaNovaSenha">Confirmar nova senha</label>
+        <input type="password" th:field="*{confirmaNovaSenha}" class="form-control" th:classappend="${#fields.hasErrors('confirmaNovaSenha')} ? 'is-invalid'" autocomplete="new-password" required />
+        <small class="erro-campo" th:if="${#fields.hasErrors('confirmaNovaSenha')}" th:errors="*{confirmaNovaSenha}">Erro</small>
+      </div>
+      <div class="rodape-form"><button type="submit" class="btn btn-primary">Alterar senha</button><a th:href="@{/dashboard}" class="btn btn-outline-secondary">Cancelar</a></div>
+    </div></section>
+  </form>
+</th:block>
 </body>
 </html>

@@ -2,43 +2,56 @@
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Entrar - Bublo</title>
+  <title th:text="${'Entrar · ' + (nomeInstituicao ?: 'Bublo')}">Entrar · Bublo</title>
 </head>
-<body class="login-container">
-  <button type="button" class="btn-toggle-tema" id="btn-tema" title="Alternar tema" aria-label="Alternar tema"
-          style="position:fixed;top:1rem;right:1rem;z-index:50;background:var(--bublo-superficie);">
-    <i class="bi bi-moon-stars-fill"></i>
-  </button>
+<body>
+  <div class="login">
+    <section class="login-editorial" aria-label="Apresentação">
+      <div>
+        <svg th:replace="~{layout/componentes :: marca}"></svg>
+        <h1 th:text="${nomeInstituicao ?: 'Biblioteca Acadêmica'}">Biblioteca Acadêmica</h1>
+        <hr class="filete" />
+        <p class="lema">Acervo, leitores e circulação reunidos em um só lugar, com a calma de uma sala de leitura.</p>
+      </div>
+      <p class="rodape-editorial">Sistema de gestão da biblioteca acadêmica</p>
+    </section>
 
-  <div class="login-area-editorial">
-    <div class="simbolo-livro"><i class="bi bi-book"></i></div>
-    <h1 th:text="${nomeInstituicao ?: 'Biblioteca Acadêmica'}">Biblioteca Acadêmica</h1>
-    <p class="mensagem">Sistema de gerenciamento de acervo, empréstimos e leitores. Acesso restrito ao administrador.</p>
-  </div>
+    <section class="login-form-lado">
+      <button type="button" class="btn-icone login-tema" id="btn-tema" title="Alternar tema" aria-label="Alternar tema">
+        <i class="bi bi-moon-stars"></i>
+      </button>
+      <div class="login-cartao">
+        <span class="selo-acesso"><i class="bi bi-shield-lock" aria-hidden="true"></i>Acesso exclusivo do administrador</span>
+        <h2>Entrar</h2>
+        <p class="texto-suave mb-4">Use as credenciais definidas para a administração da biblioteca.</p>
 
-  <div class="login-area-form">
-    <div class="login-card">
-      <h2>Entrar</h2>
-      <p class="subtitulo">Acesso exclusivo do administrador da biblioteca</p>
-
-      <form th:action="@{/login}" method="post">
-        <div class="mb-3">
-          <label class="form-label" for="username">Usuário</label>
-          <input type="text" id="username" name="username" class="form-control" autocomplete="username" autofocus required />
+        <div class="alerta-login" role="alert" th:if="${param.error}">
+          <i class="bi bi-exclamation-octagon" aria-hidden="true"></i>
+          <span>Não foi possível entrar. Verifique seus dados e tente novamente.</span>
         </div>
-        <div class="mb-3">
-          <label class="form-label" for="password">Senha</label>
-          <input type="password" id="password" name="password" class="form-control" autocomplete="current-password" required />
-        </div>
-        <button type="submit" class="btn-bublo w-100 mt-3">Entrar</button>
-      </form>
-      <p class="texto-ajuda mt-3 text-center">
-        Credenciais configuradas pelo administrador via variáveis de ambiente.<br/>
-        <small>Senhas armazenadas com BCrypt.</small>
-      </p>
-    </div>
-  </div>
 
+        <form th:action="@{/login}" method="post" id="form-login">
+          <div class="mb-3">
+            <label class="form-label" for="username">Usuário</label>
+            <input type="text" id="username" name="username" class="form-control" autocomplete="username" autofocus required />
+          </div>
+          <div class="mb-4">
+            <label class="form-label" for="password">Senha</label>
+            <div class="senha-campo">
+              <input type="password" id="password" name="password" class="form-control" autocomplete="current-password" required />
+              <button type="button" class="btn-icone" id="ver-senha" aria-label="Mostrar senha" aria-pressed="false"><i class="bi bi-eye"></i></button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-100">Entrar</button>
+        </form>
+
+        <p class="aviso-seguranca">
+          <i class="bi bi-lock" aria-hidden="true"></i>
+          <span>Seus dados de acesso são protegidos e cada entrada fica registrada na auditoria. Não compartilhe sua senha.</span>
+        </p>
+      </div>
+    </section>
+  </div>
   <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

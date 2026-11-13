@@ -1,97 +1,157 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Dashboard - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Dashboard', 'dashboard', ~{::conteudo}, ~{::scripts})}">
+<head><title>Dashboard</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('dashboard')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1>Dashboard</h1>
-        <p class="subtitulo">Visão executiva da biblioteca</p>
-      </div>
-
-      <div class="grid-indicadores">
-        <div class="indicador" th:each="ind : ${indicadores}">
-          <div class="valor" th:text="${ind.valor}">0</div>
-          <div class="rotulo" th:text="${ind.rotulo}">Títulos</div>
-          <div class="subtitulo" th:text="${ind.subtitulo}">Itens do acervo</div>
-        </div>
-      </div>
-
-      <div class="grid-duas-colunas">
-        <div class="card-bublo p-4">
-          <h3 class="mt-0">Empréstimos nos últimos meses</h3>
-          <canvas id="graficoLinha" height="120" aria-label="Empréstimos por mês" role="img"></canvas>
-          <p class="texto-ajuda" th:if="${#lists.isEmpty(valoresMes)}">Ainda não há empréstimos registrados.</p>
-        </div>
-        <div class="card-bublo p-4">
-          <h3 class="mt-0">Materiais por tipo</h3>
-          <canvas id="graficoPizza" height="120" aria-label="Materiais por tipo" role="img"></canvas>
-          <p class="texto-ajuda" th:if="${#lists.isEmpty(valoresTipo)}">Ainda não há materiais cadastrados.</p>
-        </div>
-      </div>
-
-      <div class="card-bublo p-4 mt-4">
-        <h3 class="mt-0">Atividades recentes</h3>
-        <div class="estado-vazio" style="padding:2rem;" th:if="${#lists.isEmpty(atividadesRecentes)}">
-          <div class="simbolo"><i class="bi bi-clock-history"></i></div>
-          <h3>Sem atividades recentes</h3>
-          <p>Realize empréstimos, devoluções e cadastros para ver o histórico aqui.</p>
-        </div>
-        <ul class="list-unstyled mb-0" th:unless="${#lists.isEmpty(atividadesRecentes)}">
-          <li class="py-2" style="border-bottom:1px solid var(--bublo-borda);" th:each="a : ${atividadesRecentes}">
-            <strong th:text="${a.tipoOperacao}">OPERACAO</strong>
-            <span class="texto-ajuda" th:text="${a.modulo + ' · ' + a.adminUsuario + ' · ' + #temporals.format(a.dataHora, 'dd/MM/yyyy HH:mm')}">Módulo</span>
-          </li>
-        </ul>
-      </div>
-    </main>
+<th:block th:fragment="conteudo"
+          th:with="icones=${T(java.util.Map).of('Títulos', 'bi-journal-bookmark', 'Exemplares', 'bi-collection', 'Disponíveis', 'bi-check2-circle', 'Indisponíveis', 'bi-slash-circle', 'Empréstimos ativos', 'bi-arrow-up-right-square', 'Atrasados', 'bi-alarm', 'Multas pendentes', 'bi-receipt', 'Reservas', 'bi-bookmark', 'Leitores', 'bi-people')},
+                   destinos=${T(java.util.Map).of('Títulos', '/acervo', 'Exemplares', '/acervo', 'Disponíveis', '/acervo?disponivel=true', 'Indisponíveis', '/acervo?disponivel=false', 'Empréstimos ativos', '/emprestimos?status=ATIVO', 'Atrasados', '/emprestimos?status=ATRASADO', 'Multas pendentes', '/multas?status=PENDENTE', 'Reservas', '/reservas?status=AGUARDANDO', 'Leitores', '/leitores')}">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Dashboard</h1>
+      <p class="pagina-sub">Panorama do acervo, da circulação e das multas. Inventário e leitores são acumulados; o restante segue o período escolhido.</p>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <div class="acoes-rapidas" aria-label="Ações rápidas">
+    <a class="acao-rapida" th:href="@{/emprestimos/novo}"><i class="bi bi-arrow-up-right-square"></i>Novo empréstimo</a>
+    <a class="acao-rapida" th:href="@{/devolucoes}"><i class="bi bi-arrow-down-left-square"></i>Devolução</a>
+    <a class="acao-rapida" th:href="@{/acervo/novo}"><i class="bi bi-journal-plus"></i>Novo material</a>
+    <a class="acao-rapida" th:href="@{/leitores/novo}"><i class="bi bi-person-plus"></i>Novo leitor</a>
+    <a class="acao-rapida" th:href="@{/reservas}"><i class="bi bi-bookmark-check"></i>Reservas</a>
+    <a class="acao-rapida" th:href="@{/multas(status='PENDENTE')}"><i class="bi bi-cash-coin"></i>Pagamento</a>
+    <a class="acao-rapida" th:href="@{/relatorios}"><i class="bi bi-bar-chart-line"></i>Relatórios</a>
+  </div>
+
+  <div class="grade-kpi">
+    <a class="kpi" th:each="ind : ${indicadores}" th:href="@{${destinos[ind.rotulo]}}"
+       th:classappend="${ind.rotulo == 'Atrasados' and ind.valor != '0'} ? 'destaque-erro' : (${ind.rotulo == 'Multas pendentes' and ind.valor != '0'} ? 'destaque-aviso')">
+      <span class="kpi-topo"><span th:text="${ind.rotulo}">Títulos</span><i class="bi" th:classappend="${icones[ind.rotulo]}"></i></span>
+      <span class="kpi-valor" th:text="${ind.valor}">0</span>
+      <span class="kpi-nota" th:text="${ind.subtitulo}">Itens do acervo</span>
+    </a>
+    <a class="kpi" th:href="@{/multas}">
+      <span class="kpi-topo"><span>Valores arrecadados</span><i class="bi bi-cash-coin"></i></span>
+      <span class="kpi-valor" id="kpi-arrecadado">—</span>
+      <span class="kpi-nota">No período escolhido</span>
+    </a>
+  </div>
+
+  <div class="filtro-periodo" role="group" aria-label="Período dos gráficos">
+    <div class="segmentado" id="filtro-periodo">
+      <button type="button" data-periodo="hoje">Hoje</button>
+      <button type="button" data-periodo="7d">7 dias</button>
+      <button type="button" data-periodo="30d" class="ativo">30 dias</button>
+      <button type="button" data-periodo="mes">Mês atual</button>
+      <button type="button" data-periodo="ano">Ano atual</button>
+      <button type="button" data-periodo="custom">Personalizado</button>
+    </div>
+    <div class="periodo-custom" id="periodo-custom">
+      <label class="sr-only" for="periodo-de">De</label><input type="date" id="periodo-de" class="form-control" />
+      <span class="texto-fraco">até</span>
+      <label class="sr-only" for="periodo-ate">Até</label><input type="date" id="periodo-ate" class="form-control" />
+      <button type="button" class="btn btn-primary btn-sm" id="periodo-aplicar">Aplicar</button>
+    </div>
+    <span class="periodo-aviso numero" id="periodo-texto" aria-live="polite"></span>
+  </div>
+
+  <div class="grade-graficos">
+    <section class="painel grafico-card g-8">
+      <div class="painel-cabeca"><h2>Empréstimos no tempo<span class="sub" id="sub-emprestimos"></span></h2></div>
+      <div class="painel-corpo"><div class="grafico-quadro skeleton"><canvas id="g-tempo" role="img" aria-label="Empréstimos no período"></canvas><div class="grafico-vazio"></div></div><p class="sr-only" data-resumo="g-tempo"></p></div>
+    </section>
+    <section class="painel grafico-card g-4">
+      <div class="painel-cabeca"><h2>Comparação mensal<span class="sub">Empréstimos e devoluções, 6 meses</span></h2></div>
+      <div class="painel-corpo"><div class="grafico-quadro skeleton"><canvas id="g-mensal" role="img" aria-label="Empréstimos e devoluções por mês"></canvas><div class="grafico-vazio"></div></div><p class="sr-only" data-resumo="g-mensal"></p></div>
+    </section>
+
+    <section class="painel grafico-card g-4 meio">
+      <div class="painel-cabeca"><h2>Materiais por tipo<span class="sub">Acumulado</span></h2></div>
+      <div class="painel-corpo"><div class="grafico-quadro"><canvas id="g-tipo" role="img" aria-label="Materiais por tipo"></canvas><div class="grafico-vazio"></div></div><p class="sr-only" data-resumo="g-tipo"></p></div>
+    </section>
+    <section class="painel grafico-card g-4 meio">
+      <div class="painel-cabeca"><h2>Disponíveis e indisponíveis<span class="sub">Exemplares, acumulado</span></h2></div>
+      <div class="painel-corpo"><div class="grafico-quadro skeleton"><canvas id="g-disponibilidade" role="img" aria-label="Exemplares disponíveis e indisponíveis"></canvas><div class="grafico-vazio"></div></div><p class="sr-only" data-resumo="g-disponibilidade"></p></div>
+    </section>
+    <section class="painel grafico-card g-4">
+      <div class="painel-cabeca"><h2>Leitores por tipo<span class="sub">Ativos, acumulado</span></h2></div>
+      <div class="painel-corpo"><div class="grafico-quadro skeleton"><canvas id="g-leitores" role="img" aria-label="Leitores por tipo"></canvas><div class="grafico-vazio"></div></div><p class="sr-only" data-resumo="g-leitores"></p></div>
+    </section>
+
+    <section class="painel grafico-card g-6">
+      <div class="painel-cabeca"><h2>Empréstimos por categoria<span class="sub">No período</span></h2></div>
+      <div class="painel-corpo"><div class="grafico-quadro skeleton"><canvas id="g-categoria" role="img" aria-label="Empréstimos por categoria"></canvas><div class="grafico-vazio"></div></div><p class="sr-only" data-resumo="g-categoria"></p></div>
+    </section>
+    <section class="painel grafico-card g-6">
+      <div class="painel-cabeca"><h2>Materiais mais emprestados<span class="sub">No período</span></h2></div>
+      <div class="painel-corpo"><div class="grafico-quadro skeleton"><canvas id="g-ranking" role="img" aria-label="Materiais mais emprestados"></canvas><div class="grafico-vazio"></div></div><p class="sr-only" data-resumo="g-ranking"></p></div>
+    </section>
+
+    <section class="painel grafico-card g-12">
+      <div class="painel-cabeca"><h2>Multas geradas e pagas<span class="sub">Valores em reais no período</span></h2></div>
+      <div class="painel-corpo"><div class="grafico-quadro skeleton"><canvas id="g-multas" role="img" aria-label="Multas geradas e pagas"></canvas><div class="grafico-vazio"></div></div><p class="sr-only" data-resumo="g-multas"></p></div>
+    </section>
+  </div>
+
+  <div class="grade-listas">
+    <section class="painel">
+      <div class="painel-cabeca"><h2>Próximas devoluções</h2><a th:href="@{/devolucoes}" class="btn btn-link btn-sm">Ver todas</a></div>
+      <div class="painel-lista mt-2">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(proximasDevolucoes)}"><h3>Nenhuma devolução a vencer</h3></div>
+        <a class="item-lista" th:each="e : ${proximasDevolucoes}" th:href="@{/devolucoes(termo=${e.tombamento})}">
+          <span class="info"><strong th:text="${e.titulo}">Título</strong><span th:text="${e.leitorNome + ' · ' + e.tombamento}">Leitor</span></span>
+          <span class="lado" th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">01/01/2026</span>
+        </a>
+      </div>
+    </section>
+    <section class="painel">
+      <div class="painel-cabeca"><h2>Empréstimos atrasados</h2><a th:href="@{/emprestimos(status='ATRASADO')}" class="btn btn-link btn-sm">Ver todos</a></div>
+      <div class="painel-lista mt-2">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(emprestimosAtrasados)}"><h3>Nenhum atraso no momento</h3></div>
+        <a class="item-lista" th:each="e : ${emprestimosAtrasados}" th:href="@{/devolucoes(termo=${e.tombamento})}">
+          <span class="info"><strong th:text="${e.titulo}">Título</strong><span th:text="${e.leitorNome + ' · ' + e.tombamento}">Leitor</span></span>
+          <span class="badge-b st-erro" th:text="${'Venceu ' + #temporals.format(e.dataPrevistaDevolucao, 'dd/MM')}">Atrasado</span>
+        </a>
+      </div>
+    </section>
+    <section class="painel">
+      <div class="painel-cabeca"><h2>Reservas aguardando retirada</h2><a th:href="@{/reservas(status='AGUARDANDO')}" class="btn btn-link btn-sm">Ver todas</a></div>
+      <div class="painel-lista mt-2">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(reservasAguardando)}"><h3>Nenhuma reserva na fila</h3></div>
+        <a class="item-lista" th:each="r : ${reservasAguardando}" th:href="@{/reservas(termo=${r.itemTitulo})}">
+          <span class="info"><strong th:text="${r.itemTitulo}">Título</strong><span th:text="${r.leitorNome + ' · posição ' + r.posicao}">Leitor</span></span>
+          <span class="lado" th:text="${'até ' + #temporals.format(r.prazoRetirada, 'dd/MM')}">até 01/01</span>
+        </a>
+      </div>
+    </section>
+    <section class="painel">
+      <div class="painel-cabeca"><h2>Multas pendentes</h2><a th:href="@{/multas(status='PENDENTE')}" class="btn btn-link btn-sm">Ver todas</a></div>
+      <div class="painel-lista mt-2">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(multasPendentes)}"><h3>Nenhuma multa pendente</h3></div>
+        <a class="item-lista" th:each="m : ${multasPendentes}" th:href="@{/multas/{id}/pagar(id=${m.id})}">
+          <span class="info"><strong th:text="${m.leitorNome}">Leitor</strong><span th:text="${m.diasAtraso + ' dia(s) de atraso'}">3 dias</span></span>
+          <span class="lado principal" th:text="${#numbers.formatCurrency(m.saldoPendente)}">R$ 0,00</span>
+        </a>
+      </div>
+    </section>
+    <section class="painel" style="grid-column: 1 / -1;">
+      <div class="painel-cabeca"><h2>Atividades recentes</h2><a th:href="@{/auditoria}" class="btn btn-link btn-sm">Abrir auditoria</a></div>
+      <div class="painel-lista mt-2">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(atividadesRecentes)}"><h3>Sem atividades recentes</h3></div>
+        <div class="item-lista" th:each="a : ${atividadesRecentes}">
+          <span class="info"><strong th:text="${T(java.util.Map).of('LOGIN','Login realizado','LOGIN_FALHA','Tentativa de login recusada','ALTERACAO_SENHA','Senha alterada','ALTERACAO_CONFIGURACAO','Configuração alterada').getOrDefault(a.tipoOperacao, a.tipoOperacao)}">Operação</strong>
+            <span th:text="${T(java.util.Map).of('Seguranca','Segurança','Configuracoes','Configurações').getOrDefault(a.modulo, a.modulo) + ' · ' + a.adminUsuario}">Módulo</span></span>
+          <span class="lado" th:text="${#temporals.format(a.dataHora, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</th:block>
+
+<th:block th:fragment="scripts">
+  <script type="application/json" id="dados-tipos" th:inline="javascript">{"rotulos": [[${rotulosTipo}]], "valores": [[${valoresTipo}]]}</script>
   <script th:src="@{/lib/chart.js/chart.umd.js}"></script>
-  <script th:inline="javascript">
-    document.addEventListener('DOMContentLoaded', function () {
-      const dados = {
-        rotulosMes: /*[[${rotulosMes}]]*/ [],
-        valoresMes: /*[[${valoresMes}]]*/ [],
-        rotulosTipo: /*[[${rotulosTipo}]]*/ [],
-        valoresTipo: /*[[${valoresTipo}]]*/ []
-      };
-      const paleta = ['#7b1f35', '#c9a227', '#2e7d32', '#1565c0'];
-      const graficos = [];
-      const css = (nome) => getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
-
-      function aplicarTema() {
-        Chart.defaults.color = css('--bublo-texto-suave');
-        Chart.defaults.borderColor = css('--bublo-borda');
-        graficos.forEach((g) => g.update());
-      }
-
-      const linha = document.getElementById('graficoLinha');
-      if (linha && dados.valoresMes.length) {
-        graficos.push(new Chart(linha, {
-          type: 'line',
-          data: { labels: dados.rotulosMes, datasets: [{ label: 'Empréstimos', data: dados.valoresMes, borderColor: '#c9a227', backgroundColor: 'rgba(201,162,39,0.2)', tension: 0.3, fill: true }] },
-          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
-        }));
-      }
-      const pizza = document.getElementById('graficoPizza');
-      if (pizza && dados.valoresTipo.length) {
-        graficos.push(new Chart(pizza, {
-          type: 'doughnut',
-          data: { labels: dados.rotulosTipo, datasets: [{ data: dados.valoresTipo, backgroundColor: paleta, borderColor: css('--bublo-superficie') }] },
-          options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-        }));
-      }
-      aplicarTema();
-      window.addEventListener('bublo:tema:alterado', aplicarTema);
-    });
-  </script>
+  <script type="module" th:src="@{/js/pages/dashboard.js}"></script>
+</th:block>
 </body>
 </html>
