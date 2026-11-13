@@ -1,50 +1,51 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Nova reserva - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='reservas')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('reservas')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
       <div class="page-header">
         <h1>Nova reserva</h1>
-        <p class="subtitulo">Reservar material indisponível</p>
-      </div>
-
-      <div th:if="${erro}" class="toast erro" style="margin-bottom:1rem;">
-        <i class="bi bi-exclamation-circle-fill icone"></i>
-        <div class="conteudo"><div class="titulo" th:text="${erro}">Erro</div></div>
+        <p class="subtitulo">Reservar material sem exemplares disponíveis</p>
       </div>
 
       <form th:action="@{/reservas}" method="post" novalidate>
         <div class="form-grid">
           <div>
-            <label class="form-label">Leitor</label>
-            <input type="text" name="leitor" class="form-control" required placeholder="Nome ou matrícula" />
-          </div>
-          <div>
-            <label class="form-label">Material</label>
-            <select name="item" class="form-control" required>
-              <option th:each="a : ${acervo}" th:value="${a.id}" th:text="${a.titulo}">Material</option>
+            <label class="form-label" for="leitorId">Leitor</label>
+            <select id="leitorId" name="leitorId" class="form-control" required>
+              <option value="">Selecione…</option>
+              <option th:each="l : ${leitores}" th:value="${l.id}" th:text="${l.matricula + ' — ' + l.nome}"
+                      th:selected="${leitorSelecionado != null and leitorSelecionado == l.id}">Leitor</option>
             </select>
           </div>
           <div>
-            <label class="form-label">Prazo para retirada</label>
-            <input type="date" name="prazo" class="form-control" required />
+            <label class="form-label" for="itemId">Material</label>
+            <select id="itemId" name="itemId" class="form-control" required>
+              <option value="">Selecione…</option>
+              <option th:each="a : ${acervo}" th:value="${a.id}" th:text="${a.titulo + ' (' + a.exemplaresDisponiveis + '/' + a.totalExemplares + ' disp.)'}"
+                      th:selected="${itemSelecionado != null and itemSelecionado == a.id}">Material</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="prazo">Prazo para retirada</label>
+            <input type="date" id="prazo" name="prazo" class="form-control" required th:min="${hoje}" th:value="${prazoSelecionado}" />
           </div>
         </div>
-        <div style="display:flex;gap:0.75rem;margin-top:1.5rem;">
+        <div class="acoes-linha mt-4">
           <button type="submit" class="btn-bublo">Criar reserva</button>
-          <a th:href="@{/reservas}" class="btn-bublo-secundario">Cancelar</a>
+          <a th:href="@{/reservas}" class="btn-bublo btn-contorno">Cancelar</a>
         </div>
       </form>
     </main>
   </div>
+
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

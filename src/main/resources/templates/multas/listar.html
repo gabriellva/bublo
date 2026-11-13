@@ -1,42 +1,72 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Multas - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='multas')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('multas')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
       <div class="page-header">
         <h1>Multas e pagamentos</h1>
-        <p class="subtitulo">Multas pendentes, pagamentos e estornos</p>
+        <p class="subtitulo">Multas por atraso e registro de pagamentos</p>
       </div>
 
-      <table class="tabela">
-        <thead>
-          <tr><th>#</th><th>Leitor</th><th>Valor</th><th>Pago</th><th>Saldo</th><th>Status</th><th>Gerada em</th><th>Ação</th></tr>
-        </thead>
-        <tbody>
-          <tr th:each="m : ${resultado.conteudo}">
-            <td th:text="${m.id}">-</td>
-            <td th:text="${m.leitorId}">-</td>
-            <td th:text="${m.valor}">0,00</td>
-            <td th:text="${m.valorPago}">0,00</td>
-            <td th:text="${m.saldoPendente}">0,00</td>
-            <td><span class="badge-bublo" th:class="${m.status == 'PAGA'} ? 'badge-paga' : (m.status == 'PAGA_PARCIAL') ? 'badge-parcial' : 'badge-pendente'" th:text="${m.status}">Pendente</span></td>
-            <td th:text="${#temporals.format(m.dataGeracao, 'dd/MM/yyyy')}">-</td>
-            <td>
-              <a th:href="@{/multas/{id}/pagar(id=${m.id})}" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.82rem;" th:if="${m.status != 'PAGA'}">Pagar</a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="card-bublo p-3 mb-3">
+        <form th:action="@{/multas}" method="get" class="form-grid" style="align-items:end;">
+          <div>
+            <label class="form-label" for="termo">Buscar (nome ou matrícula do leitor)</label>
+            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
+          </div>
+          <div>
+            <label class="form-label" for="status">Situação</label>
+            <select id="status" name="status" class="form-control">
+              <option value="">Todas</option>
+              <option value="PENDENTE" th:selected="${status == 'PENDENTE'}">Pendentes</option>
+              <option value="PAGA_PARCIAL" th:selected="${status == 'PAGA_PARCIAL'}">Pagas parcialmente</option>
+              <option value="PAGA" th:selected="${status == 'PAGA'}">Pagas</option>
+            </select>
+          </div>
+          <div class="acoes-linha">
+            <button type="submit" class="btn-bublo">Filtrar</button>
+            <a th:href="@{/multas}" class="btn-bublo btn-contorno">Limpar</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela">
+          <thead>
+            <tr><th>#</th><th>Leitor</th><th>Dias</th><th>Valor</th><th>Pago</th><th>Saldo</th><th>Situação</th><th>Gerada em</th><th>Ação</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="m : ${resultado.conteudo}">
+              <td th:text="${m.id}">-</td>
+              <td th:text="${m.leitorNome ?: '-'}">Leitor</td>
+              <td th:text="${m.diasAtraso}">-</td>
+              <td th:text="${#numbers.formatCurrency(m.valor)}">R$ 0,00</td>
+              <td th:text="${#numbers.formatCurrency(m.valorPago)}">R$ 0,00</td>
+              <td th:text="${#numbers.formatCurrency(m.saldoPendente)}">R$ 0,00</td>
+              <td><span class="badge-bublo" th:classappend="${m.status == 'PAGA'} ? 'badge-paga' : (${m.status == 'PAGA_PARCIAL'} ? 'badge-parcial' : 'badge-pendente')"
+                        th:text="${m.status == 'PAGA'} ? 'Paga' : (${m.status == 'PAGA_PARCIAL'} ? 'Paga parcialmente' : 'Pendente')">Pendente</span></td>
+              <td th:text="${#temporals.format(m.dataGeracao, 'dd/MM/yyyy')}">-</td>
+              <td><a th:href="@{/multas/{id}/pagar(id=${m.id})}" class="btn-bublo btn-acao" th:if="${m.status == 'PENDENTE' or m.status == 'PAGA_PARCIAL'}">Pagar</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
+        <div class="simbolo"><i class="bi bi-currency-dollar"></i></div>
+        <h3>Nenhuma multa encontrada</h3>
+        <p>Multas são geradas automaticamente na devolução de empréstimos em atraso.</p>
+      </div>
+      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/multas')}"></th:block>
     </main>
   </div>
+
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

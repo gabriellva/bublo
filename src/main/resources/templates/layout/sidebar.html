@@ -5,34 +5,37 @@
       <span th:text="${nomeInstituicao ?: 'Bublo'}">Bublo</span>
     </div>
     <nav>
-      <a class="nav-item" th:class="${modulo == 'dashboard'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/dashboard}">
+      <a class="nav-item" th:classappend="${modulo == 'dashboard'} ? 'ativo'" th:href="@{/dashboard}">
         <span class="icone"><i class="bi bi-speedometer2"></i></span>Dashboard
       </a>
-      <a class="nav-item" th:class="${modulo == 'acervo'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/acervo}">
+      <a class="nav-item" th:classappend="${modulo == 'acervo'} ? 'ativo'" th:href="@{/acervo}">
         <span class="icone"><i class="bi bi-book-half"></i></span>Acervo
       </a>
-      <a class="nav-item" th:class="${modulo == 'leitores'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/leitores}">
+      <a class="nav-item" th:classappend="${modulo == 'leitores'} ? 'ativo'" th:href="@{/leitores}">
         <span class="icone"><i class="bi bi-people"></i></span>Leitores
       </a>
-      <a class="nav-item" th:class="${modulo == 'emprestimos'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/emprestimos}">
+      <a class="nav-item" th:classappend="${modulo == 'emprestimos'} ? 'ativo'" th:href="@{/emprestimos}">
         <span class="icone"><i class="bi bi-box-arrow-right"></i></span>Empréstimos
       </a>
-      <a class="nav-item" th:class="${modulo == 'devolucoes'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/devolucoes}">
+      <a class="nav-item" th:classappend="${modulo == 'devolucoes'} ? 'ativo'" th:href="@{/devolucoes}">
         <span class="icone"><i class="bi bi-box-arrow-left"></i></span>Devoluções
       </a>
-      <a class="nav-item" th:class="${modulo == 'reservas'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/reservas}">
+      <a class="nav-item" th:classappend="${modulo == 'reservas'} ? 'ativo'" th:href="@{/reservas}">
         <span class="icone"><i class="bi bi-calendar-check"></i></span>Reservas
       </a>
-      <a class="nav-item" th:class="${modulo == 'multas'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/multas}">
-        <span class="icone"><i class="bi bi-currency-real"></i></span>Multas
+      <a class="nav-item" th:classappend="${modulo == 'multas'} ? 'ativo'" th:href="@{/multas}">
+        <span class="icone"><i class="bi bi-currency-dollar"></i></span>Multas
       </a>
-      <a class="nav-item" th:class="${modulo == 'relatorios'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/relatorios}">
+      <a class="nav-item" th:classappend="${modulo == 'relatorios'} ? 'ativo'" th:href="@{/relatorios}">
         <span class="icone"><i class="bi bi-file-earmark-bar-graph"></i></span>Relatórios
       </a>
-      <a class="nav-item" th:class="${modulo == 'configuracoes'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/configuracoes}">
+      <a class="nav-item" th:classappend="${modulo == 'notificacoes'} ? 'ativo'" th:href="@{/notificacoes}">
+        <span class="icone"><i class="bi bi-bell"></i></span>Notificações
+      </a>
+      <a class="nav-item" th:classappend="${modulo == 'configuracoes'} ? 'ativo'" th:href="@{/configuracoes}">
         <span class="icone"><i class="bi bi-gear"></i></span>Configurações
       </a>
-      <a class="nav-item" th:href="@{/auditoria}">
+      <a class="nav-item" th:classappend="${modulo == 'auditoria'} ? 'ativo'" th:href="@{/auditoria}">
         <span class="icone"><i class="bi bi-journal-text"></i></span>Auditoria
       </a>
     </nav>

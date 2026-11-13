@@ -1,15 +1,14 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <th:block th:replace="~{layout/base :: head}"></th:block>
   <title>Minha conta - Bublo</title>
 </head>
 <body>
-
-  <th:block th:replace="~{layout::sidebar(modulo='configuracoes')}"></th:block>
-  <th:block th:replace="~{layout::topbar}"></th:block>
+  <th:block th:replace="~{layout/sidebar :: sidebar('configuracoes')}"></th:block>
 
   <div class="main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
     <main class="conteudo">
       <div class="page-header">
         <h1>Minha conta</h1>
@@ -17,32 +16,26 @@
       </div>
 
       <div class="formulario-card" style="max-width:560px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-          <h2 style="margin:0;">Alterar senha</h2>
+        <div class="cabecalho-pagina mb-3">
+          <h2 class="m-0">Alterar senha</h2>
           <span class="badge-bublo badge-ativo">Administrador</span>
         </div>
 
-        <div th:if="${sucesso}" class="toast sucesso" style="margin-bottom:1rem;">
-          <i class="bi bi-check-circle-fill icone"></i>
-          <div class="conteudo"><div class="titulo" th:text="${sucesso}">Senha alterada.</div></div>
-        </div>
-        <div th:if="${erroSenha}" class="toast erro" style="margin-bottom:1rem;">
-          <i class="bi bi-exclamation-circle-fill icone"></i>
-          <div class="conteudo"><div class="titulo" th:text="${erroSenha}">Erro.</div></div>
-        </div>
-
-        <form th:action="@{/troca-senha}" method="post" novalidate>
+        <form th:action="@{/troca-senha}" th:object="${trocaSenhaDTO}" method="post" novalidate>
           <div class="mb-3">
-            <label class="form-label">Senha atual</label>
-            <input type="password" name="senhaAtual" class="form-control" required />
+            <label class="form-label" for="senhaAtual">Senha atual</label>
+            <input type="password" th:field="*{senhaAtual}" class="form-control" th:classappend="${#fields.hasErrors('senhaAtual')} ? 'is-invalid'" autocomplete="current-password" required />
+            <small class="erro-campo" th:if="${#fields.hasErrors('senhaAtual')}" th:errors="*{senhaAtual}">Erro</small>
           </div>
           <div class="mb-3">
-            <label class="form-label">Nova senha (mín. 8 caracteres, letras e números)</label>
-            <input type="password" name="novaSenha" class="form-control" required />
+            <label class="form-label" for="novaSenha">Nova senha (mín. 8 caracteres, com letras e números)</label>
+            <input type="password" th:field="*{novaSenha}" class="form-control" th:classappend="${#fields.hasErrors('novaSenha')} ? 'is-invalid'" autocomplete="new-password" required />
+            <small class="erro-campo" th:if="${#fields.hasErrors('novaSenha')}" th:errors="*{novaSenha}">Erro</small>
           </div>
           <div class="mb-3">
-            <label class="form-label">Confirmar nova senha</label>
-            <input type="password" name="confirmaNovaSenha" class="form-control" required />
+            <label class="form-label" for="confirmaNovaSenha">Confirmar nova senha</label>
+            <input type="password" th:field="*{confirmaNovaSenha}" class="form-control" th:classappend="${#fields.hasErrors('confirmaNovaSenha')} ? 'is-invalid'" autocomplete="new-password" required />
+            <small class="erro-campo" th:if="${#fields.hasErrors('confirmaNovaSenha')}" th:errors="*{confirmaNovaSenha}">Erro</small>
           </div>
           <button type="submit" class="btn-bublo w-100">Alterar senha</button>
         </form>
@@ -51,6 +44,6 @@
     </main>
   </div>
 
-  <script th:src="@{/js/bublo.js"></script>
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

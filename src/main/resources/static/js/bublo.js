@@ -1,7 +1,8 @@
 /* =========================================================================
    Bublo - JavaScript Modular
-   Tema claro/escuro, toasts, notificações WebSocket, utilitários de UI.
-   Sem dependência de CDN.
+   Tema claro/escuro, toasts, confirmações, notificações WebSocket.
+   Sem dependência de CDN. O tema inicial é aplicado por um script inline no
+   <head> (layout/base.html) para evitar piscar antes da primeira pintura.
    ========================================================================= */
 
 const Bublo = (function () {
@@ -11,38 +12,45 @@ const Bublo = (function () {
 
   // ---------- Tema ----------
   const Tema = {
-    obterPreferencia: function () {
+    atual: function () {
+      return document.documentElement.getAttribute("data-tema") === "escuro" ? "escuro" : "claro";
+    },
+    preferenciaSalva: function () {
       try {
-        return localStorage.getItem(TEMA_KEY);
+        const salvo = localStorage.getItem(TEMA_KEY);
+        return salvo === "claro" || salvo === "escuro" ? salvo : null;
       } catch (e) { return null; }
     },
-    salvarPreferencia: function (tema) {
-      try { localStorage.setItem(TEMA_KEY, tema); } catch (e) {}
-    },
-    aplicar: function (tema) {
-      const html = document.documentElement;
-      if (!tema) {
-        tema = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "escuro" : "claro";
+    aplicar: function (tema, persistir) {
+      const raiz = document.documentElement;
+      raiz.setAttribute("data-tema", tema);
+      raiz.setAttribute("data-bs-theme", tema === "escuro" ? "dark" : "light");
+      if (persistir) {
+        try { localStorage.setItem(TEMA_KEY, tema); } catch (e) {}
       }
-      html.setAttribute("data-tema", tema);
-      this.salvarPreferencia(tema);
-      const btn = document.getElementById("btn-tema");
-      if (btn) {
-        const icone = btn.querySelector("i");
-        if (icone) icone.className = tema === "escuro" ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
-      }
+      this.atualizarIcone();
       window.dispatchEvent(new CustomEvent("bublo:tema:alterado", { detail: { tema } }));
     },
+    atualizarIcone: function () {
+      const icone = document.querySelector("#btn-tema i");
+      if (icone) icone.className = this.atual() === "escuro" ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
+    },
     alternar: function () {
-      const atual = document.documentElement.getAttribute("data-tema") || this.obterPreferencia() || "claro";
-      this.aplicar(atual === "claro" ? "escuro" : "claro");
+      document.documentElement.classList.add("tema-animado");
+      this.aplicar(this.atual() === "claro" ? "escuro" : "claro", true);
     },
     init: function () {
       const btn = document.getElementById("btn-tema");
       if (btn) btn.addEventListener("click", () => this.alternar());
-      const tema = this.obterPreferencia();
-      this.aplicar(tema);
+      this.atualizarIcone();
+      if (window.matchMedia) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+          if (!this.preferenciaSalva()) this.aplicar(e.matches ? "escuro" : "claro", false);
+        });
+      }
+      window.addEventListener("storage", (e) => {
+        if (e.key === TEMA_KEY && (e.newValue === "claro" || e.newValue === "escuro")) this.aplicar(e.newValue, false);
+      });
     }
   };
 
@@ -55,41 +63,113 @@ const Bublo = (function () {
         c = document.createElement("div");
         c.id = "toast-container";
         c.className = "toast-container";
+        c.setAttribute("aria-live", "polite");
         document.body.appendChild(c);
       }
       this.container = c;
     },
-    mostrar: function (tipo, titulo, descricao, duracao = 5000) {
+    mostrar: function (tipo, titulo, descricao, duracao) {
       if (!this.container) this.init();
-      const el = document.createElement("div");
-      el.className = `toast ${tipo}`;
       const icones = { sucesso: "bi-check-circle-fill", erro: "bi-exclamation-circle-fill", atencao: "bi-exclamation-triangle-fill", info: "bi-info-circle-fill" };
-      el.innerHTML = `
-        <i class="bi ${icones[tipo] || 'bi-info-circle-fill'} icone"></i>
-        <div class="conteudo">
-          <div class="titulo">${this.escapeHtml(titulo)}</div>
-          ${descricao ? `<div class="descricao">${this.escapeHtml(descricao)}</div>` : ""}
-        </div>
-      `;
+      const el = document.createElement("div");
+      el.className = "toast show " + tipo;
+      el.setAttribute("role", tipo === "erro" ? "alert" : "status");
+
+      const icone = document.createElement("i");
+      icone.className = "bi " + (icones[tipo] || icones.info) + " icone";
+      const conteudo = document.createElement("div");
+      conteudo.className = "conteudo";
+      const t = document.createElement("div");
+      t.className = "titulo";
+      t.textContent = titulo;
+      conteudo.appendChild(t);
+      if (descricao) {
+        const d = document.createElement("div");
+        d.className = "descricao";
+        d.textContent = descricao;
+        conteudo.appendChild(d);
+      }
+      const fechar = document.createElement("button");
+      fechar.type = "button";
+      fechar.className = "fechar";
+      fechar.setAttribute("aria-label", "Fechar");
+      fechar.textContent = "×";
+      fechar.addEventListener("click", () => this.remover(el));
+
+      el.append(icone, conteudo, fechar);
       this.container.appendChild(el);
-      setTimeout(() => this.remover(el), duracao);
+      setTimeout(() => this.remover(el), duracao || (tipo === "erro" ? 8000 : 5000));
       return el;
     },
     remover: function (el) {
-      if (el && el.parentNode) {
-        el.style.opacity = "0";
-        el.style.transform = "translateX(20px)";
-        setTimeout(() => el.remove(), 250);
-      }
+      if (!el || !el.parentNode) return;
+      el.style.opacity = "0";
+      el.style.transform = "translateX(20px)";
+      setTimeout(() => el.remove(), 250);
     },
-    sucesso: function (t, d) { this.mostrar("sucesso", t, d); },
-    erro: function (t, d) { this.mostrar("erro", t, d); },
-    atencao: function (t, d) { this.mostrar("atencao", t, d); },
-    info: function (t, d) { this.mostrar("info", t, d); },
-    escapeHtml: function (s) {
-      const div = document.createElement("div");
-      div.textContent = s;
-      return div.innerHTML;
+    sucesso: function (t, d) { return this.mostrar("sucesso", t, d); },
+    erro: function (t, d) { return this.mostrar("erro", t, d); },
+    atencao: function (t, d) { return this.mostrar("atencao", t, d); },
+    info: function (t, d) { return this.mostrar("info", t, d); },
+    exibirFlash: function () {
+      const dados = document.getElementById("flash-data");
+      if (!dados) return;
+      if (dados.dataset.sucesso) this.sucesso(dados.dataset.sucesso);
+      if (dados.dataset.erro) this.erro(dados.dataset.erro);
+      if (dados.dataset.aviso) this.atencao(dados.dataset.aviso);
+    }
+  };
+
+  // ---------- Confirmações (modal Bootstrap) ----------
+  const Confirmacoes = {
+    modal: null,
+    elemento: null,
+    aoConfirmar: null,
+    construir: function () {
+      const el = document.createElement("div");
+      el.className = "modal fade modal-confirmacao";
+      el.tabIndex = -1;
+      el.setAttribute("aria-hidden", "true");
+      el.innerHTML =
+        '<div class="modal-dialog modal-dialog-centered"><div class="modal-content">' +
+        '<div class="modal-header"><h5 class="modal-title"></h5>' +
+        '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>' +
+        '<div class="modal-body"></div>' +
+        '<div class="modal-footer">' +
+        '<button type="button" class="btn-bublo btn-sm btn-contorno" data-bs-dismiss="modal">Voltar</button>' +
+        '<button type="button" class="btn-bublo btn-sm" data-acao="confirmar">Confirmar</button>' +
+        "</div></div></div>";
+      document.body.appendChild(el);
+      el.querySelector('[data-acao="confirmar"]').addEventListener("click", () => {
+        const acao = this.aoConfirmar;
+        this.aoConfirmar = null;
+        this.modal.hide();
+        if (acao) acao();
+      });
+      this.modal = new bootstrap.Modal(el);
+      this.elemento = el;
+    },
+    perguntar: function (mensagem, titulo, aoConfirmar) {
+      if (typeof bootstrap === "undefined") {
+        if (window.confirm(mensagem)) aoConfirmar();
+        return;
+      }
+      if (!this.modal) this.construir();
+      this.elemento.querySelector(".modal-title").textContent = titulo || "Confirmar ação";
+      this.elemento.querySelector(".modal-body").textContent = mensagem;
+      this.aoConfirmar = aoConfirmar;
+      this.modal.show();
+    },
+    init: function () {
+      document.addEventListener("submit", (e) => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement) || !form.dataset.confirmar || form.dataset.confirmado) return;
+        e.preventDefault();
+        this.perguntar(form.dataset.confirmar, form.dataset.confirmarTitulo, () => {
+          form.dataset.confirmado = "1";
+          form.requestSubmit();
+        });
+      });
     }
   };
 
@@ -97,58 +177,97 @@ const Bublo = (function () {
   const Notificacoes = {
     contadorEl: null,
     dropdownEl: null,
-    socket: null,
-    wsHandler: null,
-    init: function (wsEndpoint) {
+    listaEl: null,
+    tentativas: 0,
+    init: function () {
       this.contadorEl = document.getElementById("contador-notificacoes");
       this.dropdownEl = document.getElementById("dropdown-notificacoes");
+      this.listaEl = document.getElementById("lista-notificacoes");
       const btn = document.getElementById("btn-notificacoes");
-      if (btn) {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          this.alternarDropdown();
-        });
-      }
-      document.addEventListener("click", (e) => {
-        if (this.dropdownEl && !this.dropdownEl.contains(e.target)) {
-          this.dropdownEl.classList.remove("visivel");
-        }
+      if (!btn || !this.dropdownEl) return;
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.dropdownEl.classList.toggle("visivel");
+        if (this.dropdownEl.classList.contains("visivel")) this.carregar();
       });
-      if (wsEndpoint) this.conectarWS(wsEndpoint);
+      document.addEventListener("click", (e) => {
+        if (!this.dropdownEl.contains(e.target)) this.dropdownEl.classList.remove("visivel");
+      });
+      this.carregar();
+      this.conectarWS();
     },
-    conectarWS: function (endpoint) {
+    carregar: function () {
+      fetch("/notificacoes/resumo", { headers: { Accept: "application/json" }, credentials: "same-origin" })
+        .then((r) => {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then((dados) => {
+          this.atualizarContador(dados.naoLidas);
+          this.renderizar(dados.itens);
+        })
+        .catch(() => {
+          this.renderizar(null);
+        });
+    },
+    renderizar: function (itens) {
+      if (!this.listaEl) return;
+      this.listaEl.textContent = "";
+      const vazio = (texto) => {
+        const el = document.createElement("div");
+        el.className = "item item-vazio";
+        el.textContent = texto;
+        this.listaEl.appendChild(el);
+      };
+      if (itens === null) return vazio("Não foi possível carregar as notificações.");
+      if (!itens.length) return vazio("Nenhuma notificação.");
+      itens.forEach((n) => {
+        const a = document.createElement("a");
+        a.className = "item d-block";
+        a.href = "/notificacoes";
+        const titulo = document.createElement("strong");
+        titulo.textContent = n.titulo;
+        a.appendChild(titulo);
+        if (n.mensagem) {
+          const msg = document.createElement("div");
+          msg.className = "texto-ajuda";
+          msg.textContent = n.mensagem;
+          a.appendChild(msg);
+        }
+        this.listaEl.appendChild(a);
+      });
+    },
+    conectarWS: function () {
+      if (!("WebSocket" in window)) return;
+      const protocolo = window.location.protocol === "https:" ? "wss:" : "ws:";
+      let socket;
       try {
-        this.socket = new WebSocket(endpoint);
-        this.socket.onopen = () => {};
-        this.socket.onmessage = (evt) => {
-          try {
-            const msg = JSON.parse(evt.data);
-            if (msg.tipo === "notificacao") {
-              this.incrementarContador();
-              Toasts.info("Nova notificação", msg.dados && msg.dados.titulo ? msg.dados.titulo : "Você tem uma nova notificação");
-            }
-          } catch (e) {}
-        };
-        this.socket.onclose = () => {
-          // reconexão automática após 3s
-          setTimeout(() => this.conectarWS(endpoint), 3000);
-        };
-        this.socket.onerror = () => {};
-      } catch (e) {}
+        socket = new WebSocket(protocolo + "//" + window.location.host + "/ws/notificacoes");
+      } catch (e) { return; }
+      socket.onopen = () => { this.tentativas = 0; };
+      socket.onmessage = (evt) => {
+        let msg;
+        try { msg = JSON.parse(evt.data); } catch (e) { return; }
+        if (msg.tipo !== "notificacao") return;
+        this.incrementarContador();
+        Toasts.info("Nova notificação", msg.dados && msg.dados.titulo ? msg.dados.titulo : "Você tem uma nova notificação");
+        if (this.dropdownEl.classList.contains("visivel")) this.carregar();
+      };
+      socket.onclose = () => {
+        this.tentativas += 1;
+        if (this.tentativas > 5) return;
+        setTimeout(() => this.conectarWS(), Math.min(30000, 3000 * this.tentativas));
+      };
     },
     incrementarContador: function () {
       if (!this.contadorEl) return;
-      let atual = parseInt(this.contadorEl.textContent || "0", 10) || 0;
-      this.contadorEl.textContent = atual + 1;
-      this.contadorEl.style.display = "inline";
+      this.atualizarContador((parseInt(this.contadorEl.textContent, 10) || 0) + 1);
     },
     atualizarContador: function (n) {
       if (!this.contadorEl) return;
-      this.contadorEl.textContent = n || "0";
-      this.contadorEl.style.display = n > 0 ? "inline" : "none";
-    },
-    alternarDropdown: function () {
-      if (this.dropdownEl) this.dropdownEl.classList.toggle("visivel");
+      const total = n || 0;
+      this.contadorEl.textContent = total;
+      this.contadorEl.style.display = total > 0 ? "" : "none";
     }
   };
 
@@ -157,20 +276,6 @@ const Bublo = (function () {
     formatoMoeda: function (v) {
       return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v != null ? v : 0);
     },
-    formatoData: function (iso) {
-      if (!iso) return "-";
-      try {
-        const d = new Date(iso);
-        return d.toLocaleDateString("pt-BR");
-      } catch (e) { return iso; }
-    },
-    formatoDataHora: function (iso) {
-      if (!iso) return "-";
-      try {
-        const d = new Date(iso);
-        return d.toLocaleString("pt-BR");
-      } catch (e) { return iso; }
-    },
     debounce: function (fn, ms) {
       let t;
       return function (...args) {
@@ -178,28 +283,34 @@ const Bublo = (function () {
         t = setTimeout(() => fn.apply(this, args), ms);
       };
     },
-    csrfToken: function () {
-      const meta = document.querySelector('meta[name="_csrf"]');
+    csrf: function () {
+      const token = document.querySelector('meta[name="_csrf"]');
       const header = document.querySelector('meta[name="_csrf_header"]');
-      if (meta && header) return { nome: header.content, valor: meta.content };
-      return null;
+      return token && header ? { cabecalho: header.content, valor: token.content } : null;
     }
   };
 
-  // ---------- Confirmações ----------
-  const Confirmacoes = {
-    perguntar: function (mensagem) {
-      return confirm(mensagem);
-    }
-  };
+  function iniciarMenuMobile() {
+    const btn = document.getElementById("btn-menu");
+    const sidebar = document.getElementById("sidebar");
+    if (!btn || !sidebar) return;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      sidebar.classList.toggle("aberta");
+    });
+    document.addEventListener("click", (e) => {
+      if (!sidebar.contains(e.target)) sidebar.classList.remove("aberta");
+    });
+  }
 
-  // Inicialização automática
   document.addEventListener("DOMContentLoaded", function () {
     Tema.init();
     Toasts.init();
+    Confirmacoes.init();
+    Notificacoes.init();
+    iniciarMenuMobile();
+    Toasts.exibirFlash();
   });
 
-  return {
-    Tema, Toasts, Notificacoes, Utils, Confirmacoes
-  };
+  return { Tema, Toasts, Notificacoes, Utils, Confirmacoes };
 })();
