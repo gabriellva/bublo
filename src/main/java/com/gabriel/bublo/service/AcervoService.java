@@ -11,10 +11,14 @@ import com.gabriel.bublo.model.DVD;
 import com.gabriel.bublo.model.PublicacaoDigital;
 import com.gabriel.bublo.repository.ItemAcervoRepository;
 import com.gabriel.bublo.repository.ExemplarRepository;
+import com.gabriel.bublo.model.Categoria;
+import com.gabriel.bublo.model.Exemplar;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +28,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class AcervoService {
+
+    private static final int QUANTIDADE_MAXIMA_LOTE = 100;
+    private static final String IDIOMA_PADRAO = "Português";
 
     private final ItemAcervoRepository itemAcervoRepository;
     private final ExemplarRepository exemplarRepository;
@@ -36,6 +43,7 @@ public class AcervoService {
 
     @Transactional(readOnly = true)
     public ItemAcervoDTO buscarDTO(Long id) {
+        if (!itemAcervoRepository.estaAtivo(id)) return null;
         ItemAcervo item = itemAcervoRepository.buscarPorId(id).orElse(null);
         return item != null ? toDTO(item) : null;
     }
@@ -48,8 +56,27 @@ public class AcervoService {
     @Transactional
     public ItemAcervoDTO salvar(ItemAcervoDTO dto, String adminUsuario) {
         ItemAcervo item = construirItem(dto);
-        item = itemAcervoRepository.salvar(item);
+        try {
+            item = itemAcervoRepository.salvar(item);
+        } catch (DuplicateKeyException e) {
+            throw new IllegalStateException("Já existe um material cadastrado com este ISBN/ISSN.");
+        }
         return toDTO(item);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Categoria> listarCategorias() {
+        return itemAcervoRepository.listarCategorias();
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.gabriel.bublo.dto.ExemplarOpcaoDTO> listarExemplaresDisponiveis() {
+        return exemplarRepository.listarDisponiveisParaEmprestimo();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Exemplar> listarExemplares(Long itemId) {
+        return exemplarRepository.listarPorItem(itemId);
     }
 
     @Transactional(readOnly = true)
@@ -71,7 +98,7 @@ public class AcervoService {
 
     @Transactional(readOnly = true)
     public long totalTitulos() {
-        return itemAcervoRepository.listarTodos().size(); // aproximação
+        return itemAcervoRepository.contarTitulos();
     }
 
     @Transactional
@@ -83,6 +110,9 @@ public class AcervoService {
 
     @Transactional
     public void cadastrarExemplaresLote(Long itemId, int quantidade, String adminUsuario) {
+        if (quantidade < 1 || quantidade > QUANTIDADE_MAXIMA_LOTE) {
+            throw new IllegalStateException("Informe uma quantidade entre 1 e " + QUANTIDADE_MAXIMA_LOTE + ".");
+        }
         ItemAcervo item = itemAcervoRepository.buscarPorId(itemId)
             .orElseThrow(() -> new IllegalStateException("Item não encontrado"));
         exemplarRepository.salvarLote(item, quantidade);
@@ -102,7 +132,12 @@ public class AcervoService {
     }
 
     private ItemAcervo construirItem(ItemAcervoDTO dto) {
-        TipoMaterial tipo = TipoMaterial.valueOf(dto.getTipo());
+        TipoMaterial tipo;
+        try {
+            tipo = TipoMaterial.valueOf(dto.getTipo());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalStateException("Tipo de material inválido.");
+        }
         ItemAcervo item;
         switch (tipo) {
             case LIVRO -> item = new Livro();
@@ -117,19 +152,18 @@ public class AcervoService {
         item.setDescricao(dto.getDescricao());
         item.setEditora(dto.getEditora());
         item.setAno(dto.getAno());
-        item.setDataPublicacao(dto.getDataPublicacao() != null
-            ? LocalDate.parse(dto.getDataPublicacao()) : null);
+        item.setDataPublicacao(parseData(dto.getDataPublicacao()));
         item.setPaginas(dto.getPaginas());
-        item.setIdioma(dto.getIdioma());
+        item.setIdioma(dto.getIdioma() == null || dto.getIdioma().isBlank() ? IDIOMA_PADRAO : dto.getIdioma().trim());
         if (dto.getCategoriaId() != null) {
             com.gabriel.bublo.model.Categoria cat = new com.gabriel.bublo.model.Categoria();
             cat.setId(dto.getCategoriaId());
             cat.setNome("");
             item.setCategoria(cat);
         }
-        if (item instanceof Livro l) l.setIsbn(dto.getIsbn());
+        if (item instanceof Livro l) l.setIsbn(vazioParaNulo(dto.getIsbn()));
         if (item instanceof Revista r) {
-            r.setIssn(dto.getIssn());
+            r.setIssn(vazioParaNulo(dto.getIssn()));
             r.setVolume(dto.getVolume());
         }
         if (item instanceof DVD d) d.setDuracaoMinutos(dto.getDuracaoMinutos());
@@ -145,6 +179,7 @@ public class AcervoService {
             }
         }
         if (dto.getNovosAutores() != null) {
+            dto.getNovosAutores().removeIf(nome -> nome == null || nome.isBlank());
             for (String nome : dto.getNovosAutores()) {
                 if (nome != null && !nome.isBlank()) {
                     Autor a = new Autor();
@@ -157,6 +192,19 @@ public class AcervoService {
         }
         item.setAutores(autores);
         return item;
+    }
+
+    private LocalDate parseData(String texto) {
+        if (texto == null || texto.isBlank()) return null;
+        try {
+            return LocalDate.parse(texto.trim());
+        } catch (DateTimeParseException e) {
+            throw new IllegalStateException("Data de publicação inválida.");
+        }
+    }
+
+    private String vazioParaNulo(String texto) {
+        return texto == null || texto.isBlank() ? null : texto.trim();
     }
 
     private ItemAcervoDTO toDTO(ItemAcervo item) {
@@ -180,6 +228,12 @@ public class AcervoService {
             dto.setUrlExterna(pd.getUrlExterna());
         }
         dto.setAutorIds(item.getAutores().stream().map(Autor::getId).collect(Collectors.toList()));
+        dto.setAutoresNomes(item.getAutores().stream().map(Autor::getNome).collect(Collectors.toList()));
+        dto.setCategoriaNome(item.getCategoria() != null ? item.getCategoria().getNome() : null);
+        if (item.getId() != null) {
+            dto.setTotalExemplares(exemplarRepository.contarPorItem(item.getId()));
+            dto.setExemplaresDisponiveis(exemplarRepository.contarDisponiveisPorItem(item.getId()));
+        }
         return dto;
     }
 }

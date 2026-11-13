@@ -1,6 +1,7 @@
 package com.gabriel.bublo.service;
 
 import com.gabriel.bublo.dto.Paginacao;
+import com.gabriel.bublo.dto.MultaDTO;
 import com.gabriel.bublo.model.Multa;
 import com.gabriel.bublo.repository.LeitorRepository;
 import com.gabriel.bublo.repository.MultaRepository;
@@ -71,6 +72,12 @@ public class MultaService {
         Multa multa = multaRepository.buscarPorId(multaId)
             .orElseThrow(() -> new IllegalStateException("Multa não encontrada"));
         BigDecimal saldo = multa.getSaldoPendente();
+        if (formaPagamento == null || formaPagamento.isBlank()) {
+            throw new IllegalStateException("Informe a forma de pagamento");
+        }
+        if ("PAGA".equals(multa.getStatus()) || "CANCELADA".equals(multa.getStatus())) {
+            throw new IllegalStateException("Esta multa não aceita novos pagamentos");
+        }
         if (valor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalStateException("Valor do pagamento deve ser maior que zero");
         }
@@ -133,6 +140,10 @@ public class MultaService {
         MultaDTO dto = new MultaDTO();
         dto.setId(m.getId());
         dto.setLeitorId(m.getLeitorId());
+        leitorRepository.buscarPorId(m.getLeitorId()).ifPresent(l -> {
+            dto.setLeitorNome(l.getNome());
+            dto.setLeitorMatricula(l.getMatricula());
+        });
         dto.setValor(m.getValor());
         dto.setValorPago(m.getValorPago());
         dto.setSaldoPendente(m.getSaldoPendente());
@@ -141,32 +152,4 @@ public class MultaService {
         dto.setDiasAtraso(m.getDiasAtraso());
         return dto;
     }
-}
-
-// DTO local
-class MultaDTO {
-    private Long id;
-    private Long leitorId;
-    private java.math.BigDecimal valor;
-    private java.math.BigDecimal valorPago;
-    private java.math.BigDecimal saldoPendente;
-    private String status;
-    private java.time.LocalDateTime dataGeracao;
-    private Integer diasAtraso;
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Long getLeitorId() { return leitorId; }
-    public void setLeitorId(Long leitorId) { this.leitorId = leitorId; }
-    public java.math.BigDecimal getValor() { return valor; }
-    public void setValor(java.math.BigDecimal valor) { this.valor = valor; }
-    public java.math.BigDecimal getValorPago() { return valorPago; }
-    public void setValorPago(java.math.BigDecimal valorPago) { this.valorPago = valorPago; }
-    public java.math.BigDecimal getSaldoPendente() { return saldoPendente; }
-    public void setSaldoPendente(java.math.BigDecimal saldoPendente) { this.saldoPendente = saldoPendente; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public java.time.LocalDateTime getDataGeracao() { return dataGeracao; }
-    public void setDataGeracao(java.time.LocalDateTime dataGeracao) { this.dataGeracao = dataGeracao; }
-    public Integer getDiasAtraso() { return diasAtraso; }
-    public void setDiasAtraso(Integer diasAtraso) { this.diasAtraso = diasAtraso; }
 }
