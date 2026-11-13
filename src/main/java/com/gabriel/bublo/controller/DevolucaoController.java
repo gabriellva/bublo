@@ -1,6 +1,7 @@
 package com.gabriel.bublo.controller;
 
 import com.gabriel.bublo.security.AuthUtil;
+import com.gabriel.bublo.service.ConfiguracaoService;
 import com.gabriel.bublo.service.EmprestimoService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,10 +25,14 @@ public class DevolucaoController {
 
     private static final int LIMITE_LISTAGEM = 1000;
 
-    private final EmprestimoService emprestimoService;
+    private static final BigDecimal TAXA_DIARIA_PADRAO = new BigDecimal("2.00");
 
-    public DevolucaoController(EmprestimoService emprestimoService) {
+    private final EmprestimoService emprestimoService;
+    private final ConfiguracaoService configuracaoService;
+
+    public DevolucaoController(EmprestimoService emprestimoService, ConfiguracaoService configuracaoService) {
         this.emprestimoService = emprestimoService;
+        this.configuracaoService = configuracaoService;
     }
 
     @GetMapping
@@ -35,6 +40,7 @@ public class DevolucaoController {
         var resultado = emprestimoService.listar(termo, "ATIVO", 0, LIMITE_LISTAGEM, "data_prevista_devolucao ASC");
         model.addAttribute("resultado", resultado);
         model.addAttribute("termo", termo);
+        model.addAttribute("taxaMulta", configuracaoService.buscarDecimal("taxa_diaria_multa", TAXA_DIARIA_PADRAO));
         return "devolucoes/listar";
     }
 

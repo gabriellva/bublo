@@ -1,63 +1,52 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Devoluções - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Devoluções', 'devolucoes', ~{::conteudo}, ~{::scripts})}">
+<head><title>Devoluções</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('devolucoes')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1>Devoluções</h1>
-        <p class="subtitulo">Registrar devolução de empréstimos ativos</p>
-      </div>
-
-      <div class="card-bublo p-3 mb-3">
-        <form th:action="@{/devolucoes}" method="get" class="d-flex gap-2 flex-wrap align-items-end">
-          <div class="flex-grow-1">
-            <label class="form-label" for="termo">Buscar por tombamento, matrícula ou nome</label>
-            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" placeholder="Ex: BA-000001 ou ALU-00001" />
-          </div>
-          <button type="submit" class="btn-bublo">Buscar</button>
-          <a th:href="@{/devolucoes}" class="btn-bublo btn-contorno">Limpar</a>
-        </form>
-      </div>
-
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
-          <thead>
-            <tr><th>Empréstimo</th><th>Leitor</th><th>Material</th><th>Tombamento</th><th>Prevista</th><th>Situação</th><th>Ação</th></tr>
-          </thead>
-          <tbody>
-            <tr th:each="e : ${resultado.conteudo}">
-              <td th:text="${e.id}">-</td>
-              <td th:text="${e.leitorNome ?: '-'}">Leitor</td>
-              <td th:text="${e.titulo ?: '-'}">Material</td>
-              <td th:text="${e.tombamento ?: '-'}">BA-000001</td>
-              <td th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
-              <td><span class="badge-bublo" th:classappend="${e.atrasado} ? 'badge-atrasado' : 'badge-ativo'" th:text="${e.atrasado} ? 'Em atraso' : 'No prazo'">No prazo</span></td>
-              <td>
-                <form th:action="@{/devolucoes/{id}/devolver(id=${e.id})}" method="post" class="form-inline"
-                      th:attr="data-confirmar=${e.atrasado} ? 'Este empréstimo está em atraso e uma multa será gerada. Registrar a devolução?' : 'Registrar a devolução deste exemplar?'"
-                      data-confirmar-titulo="Registrar devolução">
-                  <button type="submit" class="btn-bublo btn-acao">Registrar devolução</button>
-                </form>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
-        <div class="simbolo"><i class="bi bi-box-arrow-left"></i></div>
-        <h3>Sem empréstimos ativos</h3>
-        <p>Não há empréstimos para devolver com os filtros atuais.</p>
-      </div>
-    </main>
+<th:block th:fragment="conteudo">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Devoluções</h1>
+      <p class="pagina-sub">Encontre o exemplar pelo tombamento, pela matrícula ou pelo nome do leitor. Se houver atraso, você vê a multa antes de confirmar.</p>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <form th:action="@{/devolucoes}" method="get" class="barra-ferramentas">
+    <div class="busca" style="max-width:560px">
+      <i class="bi bi-upc-scan" aria-hidden="true"></i>
+      <label class="sr-only" for="termo">Buscar empréstimo ativo</label>
+      <input type="search" id="termo" name="termo" class="form-control form-control-lg" th:value="${termo}" placeholder="BA-000001, ALU-00001 ou nome" autofocus />
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg">Buscar</button>
+    <a th:href="@{/devolucoes}" class="btn btn-link" th:if="${termo != null and !#strings.isEmpty(termo)}">Limpar</a>
+  </form>
+
+  <div th:if="${resultado.conteudo.empty}">
+    <div th:replace="~{layout/componentes :: vazio('Nenhum empréstimo ativo encontrado', 'Não há exemplares a devolver para esta busca. Confira o tombamento ou a matrícula digitada.', null, null)}"></div>
+  </div>
+
+  <div class="tabela-wrap cartoes" th:unless="${resultado.conteudo.empty}" id="tabela-devolucoes" th:attr="data-taxa=${taxaMulta}">
+    <table class="tabela tabela-cartoes">
+      <thead><tr><th>Nº</th><th>Leitor</th><th>Material</th><th>Prevista</th><th>Situação</th><th></th></tr></thead>
+      <tbody>
+        <tr th:each="e : ${resultado.conteudo}">
+          <td data-rotulo="Nº" class="numero" th:text="${e.id}">1</td>
+          <td data-rotulo="Leitor"><span class="principal" th:text="${e.leitorNome ?: '—'}">Leitor</span><span class="secundario" th:text="${e.leitorMatricula}">ALU-00001</span></td>
+          <td data-rotulo="Material"><span class="principal" th:text="${e.titulo ?: '—'}">Material</span><span class="secundario tombo" th:text="${e.tombamento}">BA-000001</span></td>
+          <td data-rotulo="Prevista" class="numero" th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">08/01/2026</td>
+          <td data-rotulo="Situação"><span class="badge-b" th:classappend="${e.atrasado} ? 'st-erro' : 'st-ok'" th:text="${e.atrasado ? 'Em atraso' : 'No prazo'}">No prazo</span></td>
+          <td class="acoes">
+            <form th:action="@{/devolucoes/{id}/devolver(id=${e.id})}" method="post" data-devolucao
+                  th:attr="data-prevista=${#temporals.format(e.dataPrevistaDevolucao, 'yyyy-MM-dd')}, data-confirmar-registro=${e.titulo + ' · ' + e.tombamento + ' · ' + e.leitorNome}"
+                  data-confirmar="Registrar a devolução deste exemplar?" data-confirmar-titulo="Registrar devolução" data-confirmar-rotulo="Registrar devolução">
+              <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-arrow-down-left-square"></i>Devolver</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</th:block>
+<th:block th:fragment="scripts"><script type="module" th:src="@{/js/pages/devolucoes.js}"></script></th:block>
 </body>
 </html>

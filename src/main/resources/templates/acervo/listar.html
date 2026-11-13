@@ -1,93 +1,148 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Acervo - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Acervo', 'acervo', ~{::conteudo}, ~{::scripts})}">
+<head><title>Acervo</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('acervo')}"></th:block>
+<th:block th:fragment="conteudo"
+          th:with="temFiltro=${categoria != null or tipo != null or disponivel != null or (termo != null and !#strings.isEmpty(termo))},
+                   filtrosAvancados=${categoria != null or tipo != null or disponivel != null or !#strings.isEmpty(param.ordenacao)}">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Acervo</h1>
+      <p class="pagina-sub">Livros, revistas, DVDs e publicações digitais com seus exemplares.</p>
+    </div>
+    <div class="pagina-acoes">
+      <a th:href="@{/acervo/novo}" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Cadastrar material</a>
+    </div>
+  </div>
 
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header cabecalho-pagina">
-        <div>
-          <h1>Acervo</h1>
-          <p class="subtitulo">Gerencie o catálogo bibliográfico e exemplares</p>
-        </div>
-        <a th:href="@{/acervo/novo}" class="btn-bublo"><i class="bi bi-plus-lg"></i> Cadastrar material</a>
+  <form th:action="@{/acervo}" method="get" id="form-acervo">
+    <input type="hidden" name="tamanho" th:if="${param.tamanho != null}" th:value="${param.tamanho[0]}" />
+    <div class="barra-ferramentas">
+      <div class="busca">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <label class="sr-only" for="termo">Buscar no acervo</label>
+        <input type="search" id="termo" name="termo" class="form-control" th:value="${termo}" placeholder="Título, autor, ISBN ou categoria" />
       </div>
+      <button type="submit" class="btn btn-outline-secondary">Buscar</button>
+      <button type="button" class="btn btn-outline-secondary" id="btn-filtros" aria-controls="painel-filtros" th:attr="aria-expanded=${filtrosAvancados}">
+        <i class="bi bi-funnel"></i>Filtros
+        <span class="badge-b st-vinho st-sem-icone" th:if="${filtrosAvancados}">ativos</span>
+      </button>
+      <span class="espaco"></span>
+      <div class="segmentado" role="group" aria-label="Modo de exibição">
+        <button type="button" data-visao="cartoes" class="ativo" aria-pressed="true"><i class="bi bi-grid-3x2-gap"></i>Cartões</button>
+        <button type="button" data-visao="tabela" aria-pressed="false"><i class="bi bi-list-ul"></i>Tabela</button>
+      </div>
+    </div>
 
-      <div class="card-bublo p-3 mb-4">
-        <form th:action="@{/acervo}" method="get" class="form-grid" style="align-items:end;">
+    <div class="offcanvas-md offcanvas-end painel-filtros" id="painel-filtros" tabindex="-1" aria-labelledby="titulo-filtros"
+         th:classappend="${!filtrosAvancados} ? 'recolhido'">
+      <div class="offcanvas-header">
+        <h2 class="offcanvas-title fs-5" id="titulo-filtros">Filtros</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#painel-filtros" aria-label="Fechar"></button>
+      </div>
+      <div class="offcanvas-body">
+        <div class="grade-form">
           <div>
-            <label class="form-label" for="termo">Buscar (título, ISBN/ISSN)</label>
-            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
-          </div>
-          <div>
-            <label class="form-label" for="categoria">Categoria</label>
-            <select id="categoria" name="categoria" class="form-control">
-              <option value="">Todas</option>
-              <option th:each="c : ${categorias}" th:value="${c.id}" th:text="${c.nome}" th:selected="${categoria != null and categoria == c.id}">Categoria</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" for="tipo">Tipo</label>
-            <select id="tipo" name="tipo" class="form-control">
+            <label class="form-label" for="tipo">Tipo de material</label>
+            <select id="tipo" name="tipo" class="form-select">
               <option value="">Todos</option>
               <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.label}" th:selected="${tipo != null and tipo == t}">Livro</option>
             </select>
           </div>
           <div>
-            <label class="form-label" for="disponivel">Disponibilidade</label>
-            <select id="disponivel" name="disponivel" class="form-control">
-              <option value="">Ambos</option>
-              <option value="true" th:selected="${disponivel != null and disponivel}">Disponível</option>
-              <option value="false" th:selected="${disponivel != null and !disponivel}">Indisponível</option>
+            <label class="form-label" for="categoria">Categoria</label>
+            <select id="categoria" name="categoria" class="form-select">
+              <option value="">Todas</option>
+              <option th:each="c : ${categorias}" th:value="${c.id}" th:text="${c.nome}" th:selected="${categoria != null and categoria == c.id}">Categoria</option>
             </select>
           </div>
-          <div class="acoes-linha">
-            <button type="submit" class="btn-bublo">Buscar</button>
-            <a th:href="@{/acervo}" class="btn-bublo btn-contorno">Limpar</a>
+          <div>
+            <label class="form-label" for="disponivel">Disponibilidade</label>
+            <select id="disponivel" name="disponivel" class="form-select">
+              <option value="">Qualquer</option>
+              <option value="true" th:selected="${disponivel != null and disponivel}">Com exemplar disponível</option>
+              <option value="false" th:selected="${disponivel != null and !disponivel}">Sem exemplar disponível</option>
+            </select>
           </div>
-        </form>
-      </div>
-
-      <div class="estado-vazio" th:if="${resultado.conteudo.empty}">
-        <div class="simbolo"><i class="bi bi-search"></i></div>
-        <h3>Nenhum material encontrado</h3>
-        <p>Tente ajustar os filtros ou cadastre um novo material.</p>
-      </div>
-
-      <div th:unless="${resultado.conteudo.empty}">
-        <p class="texto-ajuda mb-3"><strong th:text="${resultado.total}">0</strong> título(s) encontrado(s)</p>
-        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
-          <div class="col" th:each="item : ${resultado.conteudo}">
-            <div class="card-bublo h-100 d-flex flex-column">
-              <div style="height:140px;overflow:hidden;border-radius:10px 10px 0 0;border-bottom:1px solid var(--bublo-borda);">
-                <div class="capa-generica"><i class="bi bi-book"></i></div>
-              </div>
-              <div class="p-3 d-flex flex-column flex-grow-1">
-                <span class="chip align-self-start mb-2" th:text="${item.tipo}">LIVRO</span>
-                <h4 th:text="${item.titulo}" style="margin:0 0 0.4rem 0;font-size:1rem;">Título</h4>
-                <div class="texto-ajuda" th:text="${item.autoresNomes.empty ? '-' : #strings.listJoin(item.autoresNomes, ', ')}">Autor</div>
-                <div class="texto-ajuda" th:text="${item.categoriaNome ?: 'Sem categoria'}">Categoria</div>
-                <div class="mt-2">
-                  <span class="badge-bublo" th:classappend="${item.exemplaresDisponiveis > 0} ? 'badge-disponivel' : 'badge-indisponivel'"
-                        th:text="${item.exemplaresDisponiveis + '/' + item.totalExemplares + ' disp.'}">1/2 disp.</span>
-                </div>
-                <div class="mt-auto pt-3">
-                  <a th:href="@{/acervo/{id}(id=${item.id})}" class="btn-bublo btn-sm w-100">Ver detalhes</a>
-                </div>
-              </div>
-            </div>
+          <div>
+            <label class="form-label" for="ordenacao">Ordenar por</label>
+            <select id="ordenacao" name="ordenacao" class="form-select">
+              <option value="ia.titulo ASC" th:selected="${ordenacao == 'ia.titulo ASC'}">Título (A–Z)</option>
+              <option value="ia.titulo DESC" th:selected="${ordenacao == 'ia.titulo DESC'}">Título (Z–A)</option>
+              <option value="ia.ano DESC" th:selected="${ordenacao == 'ia.ano DESC'}">Ano de publicação (mais recente)</option>
+              <option value="ia.data_cadastro DESC" th:selected="${ordenacao == 'ia.data_cadastro DESC'}">Cadastrados recentemente</option>
+            </select>
           </div>
         </div>
-        <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/acervo')}"></th:block>
+        <div class="rodape-form mt-4">
+          <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+          <a th:href="@{/acervo}" class="btn btn-outline-secondary">Limpar filtros</a>
+        </div>
       </div>
-    </main>
+    </div>
+  </form>
+
+  <div class="filtros-ativos" th:if="${temFiltro}" aria-label="Filtros aplicados">
+    <span class="rotulo">Filtros aplicados:</span>
+    <span class="chip chip-filtro" th:if="${termo != null and !#strings.isEmpty(termo)}">Busca: <span th:text="${termo}">termo</span>
+      <a class="remover" th:href="@{/acervo(categoria=${categoria}, tipo=${tipo}, disponivel=${disponivel}, ordenacao=${param.ordenacao}, tamanho=${param.tamanho})}" aria-label="Remover filtro de busca"><i class="bi bi-x"></i></a></span>
+    <span class="chip chip-filtro" th:if="${tipo != null}">Tipo: <span th:text="${tipo.label}">Livro</span>
+      <a class="remover" th:href="@{/acervo(termo=${termo}, categoria=${categoria}, disponivel=${disponivel}, ordenacao=${param.ordenacao}, tamanho=${param.tamanho})}" aria-label="Remover filtro de tipo"><i class="bi bi-x"></i></a></span>
+    <span class="chip chip-filtro" th:if="${categoria != null}">Categoria: <span th:each="c : ${categorias}" th:if="${c.id == categoria}" th:text="${c.nome}">Cat</span>
+      <a class="remover" th:href="@{/acervo(termo=${termo}, tipo=${tipo}, disponivel=${disponivel}, ordenacao=${param.ordenacao}, tamanho=${param.tamanho})}" aria-label="Remover filtro de categoria"><i class="bi bi-x"></i></a></span>
+    <span class="chip chip-filtro" th:if="${disponivel != null}"><span th:text="${disponivel ? 'Com exemplar disponível' : 'Sem exemplar disponível'}">Disponível</span>
+      <a class="remover" th:href="@{/acervo(termo=${termo}, tipo=${tipo}, categoria=${categoria}, ordenacao=${param.ordenacao}, tamanho=${param.tamanho})}" aria-label="Remover filtro de disponibilidade"><i class="bi bi-x"></i></a></span>
+    <a class="btn btn-link btn-sm" th:href="@{/acervo}">Limpar tudo</a>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <div th:if="${resultado.conteudo.empty}">
+    <div th:replace="~{layout/componentes :: vazio(${temFiltro} ? 'Nenhum material encontrado' : 'O acervo está vazio', ${temFiltro} ? 'Nenhum título corresponde aos filtros atuais. Ajuste a busca ou limpe os filtros.' : 'Cadastre o primeiro material para começar a emprestar.', ${temFiltro} ? 'Limpar filtros' : 'Cadastrar material', ${temFiltro} ? '/acervo' : '/acervo/novo')}"></div>
+  </div>
+
+  <div th:unless="${resultado.conteudo.empty}" class="acervo-wrap" id="acervo-wrap" data-visao="cartoes">
+    <div class="grade-acervo">
+      <a class="livro-card" th:each="item : ${resultado.conteudo}" th:href="@{/acervo/{id}(id=${item.id})}">
+        <div class="capa"><img th:src="@{'/images/capa-' + ${#strings.toLowerCase(item.tipo)} + '.svg'}" alt="" loading="lazy" /></div>
+        <div class="corpo">
+          <span class="tipo-tag" th:text="${T(com.gabriel.bublo.model.TipoMaterial).valueOf(item.tipo).label}">Livro</span>
+          <h3 th:text="${item.titulo}">Título</h3>
+          <span class="autor" th:text="${item.autoresNomes.empty ? 'Autor não informado' : #strings.listJoin(item.autoresNomes, ', ')}">Autor</span>
+          <div class="meta">
+            <span class="texto-fraco small" th:text="${item.categoriaNome ?: 'Sem categoria'}">Categoria</span>
+            <span class="badge-b" th:classappend="${item.exemplaresDisponiveis > 0} ? 'st-ok' : 'st-erro'"
+                  th:text="${item.exemplaresDisponiveis > 0 ? item.exemplaresDisponiveis + ' de ' + item.totalExemplares : 'Indisponível'}">1 de 2</span>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="tabela-wrap acervo-tabela cartoes">
+      <table class="tabela tabela-cartoes">
+        <thead><tr><th>Título</th><th>Tipo</th><th>Autores</th><th>Categoria</th><th>Ano</th><th>Exemplares</th><th></th></tr></thead>
+        <tbody>
+          <tr th:each="item : ${resultado.conteudo}">
+            <td data-rotulo="Título"><a class="principal" th:href="@{/acervo/{id}(id=${item.id})}" th:text="${item.titulo}">Título</a></td>
+            <td data-rotulo="Tipo" th:text="${T(com.gabriel.bublo.model.TipoMaterial).valueOf(item.tipo).label}">Livro</td>
+            <td data-rotulo="Autores" th:text="${item.autoresNomes.empty ? '—' : #strings.listJoin(item.autoresNomes, ', ')}">Autor</td>
+            <td data-rotulo="Categoria" th:text="${item.categoriaNome ?: '—'}">Cat</td>
+            <td data-rotulo="Ano" class="num" th:text="${item.ano ?: '—'}">2020</td>
+            <td data-rotulo="Exemplares"><span class="badge-b" th:classappend="${item.exemplaresDisponiveis > 0} ? 'st-ok' : 'st-erro'" th:text="${item.exemplaresDisponiveis + ' de ' + item.totalExemplares + ' livres'}">1 de 2</span></td>
+            <td class="acoes"><div class="acoes-linha">
+              <a class="btn btn-outline-secondary btn-sm" th:href="@{/acervo/{id}(id=${item.id})}">Detalhes</a>
+              <a class="btn btn-outline-secondary btn-sm" th:href="@{/acervo/{id}/editar(id=${item.id})}">Editar</a>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/acervo')}"></th:block>
+  </div>
+</th:block>
+
+<th:block th:fragment="scripts">
+  <script type="module" th:src="@{/js/pages/acervo-listar.js}"></script>
+</th:block>
 </body>
 </html>

@@ -1,59 +1,74 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Auditoria - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Auditoria', 'auditoria', ~{::conteudo}, ~{})}">
+<head><title>Auditoria</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('auditoria')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1>Auditoria</h1>
-        <p class="subtitulo">Registro cronológico de operações (somente leitura)</p>
-      </div>
-
-      <div class="card-bublo p-3 mb-3">
-        <form th:action="@{/auditoria}" method="get" class="form-grid" style="align-items:end;">
-          <div>
-            <label class="form-label" for="termo">Buscar (usuário, módulo ou operação)</label>
-            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
-          </div>
-          <div class="acoes-linha">
-            <button type="submit" class="btn-bublo">Buscar</button>
-            <a th:href="@{/auditoria}" class="btn-bublo btn-contorno">Limpar</a>
-          </div>
-        </form>
-      </div>
-
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
-          <thead>
-            <tr><th>#</th><th>Responsável</th><th>Operação</th><th>Módulo</th><th>Registro</th><th>Data e hora</th><th>Justificativa</th></tr>
-          </thead>
-          <tbody>
-            <tr th:each="a : ${resultado.conteudo}">
-              <td th:text="${a.id}">-</td>
-              <td th:text="${a.adminUsuario}">-</td>
-              <td th:text="${a.tipoOperacao}">-</td>
-              <td th:text="${a.modulo}">-</td>
-              <td th:text="${a.registroAfectado ?: '-'}">-</td>
-              <td th:text="${#temporals.format(a.dataHora, 'dd/MM/yyyy HH:mm:ss')}">-</td>
-              <td th:text="${a.justificativa ?: '-'}">-</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
-        <div class="simbolo"><i class="bi bi-journal-text"></i></div>
-        <h3>Nenhum registro encontrado</h3>
-      </div>
-      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/auditoria')}"></th:block>
-    </main>
+<th:block th:fragment="conteudo" th:with="temFiltro=${!#strings.isEmpty(termo) or !#strings.isEmpty(modulo) or !#strings.isEmpty(tipoOperacao)},
+     operacoes=${T(java.util.Map).of('LOGIN','Login realizado','LOGIN_FALHA','Login recusado','ALTERACAO_SENHA','Senha alterada','ALTERACAO_CONFIGURACAO','Configuração alterada')},
+     modulos=${T(java.util.Map).of('Seguranca','Segurança','Configuracoes','Configurações')}">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Auditoria</h1>
+      <p class="pagina-sub">Registro cronológico, do mais recente ao mais antigo, de quem fez o quê. Somente leitura.</p>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <form th:action="@{/auditoria}" method="get" class="barra-ferramentas">
+    <input type="hidden" name="tamanho" th:if="${param.tamanho != null}" th:value="${param.tamanho[0]}" />
+    <div class="busca">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <label class="sr-only" for="termo">Buscar na auditoria</label>
+      <input type="search" id="termo" name="termo" class="form-control" th:value="${termo}" placeholder="Responsável, módulo ou operação" />
+    </div>
+    <div>
+      <label class="sr-only" for="modulo">Módulo</label>
+      <select id="modulo" name="modulo" class="form-select" onchange="this.form.requestSubmit()">
+        <option value="">Todos os módulos</option>
+        <option value="Seguranca" th:selected="${modulo == 'Seguranca'}">Segurança</option>
+        <option value="Configuracoes" th:selected="${modulo == 'Configuracoes'}">Configurações</option>
+      </select>
+    </div>
+    <div>
+      <label class="sr-only" for="tipoOperacao">Tipo</label>
+      <select id="tipoOperacao" name="tipoOperacao" class="form-select" onchange="this.form.requestSubmit()">
+        <option value="">Todos os tipos</option>
+        <option th:each="o : ${operacoes}" th:value="${o.key}" th:text="${o.value}" th:selected="${tipoOperacao == o.key}">Tipo</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-outline-secondary">Buscar</button>
+    <a th:href="@{/auditoria}" class="btn btn-link" th:if="${temFiltro}">Limpar filtros</a>
+  </form>
+
+  <div th:if="${resultado.conteudo.empty}">
+    <div th:replace="~{layout/componentes :: vazio('Nenhum registro encontrado', 'Ajuste a busca ou os filtros para ver outros eventos.', 'Limpar filtros', '/auditoria')}"></div>
+  </div>
+
+  <div class="tabela-wrap cartoes" th:unless="${resultado.conteudo.empty}">
+    <table class="tabela tabela-cartoes">
+      <thead><tr><th>Data e hora</th><th>Responsável</th><th>Operação</th><th>Módulo</th><th>Registro</th><th>Detalhes</th></tr></thead>
+      <tbody>
+        <tr th:each="a : ${resultado.conteudo}">
+          <td data-rotulo="Data e hora" class="numero" th:text="${#temporals.format(a.dataHora, 'dd/MM/yyyy HH:mm:ss')}">01/01/2026 10:00:00</td>
+          <td data-rotulo="Responsável" class="principal" th:text="${a.adminUsuario}">admin</td>
+          <td data-rotulo="Operação"><span class="badge-b" th:classappend="${a.tipoOperacao == 'LOGIN_FALHA'} ? 'st-erro' : (${a.tipoOperacao == 'LOGIN'} ? 'st-ok' : 'st-info')" th:text="${operacoes.getOrDefault(a.tipoOperacao, a.tipoOperacao)}">Operação</span></td>
+          <td data-rotulo="Módulo" th:text="${modulos.getOrDefault(a.modulo, a.modulo)}">Módulo</td>
+          <td data-rotulo="Registro" th:text="${a.registroAfectado ?: '—'}">—</td>
+          <td data-rotulo="Detalhes" style="text-align:left">
+            <span th:if="${a.valoresAntes == null and a.valoresDepois == null}" class="texto-suave" th:text="${a.justificativa ?: '—'}">—</span>
+            <details th:unless="${a.valoresAntes == null and a.valoresDepois == null}">
+              <summary class="btn btn-link btn-sm p-0" style="min-height:0">Ver alteração</summary>
+              <div class="diff mt-2">
+                <div class="antes"><div class="texto-fraco small">Antes</div><pre th:text="${a.valoresAntes ?: '—'}">—</pre></div>
+                <div class="depois"><div class="texto-fraco small">Depois</div><pre th:text="${a.valoresDepois ?: '—'}">—</pre></div>
+              </div>
+              <p class="texto-suave small mt-2 mb-0" th:if="${a.justificativa}" th:text="${'Justificativa: ' + a.justificativa}">Justificativa</p>
+            </details>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/auditoria')}"></th:block>
+</th:block>
 </body>
 </html>

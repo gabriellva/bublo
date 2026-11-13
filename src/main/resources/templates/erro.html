@@ -2,20 +2,22 @@
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Erro - Bublo</title>
+  <title>Algo deu errado · Bublo</title>
 </head>
 <body>
-  <main class="d-flex align-items-center justify-content-center" style="min-height:100vh;padding:1rem;">
-    <div class="card-bublo p-4 text-center" style="max-width:520px;width:100%;">
-      <div class="estado-vazio" style="padding:1rem 0;">
-        <div class="simbolo"><i class="bi bi-exclamation-triangle"></i></div>
-        <h1 style="font-size:1.6rem;" th:text="${status != null ? 'Erro ' + status : 'Erro'}">Erro</h1>
+  <main class="erro-pagina">
+    <div class="painel cartao">
+      <svg th:replace="~{layout/componentes :: marca}"></svg>
+      <div class="erro-codigo mt-3" th:text="${status ?: 500}">500</div>
+      <h1 class="fs-2 mt-3 mb-2" th:text="${status == 404 ? 'Página não encontrada' : (status == 403 ? 'Acesso negado' : 'Algo deu errado')}">Algo deu errado</h1>
+      <p class="texto-suave" th:text="${mensagem ?: 'Ocorreu um erro inesperado. Tente novamente.'}">Mensagem.</p>
+      <p class="texto-fraco small" th:if="${status == null or status >= 500}">Se o problema continuar, o banco de dados pode estar indisponível. Aguarde alguns instantes e tente de novo.</p>
+      <div class="rodape-form justify-content-center mt-4">
+        <button type="button" class="btn btn-primary" onclick="window.location.reload()"><i class="bi bi-arrow-clockwise"></i>Tentar novamente</button>
+        <a th:href="@{/dashboard}" class="btn btn-outline-secondary">Voltar ao início</a>
       </div>
-      <p th:text="${mensagem ?: 'Erro inesperado.'}">Erro inesperado.</p>
-      <a th:href="@{/dashboard}" class="btn-bublo">Voltar ao início</a>
     </div>
   </main>
-
   <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>
 </html>

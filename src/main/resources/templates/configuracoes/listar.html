@@ -1,68 +1,100 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Configurações - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Configurações', 'configuracoes', ~{::conteudo}, ~{::scripts})}">
+<head><title>Configurações</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('configuracoes')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1>Configurações</h1>
-        <p class="subtitulo">Empréstimos, multas, reservas e dados da biblioteca</p>
-      </div>
-
-      <form th:action="@{/configuracoes/salvar}" method="post">
-        <div class="form-grid">
-          <div>
-            <label class="form-label" for="nome_instituicao">Nome da instituição</label>
-            <input type="text" id="nome_instituicao" name="nome_instituicao" class="form-control"  th:value="${valores['nome_instituicao']}" required />
-          </div>
-          <div>
-            <label class="form-label" for="prefixo_tombamento">Prefixo dos tombamentos</label>
-            <input type="text" id="prefixo_tombamento" name="prefixo_tombamento" class="form-control"  th:value="${valores['prefixo_tombamento']}" required />
-          </div>
-          <div>
-            <label class="form-label" for="limite_alunos">Limite de exemplares por aluno</label>
-            <input type="number" id="limite_alunos" name="limite_alunos" class="form-control" min="1" th:value="${valores['limite_alunos']}" required />
-          </div>
-          <div>
-            <label class="form-label" for="limite_professores">Limite de exemplares por professor</label>
-            <input type="number" id="limite_professores" name="limite_professores" class="form-control" min="1" th:value="${valores['limite_professores']}" required />
-          </div>
-          <div>
-            <label class="form-label" for="prazo_alunos">Prazo de devolução — alunos (dias)</label>
-            <input type="number" id="prazo_alunos" name="prazo_alunos" class="form-control" min="1" th:value="${valores['prazo_alunos']}" required />
-          </div>
-          <div>
-            <label class="form-label" for="prazo_professores">Prazo de devolução — professores (dias)</label>
-            <input type="number" id="prazo_professores" name="prazo_professores" class="form-control" min="1" th:value="${valores['prazo_professores']}" required />
-          </div>
-          <div>
-            <label class="form-label" for="taxa_diaria_multa">Taxa diária de multa (R$)</label>
-            <input type="number" id="taxa_diaria_multa" name="taxa_diaria_multa" class="form-control" min="0" step="0.01" th:value="${valores['taxa_diaria_multa']}" required />
-          </div>
-          <div>
-            <label class="form-label" for="prazo_retirada_reserva">Prazo de retirada da reserva (dias)</label>
-            <input type="number" id="prazo_retirada_reserva" name="prazo_retirada_reserva" class="form-control" min="1" th:value="${valores['prazo_retirada_reserva']}" required />
-          </div>
-        </div>
-        <div class="mt-3">
-          <label class="form-label" for="justificativa">Justificativa da alteração (obrigatória)</label>
-          <textarea id="justificativa" name="justificativa" class="form-control" rows="2" required></textarea>
-        </div>
-        <p class="texto-ajuda">Alterações valem somente para novas operações. Não modificam empréstimos, multas ou reservas existentes. Cada alteração é registrada na auditoria.</p>
-        <div class="acoes-linha">
-          <button type="submit" class="btn-bublo">Salvar configurações</button>
-          <a th:href="@{/configuracoes}" class="btn-bublo btn-contorno">Descartar alterações</a>
-        </div>
-      </form>
-    </main>
+<th:block th:fragment="conteudo" th:with="rotulosChave=${T(java.util.Map).of('limite_alunos','Limite de exemplares por aluno','limite_professores','Limite de exemplares por professor','prazo_alunos','Prazo de devolução dos alunos','prazo_professores','Prazo de devolução dos professores','taxa_diaria_multa','Taxa diária de multa','prazo_retirada_reserva','Prazo de retirada da reserva','nome_instituicao','Nome da instituição','prefixo_tombamento','Prefixo do tombamento')}">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Configurações</h1>
+      <p class="pagina-sub">Regras de empréstimo, multa e reserva e dados da biblioteca.</p>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <form th:action="@{/configuracoes/salvar}" method="post" id="form-config" data-proteger-alteracoes novalidate>
+    <div class="ajuda-config"><i class="bi bi-info-circle"></i><span>As mudanças valem para novas operações. Empréstimos, multas e reservas já registrados não são alterados. Toda alteração fica na auditoria com a sua justificativa.</span></div>
+
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#aba-emprestimos" type="button" role="tab"><i class="bi bi-arrow-up-right-square"></i>Empréstimos</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#aba-multas" type="button" role="tab"><i class="bi bi-receipt"></i>Multas</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#aba-reservas" type="button" role="tab"><i class="bi bi-bookmark"></i>Reservas</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#aba-biblioteca" type="button" role="tab"><i class="bi bi-building"></i>Biblioteca</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#aba-historico" type="button" role="tab"><i class="bi bi-clock-history"></i>Histórico</button></li>
+    </ul>
+
+    <div class="tab-content painel" style="border-top-left-radius:0;border-top-right-radius:0;border-top:0">
+      <div class="tab-pane fade show active painel-corpo" id="aba-emprestimos" role="tabpanel">
+        <div class="config-grid">
+          <div><label class="form-label" for="limite_alunos">Limite de exemplares por aluno</label>
+            <input type="number" id="limite_alunos" name="limite_alunos" class="form-control" min="1" th:value="${valores['limite_alunos']}" required />
+            <p class="ajuda-campo">Quantos exemplares um aluno pode ter ao mesmo tempo.</p></div>
+          <div><label class="form-label" for="limite_professores">Limite de exemplares por professor</label>
+            <input type="number" id="limite_professores" name="limite_professores" class="form-control" min="1" th:value="${valores['limite_professores']}" required />
+            <p class="ajuda-campo">Quantos exemplares um professor pode ter ao mesmo tempo.</p></div>
+          <div><label class="form-label" for="prazo_alunos">Prazo de devolução dos alunos (dias)</label>
+            <input type="number" id="prazo_alunos" name="prazo_alunos" class="form-control" min="1" th:value="${valores['prazo_alunos']}" required />
+            <p class="ajuda-campo">Usado para sugerir a data prevista no novo empréstimo.</p></div>
+          <div><label class="form-label" for="prazo_professores">Prazo de devolução dos professores (dias)</label>
+            <input type="number" id="prazo_professores" name="prazo_professores" class="form-control" min="1" th:value="${valores['prazo_professores']}" required /></div>
+        </div>
+      </div>
+      <div class="tab-pane fade painel-corpo" id="aba-multas" role="tabpanel">
+        <div class="config-grid">
+          <div><label class="form-label" for="taxa_diaria_multa">Taxa diária de multa (R$)</label>
+            <input type="number" id="taxa_diaria_multa" name="taxa_diaria_multa" class="form-control" min="0" step="0.01" th:value="${valores['taxa_diaria_multa']}" required />
+            <p class="ajuda-campo">Multiplicada pelos dias de atraso na devolução.</p></div>
+        </div>
+      </div>
+      <div class="tab-pane fade painel-corpo" id="aba-reservas" role="tabpanel">
+        <div class="config-grid">
+          <div><label class="form-label" for="prazo_retirada_reserva">Prazo de retirada da reserva (dias)</label>
+            <input type="number" id="prazo_retirada_reserva" name="prazo_retirada_reserva" class="form-control" min="1" th:value="${valores['prazo_retirada_reserva']}" required />
+            <p class="ajuda-campo">Tempo que o leitor tem para retirar o exemplar reservado.</p></div>
+        </div>
+      </div>
+      <div class="tab-pane fade painel-corpo" id="aba-biblioteca" role="tabpanel">
+        <div class="config-grid">
+          <div><label class="form-label" for="nome_instituicao">Nome da instituição</label>
+            <input type="text" id="nome_instituicao" name="nome_instituicao" class="form-control" th:value="${valores['nome_instituicao']}" required />
+            <p class="ajuda-campo">Aparece no menu, no login e nos relatórios.</p></div>
+          <div><label class="form-label" for="prefixo_tombamento">Prefixo dos tombamentos</label>
+            <input type="text" id="prefixo_tombamento" name="prefixo_tombamento" class="form-control" th:value="${valores['prefixo_tombamento']}" required />
+            <p class="ajuda-campo">Aplica-se aos próximos exemplares cadastrados (ex.: BA-000001).</p></div>
+        </div>
+      </div>
+      <div class="tab-pane fade painel-corpo" id="aba-historico" role="tabpanel">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(historico)}"><h3>Nenhuma alteração registrada</h3></div>
+        <div class="tabela-wrap" th:unless="${#lists.isEmpty(historico)}">
+          <table class="tabela">
+            <thead><tr><th>Quando</th><th>Configuração</th><th>De</th><th>Para</th><th>Justificativa</th></tr></thead>
+            <tbody>
+              <tr th:each="h : ${historico}">
+                <td class="numero" th:text="${#temporals.format(h.dataHora, 'dd/MM/yyyy HH:mm')}">01/01/2026</td>
+                <td class="principal" th:text="${rotulosChave.getOrDefault(h.registroAfectado, h.registroAfectado)}">Chave</td>
+                <td th:text="${h.valoresAntes ?: '—'}">1</td>
+                <td th:text="${h.valoresDepois ?: '—'}">2</td>
+                <td th:text="${h.justificativa ?: '—'}">Motivo</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="ajuda-campo mt-3">Somente leitura. O histórico completo está na <a th:href="@{/auditoria(modulo='Configuracoes')}">auditoria</a>.</p>
+      </div>
+    </div>
+
+    <div class="painel mt-4">
+      <div class="painel-corpo">
+        <label class="form-label" for="justificativa">Justificativa da alteração <span class="texto-fraco">(obrigatória)</span></label>
+        <textarea id="justificativa" name="justificativa" class="form-control" rows="2" required placeholder="Explique por que a regra está mudando"></textarea>
+        <small class="erro-campo" id="erro-justificativa" hidden>Informe a justificativa para salvar.</small>
+        <div class="rodape-form mt-3">
+          <button type="submit" class="btn btn-primary">Salvar configurações</button>
+          <a th:href="@{/configuracoes}" class="btn btn-outline-secondary">Descartar alterações</a>
+        </div>
+      </div>
+    </div>
+  </form>
+</th:block>
+<th:block th:fragment="scripts"><script type="module" th:src="@{/js/pages/configuracoes.js}"></script></th:block>
 </body>
 </html>

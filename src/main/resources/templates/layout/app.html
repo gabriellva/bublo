@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" th:fragment="shell(titulo, modulo, conteudo, scripts)">
+<head>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
+  <title th:text="${titulo + ' · ' + (nomeInstituicao ?: 'Bublo')}">Bublo</title>
+</head>
+<body class="app">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <th:block th:replace="~{layout/sidebar :: sidebar(${modulo})}"></th:block>
+  <div class="app-main">
+    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
+    <main class="pagina entrada-pagina" id="conteudo" tabindex="-1">
+      <th:block th:replace="${conteudo}"></th:block>
+    </main>
+    <footer class="rodape-app"><span th:text="${nomeInstituicao ?: 'Bublo'}">Bublo</span> · Sistema de gestão de biblioteca acadêmica</footer>
+  </div>
+  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <th:block th:replace="${scripts}"></th:block>
+</body>
+</html>

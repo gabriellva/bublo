@@ -1,115 +1,113 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Leitores - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Leitores', 'leitores', ~{::conteudo}, ~{::scripts})}">
+<head><title>Leitores</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('leitores')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header cabecalho-pagina">
-        <div>
-          <h1>Leitores</h1>
-          <p class="subtitulo">Alunos e professores cadastrados</p>
-        </div>
-        <a th:href="@{/leitores/novo}" class="btn-bublo"><i class="bi bi-person-plus"></i> Cadastrar leitor</a>
-      </div>
-
-      <div class="card-bublo p-3 mb-3">
-        <form th:action="@{/leitores}" method="get" class="form-grid" style="align-items:end;">
-          <div>
-            <label class="form-label" for="termo">Buscar (nome, e-mail ou matrícula)</label>
-            <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
-          </div>
-          <div>
-            <label class="form-label" for="tipo">Tipo</label>
-            <select id="tipo" name="tipo" class="form-control">
-              <option value="">Todos</option>
-              <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.name() == 'PROFESSOR' ? 'Professor' : 'Aluno'}" th:selected="${tipo != null and tipo == t}">Aluno</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" for="ativo">Situação</label>
-            <select id="ativo" name="ativo" class="form-control">
-              <option value="">Todas</option>
-              <option value="true" th:selected="${ativo != null and ativo}">Ativos</option>
-              <option value="false" th:selected="${ativo != null and !ativo}">Inativos</option>
-            </select>
-          </div>
-          <div class="acoes-linha">
-            <button type="submit" class="btn-bublo">Buscar</button>
-            <a th:href="@{/leitores}" class="btn-bublo btn-contorno">Limpar</a>
-          </div>
-        </form>
-      </div>
-
-      <div class="acoes-linha mb-3">
-        <a th:href="@{/leitores/modelo-csv}" class="btn-bublo btn-sm btn-contorno"><i class="bi bi-download"></i> Modelo CSV</a>
-        <form th:action="@{/leitores/importar}" method="post" enctype="multipart/form-data" class="d-flex flex-wrap align-items-center gap-2 m-0">
-          <label class="texto-ajuda m-0" for="arquivo">Importar CSV:</label>
-          <input type="file" id="arquivo" name="arquivo" accept=".csv,text/csv" required style="font-size:0.8rem;" />
-          <button type="submit" class="btn-bublo btn-sm">Importar</button>
-        </form>
-      </div>
-
-      <div th:if="${importacao}" class="card-bublo p-3 mb-3">
-        <h4 class="mt-0">Resultado da importação</h4>
-        <div class="d-flex gap-3 flex-wrap">
-          <span><strong>Processados:</strong> <span th:text="${importacao.totalProcessado}">0</span></span>
-          <span style="color:var(--bublo-sucesso);"><strong>Importados:</strong> <span th:text="${importacao.importados}">0</span></span>
-          <span style="color:var(--bublo-perigo);"><strong>Rejeitados:</strong> <span th:text="${importacao.rejeitados}">0</span></span>
-        </div>
-        <div th:unless="${importacao.erros.empty}" class="tabela-bloco mt-2" style="max-height:220px;overflow:auto;">
-          <table class="tabela">
-            <thead><tr><th>Linha</th><th>Motivo</th></tr></thead>
-            <tbody><tr th:each="e : ${importacao.erros}"><td th:text="${e.linha}">-</td><td th:text="${e.motivo}">-</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
-          <thead>
-            <tr><th>Matrícula</th><th>Nome</th><th>Tipo</th><th>E-mail</th><th>Curso/Depto.</th><th>Status</th><th>Ações</th></tr>
-          </thead>
-          <tbody>
-            <tr th:each="l : ${resultado.conteudo}">
-              <td><strong th:text="${l.matricula}">-</strong></td>
-              <td th:text="${l.nome}">Nome</td>
-              <td><span class="badge-bublo badge-neutro" th:text="${l.tipo == 'PROFESSOR' ? 'Professor' : 'Aluno'}">Aluno</span></td>
-              <td th:text="${l.email}">email</td>
-              <td th:text="${l.cursoDepartamento ?: '-'}">-</td>
-              <td><span class="badge-bublo" th:classappend="${l.ativo} ? 'badge-ativo' : 'badge-inativo'" th:text="${l.ativo ? 'Ativo' : 'Inativo'}">Ativo</span></td>
-              <td>
-                <div class="acoes-linha">
-                  <a th:href="@{/leitores/{id}(id=${l.id})}" class="btn-bublo btn-acao">Ver</a>
-                  <a th:href="@{/leitores/{id}/editar(id=${l.id})}" class="btn-bublo btn-acao btn-contorno">Editar</a>
-                  <a th:href="@{/emprestimos/novo(leitor=${l.id})}" class="btn-bublo btn-acao btn-contorno" th:if="${l.ativo}">Emprestar</a>
-                  <form th:action="@{/leitores/{id}/inativar(id=${l.id})}" method="post" class="form-inline" th:if="${l.ativo}"
-                        data-confirmar="Inativar este leitor? Ele não poderá realizar novos empréstimos ou reservas."
-                        data-confirmar-titulo="Inativar leitor">
-                    <button type="submit" class="btn-bublo btn-acao btn-contorno perigo">Inativar</button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
-        <div class="simbolo"><i class="bi bi-people"></i></div>
-        <h3>Nenhum leitor encontrado</h3>
-        <p>Cadastre um leitor, importe via CSV ou ajuste os filtros.</p>
-      </div>
-
-      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/leitores')}"></th:block>
-    </main>
+<th:block th:fragment="conteudo" th:with="temFiltro=${tipo != null or ativo != null or (termo != null and !#strings.isEmpty(termo))}">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Leitores</h1>
+      <p class="pagina-sub">Alunos e professores cadastrados, com a situação de cada um na biblioteca.</p>
+    </div>
+    <div class="pagina-acoes">
+      <button type="button" class="btn btn-outline-secondary" data-bs-toggle="offcanvas" data-bs-target="#painel-importar"><i class="bi bi-upload"></i>Importar CSV</button>
+      <a th:href="@{/leitores/novo}" class="btn btn-primary"><i class="bi bi-person-plus"></i>Cadastrar leitor</a>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <section class="painel mb-4" th:if="${importacao}" aria-label="Resultado da importação">
+    <div class="painel-cabeca"><h2>Resultado da importação</h2></div>
+    <div class="painel-corpo">
+      <div class="indicadores-mini">
+        <div class="indicador-mini"><span class="v" th:text="${importacao.totalProcessado}">0</span><span class="k">Linhas processadas</span></div>
+        <div class="indicador-mini"><span class="v" style="color:var(--ok)" th:text="${importacao.importados}">0</span><span class="k">Importados</span></div>
+        <div class="indicador-mini"><span class="v" th:style="${importacao.rejeitados > 0} ? 'color:var(--erro)'" th:text="${importacao.rejeitados}">0</span><span class="k">Rejeitados</span></div>
+      </div>
+      <div class="tabela-wrap" th:unless="${importacao.erros.empty}" style="max-height:260px;overflow:auto;">
+        <table class="tabela">
+          <thead><tr><th>Linha</th><th>Motivo da rejeição</th></tr></thead>
+          <tbody><tr th:each="e : ${importacao.erros}"><td class="numero" th:text="${e.linha}">2</td><td th:text="${e.motivo}">Motivo</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <form th:action="@{/leitores}" method="get">
+    <input type="hidden" name="tamanho" th:if="${param.tamanho != null}" th:value="${param.tamanho[0]}" />
+    <div class="barra-ferramentas">
+      <div class="busca">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <label class="sr-only" for="termo">Buscar leitores</label>
+        <input type="search" id="termo" name="termo" class="form-control" th:value="${termo}" placeholder="Nome, e-mail ou matrícula" />
+      </div>
+      <div>
+        <label class="sr-only" for="tipo">Tipo</label>
+        <select id="tipo" name="tipo" class="form-select" onchange="this.form.requestSubmit()">
+          <option value="">Todos os tipos</option>
+          <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.name() == 'PROFESSOR' ? 'Professores' : 'Alunos'}" th:selected="${tipo != null and tipo == t}">Aluno</option>
+        </select>
+      </div>
+      <div>
+        <label class="sr-only" for="ativo">Situação</label>
+        <select id="ativo" name="ativo" class="form-select" onchange="this.form.requestSubmit()">
+          <option value="">Qualquer situação</option>
+          <option value="true" th:selected="${ativo != null and ativo}">Ativos</option>
+          <option value="false" th:selected="${ativo != null and !ativo}">Inativos</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-outline-secondary">Buscar</button>
+      <a th:href="@{/leitores}" class="btn btn-link" th:if="${temFiltro}">Limpar filtros</a>
+    </div>
+  </form>
+
+  <div th:if="${resultado.conteudo.empty}">
+    <div th:replace="~{layout/componentes :: vazio(${temFiltro} ? 'Nenhum leitor encontrado' : 'Nenhum leitor cadastrado', ${temFiltro} ? 'Ajuste a busca ou limpe os filtros para ver mais resultados.' : 'Cadastre um leitor ou importe uma planilha CSV para começar.', ${temFiltro} ? 'Limpar filtros' : 'Cadastrar leitor', ${temFiltro} ? '/leitores' : '/leitores/novo')}"></div>
+  </div>
+
+  <div class="tabela-wrap cartoes" th:unless="${resultado.conteudo.empty}">
+    <table class="tabela tabela-cartoes">
+      <thead><tr><th>Leitor</th><th>Matrícula</th><th>Tipo</th><th>Curso ou departamento</th><th>Situação</th><th></th></tr></thead>
+      <tbody>
+        <tr th:each="l : ${resultado.conteudo}">
+          <td data-rotulo="Leitor"><a class="principal" th:href="@{/leitores/{id}(id=${l.id})}" th:text="${l.nome}">Nome</a><span class="secundario" th:text="${l.email}">email</span></td>
+          <td data-rotulo="Matrícula" class="tombo" th:text="${l.matricula}">ALU-00001</td>
+          <td data-rotulo="Tipo" th:text="${l.tipo == 'PROFESSOR' ? 'Professor' : 'Aluno'}">Aluno</td>
+          <td data-rotulo="Curso" th:text="${l.cursoDepartamento ?: '—'}">—</td>
+          <td data-rotulo="Situação"><span class="badge-b" th:classappend="${l.ativo} ? 'st-ok' : 'st-neutro'" th:text="${l.ativo ? 'Ativo' : 'Inativo'}">Ativo</span></td>
+          <td class="acoes">
+            <div class="acoes-linha">
+              <a th:href="@{/emprestimos/novo(leitor=${l.id})}" class="btn btn-outline-secondary btn-sm" th:if="${l.ativo}">Emprestar</a>
+              <a th:href="@{/leitores/{id}(id=${l.id})}" class="btn btn-outline-secondary btn-sm">Ver</a>
+              <a th:href="@{/leitores/{id}/editar(id=${l.id})}" class="btn btn-outline-secondary btn-sm">Editar</a>
+              <form th:action="@{/leitores/{id}/inativar(id=${l.id})}" method="post" th:if="${l.ativo}"
+                    data-confirmar="O leitor deixará de poder fazer novos empréstimos e reservas. O histórico é mantido."
+                    th:attr="data-confirmar-registro=${l.matricula + ' — ' + l.nome}" data-confirmar-titulo="Inativar leitor" data-confirmar-rotulo="Inativar leitor" data-confirmar-perigo>
+                <button type="submit" class="btn btn-outline-danger btn-sm">Inativar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/leitores')}"></th:block>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="painel-importar" aria-labelledby="titulo-importar">
+    <div class="offcanvas-header">
+      <h2 class="offcanvas-title fs-5" id="titulo-importar">Importar leitores</h2>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+    </div>
+    <div class="offcanvas-body">
+      <p class="texto-suave">Envie uma planilha CSV com as colunas Tipo, Nome, Email, CPF, Endereco, Telefone e CursoDepartamento. Ao final você verá quantas linhas entraram e o motivo de cada rejeição.</p>
+      <a th:href="@{/leitores/modelo-csv}" class="btn btn-outline-secondary mb-4"><i class="bi bi-download"></i>Baixar modelo CSV</a>
+      <form th:action="@{/leitores/importar}" method="post" enctype="multipart/form-data">
+        <label class="form-label" for="arquivo">Arquivo CSV</label>
+        <div class="zona-arquivo mb-3"><input type="file" id="arquivo" name="arquivo" accept=".csv,text/csv" class="form-control" required /></div>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i>Importar</button>
+      </form>
+    </div>
+  </div>
+</th:block>
+<th:block th:fragment="scripts"></th:block>
 </body>
 </html>

@@ -1,92 +1,77 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Relatórios - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Relatórios', 'relatorios', ~{::conteudo}, ~{})}">
+<head><title>Relatórios</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('relatorios')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1>Relatórios</h1>
-        <p class="subtitulo">Exportação em CSV e XLSX dos principais dados da biblioteca</p>
-      </div>
-
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-        <div class="col">
-          <div class="card-bublo d-flex flex-column p-4 h-100">
-            <h4 class="mt-0">Empréstimos</h4>
-            <p class="texto-ajuda flex-grow-1">Todos os empréstimos registrados, com leitor, exemplar e datas.</p>
-            <div class="acoes-linha">
-              <a th:href="@{/relatorios/emprestimos.csv}" class="btn-bublo btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-              <a th:href="@{/relatorios/emprestimos.xlsx}" class="btn-bublo btn-sm btn-contorno"><i class="bi bi-file-earmark-excel"></i> XLSX</a>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card-bublo d-flex flex-column p-4 h-100">
-            <h4 class="mt-0">Empréstimos em atraso</h4>
-            <p class="texto-ajuda flex-grow-1">Empréstimos ativos fora do prazo de devolução.</p>
-            <div class="acoes-linha">
-              <a th:href="@{/relatorios/emprestimos.csv?status=ATRASADO}" class="btn-bublo btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-              <a th:href="@{/relatorios/emprestimos.xlsx?status=ATRASADO}" class="btn-bublo btn-sm btn-contorno"><i class="bi bi-file-earmark-excel"></i> XLSX</a>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card-bublo d-flex flex-column p-4 h-100">
-            <h4 class="mt-0">Multas pendentes</h4>
-            <p class="texto-ajuda flex-grow-1">Multas ainda não quitadas, com saldo por leitor.</p>
-            <div class="acoes-linha">
-              <a th:href="@{/relatorios/multas.csv?status=PENDENTE}" class="btn-bublo btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-              <a th:href="@{/relatorios/multas.xlsx?status=PENDENTE}" class="btn-bublo btn-sm btn-contorno"><i class="bi bi-file-earmark-excel"></i> XLSX</a>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card-bublo d-flex flex-column p-4 h-100">
-            <h4 class="mt-0">Todas as multas</h4>
-            <p class="texto-ajuda flex-grow-1">Histórico completo de multas e pagamentos.</p>
-            <div class="acoes-linha">
-              <a th:href="@{/relatorios/multas.csv}" class="btn-bublo btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-              <a th:href="@{/relatorios/multas.xlsx}" class="btn-bublo btn-sm btn-contorno"><i class="bi bi-file-earmark-excel"></i> XLSX</a>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card-bublo d-flex flex-column p-4 h-100">
-            <h4 class="mt-0">Acervo</h4>
-            <p class="texto-ajuda flex-grow-1">Catálogo de materiais com tipo, editora, ano e ISBN/ISSN.</p>
-            <div class="acoes-linha">
-              <a th:href="@{/relatorios/materiais.csv}" class="btn-bublo btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card-bublo d-flex flex-column p-4 h-100">
-            <h4 class="mt-0">Leitores</h4>
-            <p class="texto-ajuda flex-grow-1">Lista de alunos e professores cadastrados.</p>
-            <div class="acoes-linha">
-              <a th:href="@{/relatorios/leitores.csv}" class="btn-bublo btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card-bublo d-flex flex-column p-4 h-100">
-            <h4 class="mt-0">Reservas</h4>
-            <p class="texto-ajuda flex-grow-1">Reservas ativas, atendidas, canceladas e expiradas.</p>
-            <div class="acoes-linha">
-              <a th:href="@{/relatorios/reservas.csv}" class="btn-bublo btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
+<th:block th:fragment="conteudo">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Relatórios</h1>
+      <p class="pagina-sub">Exporte os dados da biblioteca em CSV ou XLSX. Os arquivos refletem o que está cadastrado no momento da exportação.</p>
+    </div>
   </div>
-
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <div class="grade-relatorios">
+    <section class="painel relatorio-card">
+      <span class="icone-r"><i class="bi bi-arrow-up-right-square"></i></span>
+      <h2>Empréstimos</h2>
+      <p>Todos os empréstimos registrados, com leitor, exemplar e datas.</p>
+      <div class="acoes-linha" style="justify-content:flex-start">
+        <a th:href="@{/relatorios/emprestimos.csv}" class="btn btn-primary btn-sm"><i class="bi bi-filetype-csv"></i>CSV</a>
+        <a th:href="@{/relatorios/emprestimos.xlsx}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-excel"></i>XLSX</a>
+      </div>
+    </section>
+    <section class="painel relatorio-card">
+      <span class="icone-r"><i class="bi bi-alarm"></i></span>
+      <h2>Empréstimos em atraso</h2>
+      <p>Empréstimos ativos fora do prazo de devolução.</p>
+      <div class="acoes-linha" style="justify-content:flex-start">
+        <a th:href="@{/relatorios/emprestimos.csv?status=ATRASADO}" class="btn btn-primary btn-sm"><i class="bi bi-filetype-csv"></i>CSV</a>
+        <a th:href="@{/relatorios/emprestimos.xlsx?status=ATRASADO}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-excel"></i>XLSX</a>
+      </div>
+    </section>
+    <section class="painel relatorio-card">
+      <span class="icone-r"><i class="bi bi-receipt"></i></span>
+      <h2>Multas pendentes</h2>
+      <p>Multas ainda não quitadas, com o saldo de cada leitor.</p>
+      <div class="acoes-linha" style="justify-content:flex-start">
+        <a th:href="@{/relatorios/multas.csv?status=PENDENTE}" class="btn btn-primary btn-sm"><i class="bi bi-filetype-csv"></i>CSV</a>
+        <a th:href="@{/relatorios/multas.xlsx?status=PENDENTE}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-excel"></i>XLSX</a>
+      </div>
+    </section>
+    <section class="painel relatorio-card">
+      <span class="icone-r"><i class="bi bi-cash-coin"></i></span>
+      <h2>Multas e pagamentos</h2>
+      <p>Histórico completo de multas, pagamentos e saldos.</p>
+      <div class="acoes-linha" style="justify-content:flex-start">
+        <a th:href="@{/relatorios/multas.csv}" class="btn btn-primary btn-sm"><i class="bi bi-filetype-csv"></i>CSV</a>
+        <a th:href="@{/relatorios/multas.xlsx}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-excel"></i>XLSX</a>
+      </div>
+    </section>
+    <section class="painel relatorio-card">
+      <span class="icone-r"><i class="bi bi-book"></i></span>
+      <h2>Acervo</h2>
+      <p>Catálogo de materiais com tipo, editora, ano e ISBN ou ISSN.</p>
+      <div class="acoes-linha" style="justify-content:flex-start">
+        <a th:href="@{/relatorios/materiais.csv}" class="btn btn-primary btn-sm"><i class="bi bi-filetype-csv"></i>CSV</a>
+      </div>
+    </section>
+    <section class="painel relatorio-card">
+      <span class="icone-r"><i class="bi bi-people"></i></span>
+      <h2>Leitores</h2>
+      <p>Lista de alunos e professores cadastrados.</p>
+      <div class="acoes-linha" style="justify-content:flex-start">
+        <a th:href="@{/relatorios/leitores.csv}" class="btn btn-primary btn-sm"><i class="bi bi-filetype-csv"></i>CSV</a>
+      </div>
+    </section>
+    <section class="painel relatorio-card">
+      <span class="icone-r"><i class="bi bi-bookmark"></i></span>
+      <h2>Reservas</h2>
+      <p>Reservas aguardando, atendidas, canceladas e expiradas.</p>
+      <div class="acoes-linha" style="justify-content:flex-start">
+        <a th:href="@{/relatorios/reservas.csv}" class="btn btn-primary btn-sm"><i class="bi bi-filetype-csv"></i>CSV</a>
+      </div>
+    </section>
+  </div>
+</th:block>
 </body>
 </html>

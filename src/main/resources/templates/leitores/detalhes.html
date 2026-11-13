@@ -1,49 +1,96 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Detalhes do leitor - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell(${leitor.nome}, 'leitores', ~{::conteudo}, ~{})}">
+<head><title>Leitor</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('leitores')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header cabecalho-pagina">
-        <div>
-          <h1 th:text="${leitor.nome}">Nome do leitor</h1>
-          <p class="subtitulo" th:text="${leitor.tipo == 'PROFESSOR' ? 'Professor' : 'Aluno'}">Aluno</p>
-        </div>
-        <div class="acoes-linha">
-          <a th:href="@{/leitores/{id}/editar(id=${leitor.id})}" class="btn-bublo btn-contorno"><i class="bi bi-pencil"></i> Editar</a>
-          <a th:href="@{/emprestimos/novo(leitor=${leitor.id})}" class="btn-bublo" th:if="${leitor.ativo}"><i class="bi bi-box-arrow-right"></i> Novo empréstimo</a>
-          <a th:href="@{/leitores}" class="btn-bublo btn-contorno">Voltar</a>
-        </div>
-      </div>
-
-      <div class="grid-duas-colunas">
-        <div class="card-bublo p-4">
-          <table class="tabela">
-            <tr><th style="width:160px;">Matrícula</th><td th:text="${leitor.matricula}">-</td></tr>
-            <tr><th>E-mail</th><td th:text="${leitor.email}">-</td></tr>
-            <tr><th>CPF</th><td th:text="${leitor.cpf ?: '-'}">-</td></tr>
-            <tr><th>Telefone</th><td th:text="${leitor.telefone ?: '-'}">-</td></tr>
-            <tr><th>Endereço</th><td th:text="${leitor.endereco ?: '-'}">-</td></tr>
-            <tr><th>Curso / Depto.</th><td th:text="${leitor.cursoDepartamento ?: '-'}">-</td></tr>
-            <tr><th>Situação</th><td><span class="badge-bublo" th:classappend="${leitor.ativo} ? 'badge-ativo' : 'badge-inativo'" th:text="${leitor.ativo ? 'Ativo' : 'Inativo'}">Ativo</span></td></tr>
-          </table>
-        </div>
-        <div class="card-bublo p-4" th:if="${situacao}">
-          <h3 class="mt-0">Situação na biblioteca</h3>
-          <p>Empréstimos ativos: <strong th:text="${situacao.emprestimosAtivos}">0</strong></p>
-          <p>Saldo de multas: <strong th:text="${#numbers.formatCurrency(situacao.saldoPendente)}">R$ 0,00</strong></p>
-          <span class="badge-bublo" th:classappend="${situacao.bloqueado} ? 'badge-inativo' : 'badge-ativo'" th:text="${situacao.bloqueado} ? 'Bloqueado por multa pendente' : 'Sem pendências'">Sem pendências</span>
-        </div>
-      </div>
-    </main>
+<th:block th:fragment="conteudo">
+  <div class="migalhas"><a th:href="@{/leitores}">Leitores</a><i class="bi bi-chevron-right small"></i><span th:text="${leitor.nome}">Leitor</span></div>
+  <div class="pagina-cabeca">
+    <div>
+      <h1 th:text="${leitor.nome}">Nome do leitor</h1>
+      <p class="pagina-sub"><span class="tombo" th:text="${leitor.matricula}">ALU-00001</span> · <span th:text="${leitor.tipo == 'PROFESSOR' ? 'Professor' : 'Aluno'}">Aluno</span>
+        <span class="badge-b ms-2" th:classappend="${leitor.ativo} ? 'st-ok' : 'st-neutro'" th:text="${leitor.ativo ? 'Ativo' : 'Inativo'}">Ativo</span></p>
+    </div>
+    <div class="pagina-acoes">
+      <a th:href="@{/leitores/{id}/editar(id=${leitor.id})}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i>Editar</a>
+      <a th:href="@{/emprestimos/novo(leitor=${leitor.id})}" class="btn btn-primary" th:if="${leitor.ativo}"><i class="bi bi-arrow-up-right-square"></i>Novo empréstimo</a>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <div class="indicadores-mini" th:if="${situacao}">
+    <div class="indicador-mini"><span class="v" th:text="${situacao.emprestimosAtivos}">0</span><span class="k">Empréstimos ativos</span></div>
+    <div class="indicador-mini"><span class="v" th:text="${#numbers.formatCurrency(situacao.saldoPendente)}">R$ 0,00</span><span class="k">Saldo de multas</span></div>
+    <div class="indicador-mini"><span class="badge-b mb-2 align-self-start" th:classappend="${situacao.bloqueado} ? 'st-erro' : 'st-ok'" th:text="${situacao.bloqueado ? 'Bloqueado' : 'Sem pendências'}">Sem pendências</span><span class="k" th:text="${situacao.bloqueado ? 'Multa pendente impede novos empréstimos' : 'Pode retirar novos exemplares'}">Situação</span></div>
+  </div>
+
+  <div class="grade-2">
+    <section class="painel">
+      <div class="painel-cabeca"><h2>Dados cadastrais</h2></div>
+      <div class="painel-corpo">
+        <table class="tabela tabela-chave">
+          <tr><th>E-mail</th><td th:text="${leitor.email}">—</td></tr>
+          <tr><th>CPF</th><td class="numero" th:text="${leitor.cpf ?: '—'}">—</td></tr>
+          <tr><th>Telefone</th><td th:text="${leitor.telefone ?: '—'}">—</td></tr>
+          <tr><th>Endereço</th><td th:text="${leitor.endereco ?: '—'}">—</td></tr>
+          <tr><th>Curso ou departamento</th><td th:text="${leitor.cursoDepartamento ?: '—'}">—</td></tr>
+        </table>
+      </div>
+    </section>
+    <section class="painel">
+      <div class="painel-cabeca"><h2>Reservas</h2></div>
+      <div class="painel-lista mt-2">
+        <div class="vazio compacto" th:if="${#lists.isEmpty(historicoReservas)}"><h3>Nenhuma reserva</h3></div>
+        <div class="item-lista" th:each="r : ${historicoReservas}">
+          <span class="info"><strong th:text="${r.itemTitulo}">Título</strong><span th:text="${'Posição ' + r.posicao + ' · retirar até ' + #temporals.format(r.prazoRetirada, 'dd/MM/yyyy')}">Info</span></span>
+          <span class="badge-b" th:classappend="${r.status == 'AGUARDANDO'} ? 'st-aviso' : (${r.status == 'ATENDIDA'} ? 'st-ok' : 'st-neutro')" th:text="${r.status == 'AGUARDANDO' ? 'Aguardando' : (r.status == 'ATENDIDA' ? 'Atendida' : (r.status == 'CANCELADA' ? 'Cancelada' : 'Expirada'))}">Aguardando</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="painel mt-4">
+    <div class="painel-cabeca"><h2>Histórico de empréstimos<span class="sub">Os 10 mais recentes</span></h2></div>
+    <div class="painel-corpo">
+      <div class="vazio compacto" th:if="${#lists.isEmpty(historicoEmprestimos)}"><h3>Nenhum empréstimo registrado</h3></div>
+      <div class="tabela-wrap cartoes" th:unless="${#lists.isEmpty(historicoEmprestimos)}">
+        <table class="tabela tabela-cartoes">
+          <thead><tr><th>Material</th><th>Tombamento</th><th>Retirada</th><th>Devolução prevista</th><th>Situação</th></tr></thead>
+          <tbody>
+            <tr th:each="e : ${historicoEmprestimos}">
+              <td data-rotulo="Material" class="principal" th:text="${e.titulo}">Título</td>
+              <td data-rotulo="Tombamento" class="tombo" th:text="${e.tombamento}">BA-000001</td>
+              <td data-rotulo="Retirada" th:text="${#temporals.format(e.dataEmprestimo, 'dd/MM/yyyy')}">01/01/2026</td>
+              <td data-rotulo="Prevista" th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">08/01/2026</td>
+              <td data-rotulo="Situação"><span class="badge-b" th:classappend="${e.atrasado} ? 'st-erro' : (${e.status == 'ATIVO'} ? 'st-info' : (${e.status == 'DEVOLVIDO'} ? 'st-ok' : 'st-neutro'))"
+                    th:text="${e.atrasado ? 'Em atraso' : (e.status == 'ATIVO' ? 'Ativo' : (e.status == 'DEVOLVIDO' ? 'Devolvido' : 'Cancelado'))}">Ativo</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="painel mt-4">
+    <div class="painel-cabeca"><h2>Multas<span class="sub">As 10 mais recentes</span></h2></div>
+    <div class="painel-corpo">
+      <div class="vazio compacto" th:if="${#lists.isEmpty(historicoMultas)}"><h3>Nenhuma multa registrada</h3></div>
+      <div class="tabela-wrap cartoes" th:unless="${#lists.isEmpty(historicoMultas)}">
+        <table class="tabela tabela-cartoes">
+          <thead><tr><th>Gerada em</th><th>Dias de atraso</th><th class="num">Valor</th><th class="num">Pago</th><th class="num">Saldo</th><th>Situação</th></tr></thead>
+          <tbody>
+            <tr th:each="m : ${historicoMultas}">
+              <td data-rotulo="Gerada em" th:text="${#temporals.format(m.dataGeracao, 'dd/MM/yyyy')}">01/01/2026</td>
+              <td data-rotulo="Dias" class="numero" th:text="${m.diasAtraso}">3</td>
+              <td data-rotulo="Valor" class="num" th:text="${#numbers.formatCurrency(m.valor)}">R$ 0,00</td>
+              <td data-rotulo="Pago" class="num" th:text="${#numbers.formatCurrency(m.valorPago)}">R$ 0,00</td>
+              <td data-rotulo="Saldo" class="num" th:text="${#numbers.formatCurrency(m.saldoPendente)}">R$ 0,00</td>
+              <td data-rotulo="Situação"><span class="badge-b" th:classappend="${m.status == 'PAGA'} ? 'st-ok' : (${m.status == 'PAGA_PARCIAL'} ? 'st-info' : 'st-aviso')" th:text="${m.status == 'PAGA' ? 'Paga' : (m.status == 'PAGA_PARCIAL' ? 'Paga em parte' : 'Pendente')}">Pendente</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</th:block>
 </body>
 </html>

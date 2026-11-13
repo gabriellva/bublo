@@ -11,7 +11,9 @@ import com.gabriel.bublo.repository.MultaRepository;
 import com.gabriel.bublo.repository.NotificacaoRepository;
 import com.gabriel.bublo.repository.ReservaRepository;
 import com.gabriel.bublo.service.EmprestimoService;
+import com.gabriel.bublo.service.MultaService;
 import com.gabriel.bublo.service.NotificacaoService;
+import com.gabriel.bublo.service.ReservaService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +30,8 @@ public class DashboardController {
 
     private static final int MESES_NO_GRAFICO = 6;
     private static final int ATIVIDADES_RECENTES = 6;
+    private static final int ITENS_POR_LISTA = 5;
+    private static final int CANDIDATOS_PROXIMAS_DEVOLUCOES = 100;
 
     private final AuditoriaRepository auditoriaRepository;
     private final ItemAcervoRepository itemAcervoRepository;
@@ -39,6 +43,8 @@ public class DashboardController {
     private final NotificacaoRepository notificacaoRepository;
     private final EmprestimoService emprestimoService;
     private final NotificacaoService notificacaoService;
+    private final MultaService multaService;
+    private final ReservaService reservaService;
 
     public DashboardController(AuditoriaRepository auditoriaRepository,
                                ItemAcervoRepository itemAcervoRepository,
@@ -49,7 +55,9 @@ public class DashboardController {
                                MultaRepository multaRepository,
                                NotificacaoRepository notificacaoRepository,
                                EmprestimoService emprestimoService,
-                               NotificacaoService notificacaoService) {
+                               NotificacaoService notificacaoService,
+                               MultaService multaService,
+                               ReservaService reservaService) {
         this.auditoriaRepository = auditoriaRepository;
         this.itemAcervoRepository = itemAcervoRepository;
         this.exemplarRepository = exemplarRepository;
@@ -60,6 +68,8 @@ public class DashboardController {
         this.notificacaoRepository = notificacaoRepository;
         this.emprestimoService = emprestimoService;
         this.notificacaoService = notificacaoService;
+        this.multaService = multaService;
+        this.reservaService = reservaService;
     }
 
     @GetMapping("/dashboard")
@@ -84,6 +94,15 @@ public class DashboardController {
         model.addAttribute("valoresTipo", porTipo.stream().map(linha -> linha[1]).toList());
         model.addAttribute("atividadesRecentes", auditoriaRepository.buscar(null, null, null, 0, ATIVIDADES_RECENTES).getConteudo());
         model.addAttribute("naoLidas", notificacaoRepository.contarNaoLidas());
+        model.addAttribute("proximasDevolucoes", emprestimoService
+            .listar(null, "ATIVO", 0, CANDIDATOS_PROXIMAS_DEVOLUCOES, "data_prevista_devolucao ASC")
+            .getConteudo().stream().filter(e -> !e.isAtrasado()).limit(ITENS_POR_LISTA).toList());
+        model.addAttribute("emprestimosAtrasados", emprestimoService
+            .listar(null, "ATRASADO", 0, ITENS_POR_LISTA, "data_prevista_devolucao ASC").getConteudo());
+        model.addAttribute("reservasAguardando", reservaService
+            .listar(null, "AGUARDANDO", 0, ITENS_POR_LISTA, "prazo_retirada ASC").getConteudo());
+        model.addAttribute("multasPendentes", multaService
+            .listar(null, "PENDENTE", 0, ITENS_POR_LISTA, "data_geracao ASC").getConteudo());
         return "dashboard";
     }
 

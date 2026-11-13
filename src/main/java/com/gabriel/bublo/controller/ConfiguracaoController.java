@@ -1,6 +1,7 @@
 package com.gabriel.bublo.controller;
 
 import com.gabriel.bublo.security.AuthUtil;
+import com.gabriel.bublo.repository.AuditoriaRepository;
 import com.gabriel.bublo.service.ConfiguracaoService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,10 +21,14 @@ import java.util.Map;
 @RequestMapping("/configuracoes")
 public class ConfiguracaoController {
 
-    private final ConfiguracaoService configuracaoService;
+    private static final int ALTERACOES_NO_HISTORICO = 8;
 
-    public ConfiguracaoController(ConfiguracaoService configuracaoService) {
+    private final ConfiguracaoService configuracaoService;
+    private final AuditoriaRepository auditoriaRepository;
+
+    public ConfiguracaoController(ConfiguracaoService configuracaoService, AuditoriaRepository auditoriaRepository) {
         this.configuracaoService = configuracaoService;
+        this.auditoriaRepository = auditoriaRepository;
     }
 
     @GetMapping
@@ -31,6 +36,8 @@ public class ConfiguracaoController {
         Map<String, String> valores = new LinkedHashMap<>();
         configuracaoService.listarTodas().forEach(c -> valores.put(c.getChave(), c.getValor()));
         model.addAttribute("valores", valores);
+        model.addAttribute("historico", auditoriaRepository
+            .buscar(null, "Configuracoes", "ALTERACAO_CONFIGURACAO", 0, ALTERACOES_NO_HISTORICO).getConteudo());
         return "configuracoes/listar";
     }
 

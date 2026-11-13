@@ -46,7 +46,9 @@ public class NotificacaoController {
         var recentes = notificacaoService.listar(null, null, false, null, 0, RESUMO_TAMANHO).getConteudo();
         List<Map<String, Object>> itens = recentes.stream()
             .map(n -> Map.<String, Object>of("id", n.getId(), "titulo", n.getTitulo(),
-                "mensagem", n.getMensagem() != null ? n.getMensagem() : ""))
+                "mensagem", n.getMensagem() != null ? n.getMensagem() : "",
+                "prioridade", n.getPrioridade() != null ? n.getPrioridade() : "INFORMATIVO",
+                "categoria", n.getCategoria() != null ? n.getCategoria() : ""))
             .toList();
         return Map.of("naoLidas", notificacaoService.contarNaoLidas(), "itens", itens);
     }

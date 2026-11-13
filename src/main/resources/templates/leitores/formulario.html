@@ -1,81 +1,88 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Leitor - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell(${leitor.id != null ? 'Editar leitor' : 'Cadastrar leitor'}, 'leitores', ~{::conteudo}, ~{})}">
+<head><title>Leitor</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('leitores')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header">
-        <h1 th:text="${leitor.id != null} ? 'Editar leitor' : 'Cadastrar leitor'">Cadastrar leitor</h1>
-        <p class="subtitulo">Aluno ou professor</p>
-      </div>
-
-      <form th:action="@{/leitores}" th:object="${leitor}" method="post" novalidate>
-        <input type="hidden" th:field="*{id}" />
-        <div class="form-grid">
+<th:block th:fragment="conteudo">
+  <div class="migalhas"><a th:href="@{/leitores}">Leitores</a><i class="bi bi-chevron-right small"></i><span th:text="${leitor.id != null ? 'Editar' : 'Novo'}">Novo</span></div>
+  <div class="pagina-cabeca">
+    <div>
+      <h1 th:text="${leitor.id != null} ? 'Editar leitor' : 'Cadastrar leitor'">Cadastrar leitor</h1>
+      <p class="pagina-sub">Nome, e-mail e endereço são obrigatórios. A matrícula é gerada automaticamente.</p>
+    </div>
+  </div>
+  <form th:action="@{/leitores}" th:object="${leitor}" method="post" novalidate data-proteger-alteracoes class="form-estreito">
+    <input type="hidden" th:field="*{id}" />
+    <section class="painel secao-form">
+      <div class="painel-corpo">
+        <h2>Identificação</h2>
+        <p class="secao-sub">Como o leitor aparece no sistema.</p>
+        <div class="grade-form">
           <div>
             <label class="form-label" for="tipo">Tipo</label>
-            <select th:field="*{tipo}" class="form-control" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" required>
+            <select th:field="*{tipo}" class="form-select" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" required>
               <option value="ALUNO">Aluno</option>
               <option value="PROFESSOR">Professor</option>
             </select>
             <small class="erro-campo" th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}">Erro</small>
           </div>
           <div>
+            <label class="form-label" for="matricula">Matrícula</label>
+            <input type="text" id="matricula" th:value="*{matricula}" class="form-control" readonly placeholder="Gerada ao salvar" />
+          </div>
+          <div class="largo">
             <label class="form-label" for="nome">Nome completo</label>
-            <input type="text" th:field="*{nome}" class="form-control" th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'" required />
+            <input type="text" th:field="*{nome}" class="form-control" th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'" required autocomplete="off" />
             <small class="erro-campo" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}">Erro</small>
           </div>
           <div>
-            <label class="form-label" for="email">E-mail</label>
-            <input type="email" th:field="*{email}" class="form-control" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'" required />
-            <small class="erro-campo" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Erro</small>
-          </div>
-          <div>
-            <label class="form-label" for="matricula">Matrícula (gerada automaticamente)</label>
-            <input type="text" id="matricula" th:value="*{matricula}" class="form-control" readonly />
-          </div>
-          <div>
-            <label class="form-label" for="cpf">CPF (opcional)</label>
-            <input type="text" th:field="*{cpf}" class="form-control" placeholder="Somente se necessário" />
+            <label class="form-label" for="cpf">CPF <span class="opcional">(opcional)</span></label>
+            <input type="text" th:field="*{cpf}" class="form-control" inputmode="numeric" placeholder="000.000.000-00" />
             <small class="erro-campo" th:if="${#fields.hasErrors('cpf')}" th:errors="*{cpf}">Erro</small>
           </div>
           <div>
-            <label class="form-label" for="endereco">Endereço</label>
-            <input type="text" th:field="*{endereco}" class="form-control" />
-            <small class="erro-campo" th:if="${#fields.hasErrors('endereco')}" th:errors="*{endereco}">Erro</small>
-          </div>
-          <div>
-            <label class="form-label" for="telefone">Telefone</label>
-            <input type="text" th:field="*{telefone}" class="form-control" />
-            <small class="erro-campo" th:if="${#fields.hasErrors('telefone')}" th:errors="*{telefone}">Erro</small>
-          </div>
-          <div>
-            <label class="form-label" for="cursoDepartamento">Curso / Departamento</label>
+            <label class="form-label" for="cursoDepartamento">Curso ou departamento <span class="opcional">(opcional)</span></label>
             <input type="text" th:field="*{cursoDepartamento}" class="form-control" />
             <small class="erro-campo" th:if="${#fields.hasErrors('cursoDepartamento')}" th:errors="*{cursoDepartamento}">Erro</small>
           </div>
+        </div>
+      </div>
+    </section>
+    <section class="painel secao-form">
+      <div class="painel-corpo">
+        <h2>Contato</h2>
+        <p class="secao-sub">Usado para avisos de devolução, reservas e multas.</p>
+        <div class="grade-form">
+          <div>
+            <label class="form-label" for="email">E-mail</label>
+            <input type="email" th:field="*{email}" class="form-control" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'" required autocomplete="off" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Erro</small>
+          </div>
+          <div>
+            <label class="form-label" for="telefone">Telefone <span class="opcional">(opcional)</span></label>
+            <input type="text" th:field="*{telefone}" class="form-control" inputmode="tel" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('telefone')}" th:errors="*{telefone}">Erro</small>
+          </div>
+          <div class="largo">
+            <label class="form-label" for="endereco">Endereço</label>
+            <input type="text" th:field="*{endereco}" class="form-control" th:classappend="${#fields.hasErrors('endereco')} ? 'is-invalid'" required />
+            <small class="erro-campo" th:if="${#fields.hasErrors('endereco')}" th:errors="*{endereco}">Erro</small>
+          </div>
           <div>
             <label class="form-label" for="ativo">Situação</label>
-            <select th:field="*{ativo}" class="form-control">
+            <select th:field="*{ativo}" class="form-select">
               <option value="true">Ativo</option>
               <option value="false">Inativo</option>
             </select>
           </div>
         </div>
-        <div class="acoes-linha mt-4">
-          <button type="submit" class="btn-bublo">Salvar leitor</button>
-          <a th:href="@{/leitores}" class="btn-bublo btn-contorno">Cancelar</a>
-        </div>
-      </form>
-    </main>
-  </div>
-
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+      </div>
+    </section>
+    <div class="rodape-form rodape-form-fixo">
+      <button type="submit" class="btn btn-primary">Salvar leitor</button>
+      <a th:href="@{/leitores}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</th:block>
 </body>
 </html>
