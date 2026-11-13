@@ -18,8 +18,15 @@ spring:
     mode: HTML
     cache: false
     encoding: UTF-8
-  resources:
-    static-locations: classpath:/static/
+  web:
+    locale: pt_BR
+    locale-resolver: fixed
+    resources:
+      static-locations: classpath:/static/
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
   messages:
     basename: messages/messages
     encoding: UTF-8

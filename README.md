@@ -162,6 +162,14 @@ cp .env.example .env
 
 O arquivo `.env` é ignorado pelo Git (`.gitignore`).
 
+### Alternativa: app + PostgreSQL 100% em containers
+
+```bash
+docker compose -p bublo-work -f docker-compose.app.yml up -d --build   # app em http://localhost:8090
+docker compose -p bublo-work -f docker-compose.app.yml down -v         # derruba e apaga o banco
+ADMIN_PASSWORD=Mudar@1234 BASE_URL=http://localhost:8090 scripts/smoke-test.sh
+```
+
 ### 3. Inicie o PostgreSQL (Docker Compose)
 
 ```bash
