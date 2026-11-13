@@ -57,12 +57,12 @@ public class NotificacaoRepository {
             n.getCategoria(), n.getPrioridade(), n.getTitulo(), n.getMensagem(),
             n.getRegistroTipo(), n.getRegistroId());
         n.setId(id);
-        publicarAposCommit(id, n.getTitulo());
+        publicarAposCommit(id, n.getTitulo(), n.getPrioridade());
         return n;
     }
 
-    private void publicarAposCommit(Long id, String titulo) {
-        Runnable envio = () -> webSocketHandler.enviar("notificacao", java.util.Map.of("id", id, "titulo", titulo));
+    private void publicarAposCommit(Long id, String titulo, String prioridade) {
+        Runnable envio = () -> webSocketHandler.enviar("notificacao", java.util.Map.of("id", id, "titulo", titulo, "prioridade", prioridade != null ? prioridade : "INFORMATIVO"));
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             envio.run();
             return;

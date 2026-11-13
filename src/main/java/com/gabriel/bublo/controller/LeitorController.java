@@ -7,6 +7,8 @@ import com.gabriel.bublo.model.TipoLeitor;
 import com.gabriel.bublo.security.AuthUtil;
 import com.gabriel.bublo.service.EmprestimoService;
 import com.gabriel.bublo.service.LeitorService;
+import com.gabriel.bublo.service.MultaService;
+import com.gabriel.bublo.service.ReservaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -38,11 +40,18 @@ public class LeitorController {
         + "PROFESSOR,Maria Souza,maria@email.com,,Rua B,11988888888,Matematica\n";
 
     private final LeitorService leitorService;
-    private final EmprestimoService emprestimoService;
+    private static final int HISTORICO_POR_LISTA = 10;
 
-    public LeitorController(LeitorService leitorService, EmprestimoService emprestimoService) {
+    private final EmprestimoService emprestimoService;
+    private final MultaService multaService;
+    private final ReservaService reservaService;
+
+    public LeitorController(LeitorService leitorService, EmprestimoService emprestimoService,
+                           MultaService multaService, ReservaService reservaService) {
         this.leitorService = leitorService;
         this.emprestimoService = emprestimoService;
+        this.multaService = multaService;
+        this.reservaService = reservaService;
     }
 
     @GetMapping
@@ -82,6 +91,13 @@ public class LeitorController {
         }
         model.addAttribute("leitor", leitor);
         model.addAttribute("situacao", emprestimoService.restricaoLeitor(id));
+        String matricula = leitor.getMatricula();
+        model.addAttribute("historicoEmprestimos", emprestimoService
+            .listar(matricula, null, 0, HISTORICO_POR_LISTA, "data_emprestimo DESC").getConteudo());
+        model.addAttribute("historicoMultas", multaService
+            .listar(matricula, null, 0, HISTORICO_POR_LISTA, "data_geracao DESC").getConteudo());
+        model.addAttribute("historicoReservas", reservaService
+            .listar(matricula, null, 0, HISTORICO_POR_LISTA, "data_reserva DESC").getConteudo());
         return "leitores/detalhes";
     }
 
