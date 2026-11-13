@@ -1,0 +1,30 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="topbar">
+  <header class="topbar" id="topbar">
+    <button class="btn-toggle-tema" id="btn-tema" title="Alternar tema">
+      <i class="bi bi-moon-stars-fill"></i>
+    </button>
+    <div class="titulo-app" th:text="${nomeInstituicao ?: 'Bublo'}">Bublo</div>
+    <div class="actions">
+      <button id="btn-notificacoes" class="btn-toggle-tema" title="Notificações">
+        <i class="bi bi-bell"></i>
+        <span id="contador-notificacoes" class="contador" th:text="${naoLidas ?: 0}" style="display:none;">0</span>
+      </button>
+      <div class="dropdown-notificacoes" id="dropdown-notificacoes">
+        <div class="cabecalho">Notificações</div>
+        <div id="lista-notificacoes" style="max-height:300px;overflow-y:auto;">
+          <div class="item" style="color:var(--bublo-texto-suave);font-size:0.85rem;">Carregando…</div>
+        </div>
+      </div>
+      <div class="usuario">
+        <i class="bi bi-person-circle" style="font-size:1.4rem;"></i>
+        <span th:text="${usuario ?: 'Administrador'}">Administrador</span>
+      </div>
+      <a class="btn-bublo btn-sm" style="background:transparent;border:1px solid var(--bublo-borda);color:var(--bublo-texto);padding:0.4rem 0.9rem;" th:href="@{/conta}">Minha conta</a>
+      <form th:action="@{/logout}" method="post" style="margin:0;display:inline;">
+        <button type="submit" class="btn-bublo btn-sm" style="background:transparent;border:1px solid var(--bublo-borda);color:var(--bublo-texto);padding:0.4rem 0.9rem;">
+          <i class="bi bi-box-arrow-right"></i> Sair
+        </button>
+      </form>
+    </div>
+  </header>
+</th:block>

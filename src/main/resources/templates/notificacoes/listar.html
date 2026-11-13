@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Notificações - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='configuracoes')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Notificações</h1>
+        <p class="subtitulo">Central de notificações do sistema</p>
+      </div>
+
+      <div th:if="${naoLidas gt 0}" class="toast info" style="margin-bottom:1rem;">
+        <i class="bi bi-bell icone"></i>
+        <div class="conteudo"><div class="titulo" th:text="${naoLidas}">0</div><div class="descricao">notificação(ns) não lida(s)</div></div>
+      </div>
+
+      <table class="tabela">
+        <thead>
+          <tr><th>#</th><th>Categoria</th><th>Prioridade</th><th>Título</th><th>Mensagem</th><th>Data</th><th>Status</th><th>Ação</th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="n : ${resultado.conteudo}">
+            <td th:text="${n.id}">-</td>
+            <td th:text="${n.categoria}">-</td>
+            <td><span class="badge-bublo" th:text="${n.prioridade}">Info</span></td>
+            <td th:text="${n.titulo}">-</td>
+            <td th:text="${n.mensagem}">-</td>
+            <td th:text="${#temporals.format(n.dataCriacao, 'dd/MM/yyyy HH:mm')}">-</td>
+            <td>
+              <span class="badge-bublo" th:class="${n.lida} ? 'badge-ativo' : 'badge-inativo'" th:text="${n.lida ? 'Lida' : 'Não lida'}">Não lida</span>
+            </td>
+            <td>
+              <form th:action="@{/notificacoes/{id}/ler(id=${n.id})}" method="post" style="display:inline;" th:if="${!n.lida}">
+                <button type="submit" class="btn-bublo btn-sm" style="padding:0.2rem 0.5rem;font-size:0.8rem;">Ler</button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+</body>
+</html>

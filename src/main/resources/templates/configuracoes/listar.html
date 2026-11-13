@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Configurações - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='configuracoes')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Configurações</h1>
+        <p class="subtitulo">Empréstimos, multas, reservas, notificações e dados da biblioteca</p>
+      </div>
+
+      <div th:if="${sucesso}" class="toast sucesso" style="margin-bottom:1rem;">
+        <i class="bi bi-check-circle-fill icone"></i>
+        <div class="conteudo"><div class="titulo" th:text="${sucesso}">Atualizado.</div></div>
+      </div>
+      <div th:if="${erro}" class="toast erro" style="margin-bottom:1rem;">
+        <i class="bi bi-exclamation-circle-fill icone"></i>
+        <div class="conteudo"><div class="titulo" th:text="${erro}">Erro</div></div>
+      </div>
+
+      <form th:action="@{/configuracoes/salvar}" method="post">
+        <div class="form-grid">
+          <div>
+            <label class="form-label">Nome da instituição</label>
+            <input type="text" name="chave" value="nome_instituicao" readonly class="form-control" style="background:#f0ece6;" />
+            <input type="text" name="valor" class="form-control" placeholder="Nome da instituição" required />
+          </div>
+          <div>
+            <label class="form-label">Prefixo dos tombamentos</label>
+            <input type="text" name="chave" value="prefixo_tombamento" readonly class="form-control" style="background:#f0ece6;" />
+            <input type="text" name="valor" class="form-control" value="BA" required />
+          </div>
+          <div>
+            <label class="form-label">Limite alunos (exemplares)</label>
+            <input type="text" name="chave" value="limite_alunos" readonly class="form-control" style="background:#f0ece6;" />
+            <input type="number" name="valor" class="form-control" value="3" required />
+          </div>
+          <div>
+            <label class="form-label">Limite professores (exemplares)</label>
+            <input type="text" name="chave" value="limite_professores" readonly class="form-control" style="background:#f0ece6;" />
+            <input type="number" name="valor" class="form-control" value="5" required />
+          </div>
+          <div>
+            <label class="form-label">Prazo alunos (dias)</label>
+            <input type="text" name="chave" value="prazo_alunos" readonly class="form-control" style="background:#f0ece6;" />
+            <input type="number" name="valor" class="form-control" value="7" required />
+          </div>
+          <div>
+            <label class="form-label">Prazo professores (dias)</label>
+            <input type="text" name="chave" value="prazo_professores" readonly class="form-control" style="background:#f0ece6;" />
+            <input type="number" name="valor" class="form-control" value="14" required />
+          </div>
+          <div>
+            <label class="form-label">Taxa diária multa (R$)</label>
+            <input type="text" name="chave" value="taxa_diaria_multa" readonly class="form-control" style="background:#f0ece6;" />
+            <input type="number" name="valor" step="0.01" class="form-control" value="2.00" required />
+          </div>
+          <div>
+            <label class="form-label">Prazo retirada reserva (dias)</label>
+            <input type="text" name="chave" value="prazo_retirada_reserva" readonly class="form-control" style="background:#f0ece6;" />
+            <input type="number" name="valor" class="form-control" value="3" required />
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Justificativa da alteração (obrigatória)</label>
+          <textarea name="justificativa" class="form-control" rows="2" required></textarea>
+        </div>
+        <p class="texto-ajuda">Alterações valem somente para novas operações. Não modificam empréstimos, multas ou reservas existentes.</p>
+        <button type="submit" class="btn-bublo">Salvar configurações</button>
+        <a th:href="@{/configuracoes}" class="btn-bublo-secundario" style="margin-left:0.75rem;">Voltar</a>
+      </form>
+    </main>
+  </div>
+</body>
+</html>

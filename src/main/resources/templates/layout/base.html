@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title th:text="${tituloPagina ?: 'Bublo'}">Bublo - Biblioteca Acadêmica</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link th:href="@{/lib/bootstrap/css/bootstrap.min.css}" rel="stylesheet" />
+  <link th:href="@{/css/design-system.css}" rel="stylesheet" />
+  <link th:href="@{/lib/bootstrap-icons/font/bootstrap-icons.css}" rel="stylesheet" />
+  <th:block th:fragment="head"></th:block>
+</head>
+<body th:attr="data-tema=${temaUsuario ?: 'claro'}">
+  <th:block th:fragment="corpo"></th:block>
+</body>
+</html>

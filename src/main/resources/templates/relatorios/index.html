@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Relatórios - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='relatorios')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Relatórios</h1>
+        <p class="subtitulo">Empréstimos, atrasados, multas, materiais, leitores e reservas. Exportação CSV e XLSX.</p>
+      </div>
+
+      <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+        <div class="col">
+          <div class="card-bublo" style="height:220px;display:flex;flex-direction:column;padding:1.25rem;">
+            <h4 style="margin:0 0 0.75rem 0;">Empréstimos por período</h4>
+            <p class="texto-ajuda" style="flex:1;">Relatório de empréstimos em um intervalo de datas.</p>
+            <a href="#" class="btn-bublo btn-sm mt-auto">Gerar · CSV · XLSX</a>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card-bublo" style="height:220px;display:flex;flex-direction:column;padding:1.25rem;">
+            <h4 style="margin:0 0 0.75rem 0;">Empréstimos atrasados</h4>
+            <p class="texto-ajuda" style="flex:1;">Lista de empréstimos fora do prazo.</p>
+            <a href="#" class="btn-bublo btn-sm mt-auto">Gerar · CSV · XLSX</a>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card-bublo" style="height:220px;display:flex;flex-direction:column;padding:1.25rem;">
+            <h4 style="margin:0 0 0.75rem 0;">Multas e pagamentos pendentes</h4>
+            <p class="texto-ajuda" style="flex:1;">Saldo pendente por leitor.</p>
+            <a href="#" class="btn-bublo btn-sm mt-auto">Gerar · CSV · XLSX</a>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card-bublo" style="height:220px;display:flex;flex-direction:column;padding:1.25rem;">
+            <h4 style="margin:0 0 0.75rem 0;">Materiais mais emprestados</h4>
+            <p class="texto-ajuda" style="flex:1;">Popularidade do acervo.</p>
+            <a href="#" class="btn-bublo btn-sm mt-auto">Gerar · CSV · XLSX</a>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card-bublo" style="height:220px;display:flex;flex-direction:column;padding:1.25rem;">
+            <h4 style="margin:0 0 0.75rem 0;">Leitores cadastrados</h4>
+            <p class="texto-ajuda" style="flex:1;">Lista de alunos e professores.</p>
+            <a href="#" class="btn-bublo btn-sm mt-auto">Gerar · CSV · XLSX</a>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card-bublo" style="height:220px;display:flex;flex-direction:column;padding:1.25rem;">
+            <h4 style="margin:0 0 0.75rem 0;">Reservas</h4>
+            <p class="texto-ajuda" style="flex:1;">Reservas ativas e expiradas.</p>
+            <a href="#" class="btn-bublo btn-sm mt-auto">Gerar · CSV · XLSX</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

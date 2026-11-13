@@ -1,0 +1,44 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="sidebar(modulo)">
+  <aside class="sidebar" id="sidebar">
+    <div class="marca">
+      <span class="simbolo"><i class="bi bi-book"></i></span>
+      <span th:text="${nomeInstituicao ?: 'Bublo'}">Bublo</span>
+    </div>
+    <nav>
+      <a class="nav-item" th:class="${modulo == 'dashboard'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/dashboard}">
+        <span class="icone"><i class="bi bi-speedometer2"></i></span>Dashboard
+      </a>
+      <a class="nav-item" th:class="${modulo == 'acervo'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/acervo}">
+        <span class="icone"><i class="bi bi-book-half"></i></span>Acervo
+      </a>
+      <a class="nav-item" th:class="${modulo == 'leitores'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/leitores}">
+        <span class="icone"><i class="bi bi-people"></i></span>Leitores
+      </a>
+      <a class="nav-item" th:class="${modulo == 'emprestimos'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/emprestimos}">
+        <span class="icone"><i class="bi bi-box-arrow-right"></i></span>Empréstimos
+      </a>
+      <a class="nav-item" th:class="${modulo == 'devolucoes'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/devolucoes}">
+        <span class="icone"><i class="bi bi-box-arrow-left"></i></span>Devoluções
+      </a>
+      <a class="nav-item" th:class="${modulo == 'reservas'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/reservas}">
+        <span class="icone"><i class="bi bi-calendar-check"></i></span>Reservas
+      </a>
+      <a class="nav-item" th:class="${modulo == 'multas'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/multas}">
+        <span class="icone"><i class="bi bi-currency-real"></i></span>Multas
+      </a>
+      <a class="nav-item" th:class="${modulo == 'relatorios'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/relatorios}">
+        <span class="icone"><i class="bi bi-file-earmark-bar-graph"></i></span>Relatórios
+      </a>
+      <a class="nav-item" th:class="${modulo == 'configuracoes'} ? 'nav-item ativo' : 'nav-item'" th:href="@{/configuracoes}">
+        <span class="icone"><i class="bi bi-gear"></i></span>Configurações
+      </a>
+      <a class="nav-item" th:href="@{/auditoria}">
+        <span class="icone"><i class="bi bi-journal-text"></i></span>Auditoria
+      </a>
+    </nav>
+    <div class="rodape">
+      <strong th:text="${usuario ?: 'Administrador'}"></strong><br/>
+      <span>Biblioteca Acadêmica</span>
+    </div>
+  </aside>
+</th:block>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Erro - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='dashboard')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Erro</h1>
+        <p class="subtitulo">Ocorreu um problema ao processar a solicitação</p>
+      </div>
+
+      <div class="card-bublo" style="max-width:560px;padding:2rem;">
+        <div class="simbolo" style="font-size:3rem;margin-bottom:1rem;opacity:0.4;">i</div>
+        <p th:text="${mensagem ?: 'Erro inesperado.'}">Erro inesperado.</p>
+        <a th:href="@{/dashboard}" class="btn-bublo">Voltar ao dashboard</a>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

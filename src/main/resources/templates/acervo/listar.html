@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
+  <title>Acervo - Bublo</title>
+  <style>
+    .capa-generica { width:90px; height:120px; background:#e3d9c9; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#7b1f35; font-weight:700; font-size:0.75rem; }
+    .chip { display:inline-block;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;background:var(--bublo-fundo);color:var(--bublo-texto);margin-right:0.4rem; }
+  </style>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='acervo')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h1>Acervo</h1>
+          <p class="subtitulo">Gerencie o catálogo bibliográfico e exemplares</p>
+        </div>
+        <a th:href="@{/acervo/novo}" class="btn-bublo"><i class="bi bi-plus-lg"></i> Cadastrar material</a>
+      </div>
+
+      <div th:if="${param.sucesso}" class="toast sucesso" style="margin-bottom:1rem;">
+        <i class="bi bi-check-circle-fill icone"></i><div class="conteudo"><div class="titulo">Material salvo com sucesso.</div></div>
+      </div>
+      <div th:if="${param.excluido}" class="toast sucesso" style="margin-bottom:1rem;">
+        <i class="bi bi-check-circle-fill icone"></i><div class="conteudo"><div class="titulo">Material excluído com sucesso.</div></div>
+      </div>
+
+      <div class="card-bublo" style="padding:1.25rem;margin-bottom:1.5rem;">
+        <form th:action="@{/acervo}" method="get" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;align-items:end;">
+          <div>
+            <label class="form-label">Buscar (título, autor, ISBN/ISSN)</label>
+            <input type="text" name="termo" class="form-control" th:value="${termo ?: ''}" />
+          </div>
+          <div>
+            <label class="form-label">Categoria</label>
+            <select name="categoria" class="form-control"><option value="">Todas</option></select>
+          </div>
+          <div>
+            <label class="form-label">Tipo</label>
+            <select name="tipo" class="form-control"><option value="">Todos</option><option th:each="t : ${tipos}" th:value="${t}" th:text="${t}">Livro</option></select>
+          </div>
+          <div>
+            <label class="form-label">Disponibilidade</label>
+            <select name="disponivel" class="form-control"><option value="">Ambos</option><option value="true">Disponível</option><option value="false">Indisponível</option></select>
+          </div>
+          <div class="d-grid">
+            <button type="submit" class="btn-bublo">Buscar</button>
+            <a th:href="@{/acervo}" class="btn-bublo-secundario" style="text-align:center;">Limpar</a>
+          </div>
+        </form>
+      </div>
+
+      <div th:if="${resultado.conteudo.empty}">
+        <div class="estado-vazio">
+          <div class="simbolo"><i class="bi bi-search"></i></div>
+          <h3>Nenhum material encontrado</h3>
+          <p>Tente ajustar os filtros ou cadastre um novo material.</p>
+        </div>
+      </div>
+
+      <div th:if="${!resultado.conteudo.empty}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <span style="font-weight:600;color:var(--bublo-texto-suave);font-size:0.85rem;">
+            <span th:text="${resultado.total}">0</span> títulos encontrados
+          </span>
+          <div>
+            <a class="btn-bublo btn-sm" style="background:transparent;border:1px solid var(--bublo-borda);color:var(--bublo-texto);">Ver como tabela</a>
+          </div>
+        </div>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+          <div class="col" th:each="item : ${resultado.conteudo}">
+            <div class="card-bublo" style="height:100%;display:flex;flex-direction:column;">
+              <div style="position:relative;height:170px;overflow:hidden;border-radius:8px 8px 0 0;border-bottom:1px solid var(--bublo-borda);background:#f0ece6;">
+                <div class="capa-generica" style="width:100%;height:100%;">
+                  <i class="bi bi-book" style="font-size:2.2rem;"></i>
+                </div>
+                <span class="chip" th:text="${item.tipo}">Livro</span>
+              </div>
+              <div style="padding:1rem;flex:1;display:flex;flex-direction:column;">
+                <h4 th:text="${item.titulo}" style="margin:0 0 0.5rem 0;font-size:1rem;">Título</h4>
+                <div style="font-size:0.82rem;color:var(--bublo-texto-suave);margin-bottom:0.5rem;" th:text="${item.autores?.size() gt 0 ? item.autores[0].nome : '-'}">Autor</div>
+                <div th:text="${item.categoria?.nome ?: '-'}">Categoria</div>
+                <div style="margin-top:auto;">
+                  <a th:href="@{/acervo/{id}(id=${item.id})}" class="btn-bublo btn-sm w-100" style="font-size:0.82rem;">Ver detalhes</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="paginacao" th:if="${resultado.totalPaginas gt 1}">
+          <a th:each="i : ${#numbers.sequence(0, resultado.totalPaginas - 1)}" th:href="@{/acervo(pagina=${i}, tamanho=${resultado.tamanho}, termo=${termo}, tipo=${tipo}, disponivel=${disponivel})}" th:class="${resultado.pagina == i} ? 'ativo' : ''" th:text="${i + 1}">1</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script th:src="@{/js/bublo.js"></script>
+</body>
+</html>

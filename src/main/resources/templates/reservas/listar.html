@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Reservas - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='reservas')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h1>Reservas</h1>
+          <p class="subtitulo">Fila FIFO por material</p>
+        </div>
+        <a th:href="@{/reservas/novo}" class="btn-bublo"><i class="bi bi-plus-lg"></i> Nova reserva</a>
+      </div>
+
+      <table class="tabela">
+        <thead>
+          <tr><th>#</th><th>Leitor</th><th>Material</th><th>Posição</th><th>Prazo retirada</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="r : ${resultado.conteudo}">
+            <td th:text="${r.id}">-</td>
+            <td th:text="${r.leitorId}">-</td>
+            <td th:text="${r.itemId}">-</td>
+            <td th:text="${r.posicao}">-</td>
+            <td th:text="${#temporals.format(r.prazoRetirada, 'dd/MM/yyyy')}">-</td>
+            <td><span class="badge-bublo" th:text="${r.status}">Aguardando</span></td>
+            <td>
+              <form th:action="@{/reservas/{id}/cancelar(id=${r.id})}" method="post" style="display:inline;" onsubmit="return confirm('Cancelar reserva?')">
+                <button type="submit" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.8rem;background:transparent;border:1px solid #c62828;color:#c62828;">Cancelar</button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+</body>
+</html>

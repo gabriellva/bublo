@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Entrar - Bublo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" th:href="@{/lib/bootstrap/css/bootstrap.min.css}" />
+  <link rel="stylesheet" th:href="@{/css/design-system.css}" />
+  <link rel="stylesheet" th:href="@{/lib/bootstrap-icons/font/bootstrap-icons.css}" />
+  <style>
+    .login-bg { background: linear-gradient(160deg, #7b1f35 0%, #5d1728 100%); }
+  </style>
+</head>
+<body class="login-container">
+  <div class="login-area-editorial">
+    <div class="simbolo-livro"><i class="bi bi-book"></i></div>
+    <h1 th:text="${nomeInstituicao ?: 'Biblioteca Acadêmica'}">Biblioteca Acadêmica</h1>
+    <p class="mensagem" th:text="${mensagemInstituicao ?: 'Sistema de gerenciamento de acervo, empréstimos e leitores. Acesso restrito ao administrador.'}">
+      Sistema de gerenciamento de acervo, empréstimos e leitores.
+    </p>
+  </div>
+
+  <div class="login-area-form">
+    <div class="login-card">
+      <h2>Entrar</h2>
+      <p class="subtitulo">Acesso exclusivo do administrador da biblioteca</p>
+
+      <div th:if="${error}" class="erro-campo" style="background:#fdecea;padding:.75rem;border-radius:8px;margin-bottom:1rem;">
+        Usuário ou senha inválidos. Tente novamente.
+      </div>
+      <div th:if="${logout}" class="toast info" style="margin-bottom:1rem;">
+        <i class="bi bi-box-arrow-right icone"></i>
+        <div class="conteudo"><div class="titulo">Você saiu do sistema.</div></div>
+      </div>
+
+      <form th:action="@{/login}" method="post" novalidate>
+        <div class="mb-3">
+          <label class="form-label">Usuário</label>
+          <input type="text" name="username" class="form-control" autofocus required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Senha</label>
+          <input type="password" name="password" class="form-control" required />
+        </div>
+        <button type="submit" class="btn-bublo w-100 mt-3">Entrar</button>
+      </form>
+      <p class="texto-ajuda mt-3" style="text-align:center;">
+        Credenciais configuradas pelo administrador via variáveis de ambiente.<br/>
+        <small>Senhas armazenadas com BCrypt. Sessão até o logout.</small>
+      </p>
+    </div>
+  </div>
+
+  <script th:src="@{/js/bublo.js}"></script>
+</body>
+</html>

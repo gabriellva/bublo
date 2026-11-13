@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"></head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='dashboard')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p class="subtitulo">Visão executiva da biblioteca</p>
+      </div>
+
+      <div class="grid-indicadores">
+        <div class="indicador" th:each="ind : ${indicadores}">
+          <div class="rotulo" th:text="${ind.rotulo}">Títulos</div>
+          <div class="valor" th:text="${ind.valor}">0</div>
+          <div class="subtitulo" th:text="${ind.subtitulo}">Itens do acervo</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-content:start;">
+        <div class="card-bublo" style="padding:1.5rem;">
+          <h3 style="margin-top:0;font-family:'Playfair Display',Georgia,serif;">Empréstimos ao longo do tempo</h3>
+          <canvas id="graficoLinha" height="120"></canvas>
+        </div>
+        <div class="card-bublo" style="padding:1.5rem;">
+          <h3 style="margin-top:0;font-family:'Playfair Display',Georgia,serif;">Materiais por tipo</h3>
+          <canvas id="graficoPizza" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="card-bublo" style="margin-top:1.5rem;padding:1.5rem;">
+        <h3 style="margin-top:0;">Atividades recentes</h3>
+        <div class="estado-vazio" style="padding:2rem;">
+          <div class="simbolo"><i class="bi bi-clock-history"></i></div>
+          <h3>Sem atividades recentes</h3>
+          <p>Realize empréstimos, devoluções e cadastros para ver o histórico aqui.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script th:src="@{/lib/chart.js/chart.umd.js}"></script>
+  <script th:src="@{/js/bublo.js}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const ctxLinha = document.getElementById('graficoLinha');
+      if (ctxLinha) {
+        new Chart(ctxLinha.getContext('2d'), {
+          type: 'line',
+          data: { labels: [], datasets: [{ label: 'Empréstimos', data: [], borderColor: '#7b1f35', tension: 0.3, fill: false }] },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+      }
+      const ctxPizza = document.getElementById('graficoPizza');
+      if (ctxPizza) {
+        new Chart(ctxPizza.getContext('2d'), {
+          type: 'doughnut',
+          data: { labels: [], datasets: [{ data: [], backgroundColor: ['#7b1f35','#c9a227','#2e7d32','#1565c0'] }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

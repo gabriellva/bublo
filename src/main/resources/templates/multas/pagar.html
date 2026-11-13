@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Pagar multa - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='multas')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Pagamento de multa</h1>
+        <p class="subtitulo">Registro de pagamento (dinheiro ou outro meio)</p>
+      </div>
+
+      <div th:if="${erro}" class="toast erro" style="margin-bottom:1rem;">
+        <i class="bi bi-exclamation-circle-fill icone"></i>
+        <div class="conteudo"><div class="titulo" th:text="${erro}">Erro</div></div>
+      </div>
+
+      <div class="formulario-card" style="max-width:500px;">
+        <h3 style="margin-top:0;">Multa #<span th:text="${multa.id}">-</span></h3>
+        <p class="texto-ajuda">Saldo pendente: <strong th:text="${multa.saldoPendente}">0,00</strong></p>
+
+        <form th:action="@{/multas/{id}/pagar(id=${multa.id})}" method="post" novalidate>
+          <div class="mb-3">
+            <label class="form-label">Valor a pagar</label>
+            <input type="number" name="valor" step="0.01" class="form-control" required th:value="${multa.saldoPendente}" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Forma de pagamento</label>
+            <select name="forma" class="form-control">
+              <option>Dinheiro</option>
+              <option>Outro meio</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-bublo">Confirmar pagamento</button>
+          <a th:href="@{/multas}" class="btn-bublo-secundario" style="margin-left:0.75rem;">Voltar</a>
+        </form>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
