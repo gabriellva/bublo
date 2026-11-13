@@ -101,6 +101,7 @@ public class DemoDataConfig {
                 {"Banco de Dados", "Silberschatz", 2011, "LIVRO"},
                 {"Redes de Computadores", "Tanenbaum", 2010, "LIVRO"},
             };
+            int numeroIsbn = 1;
             for (Object[] l : livros) {
                 Livro livro = new Livro();
                 livro.setTipo(com.gabriel.bublo.model.TipoMaterial.LIVRO);
@@ -108,7 +109,7 @@ public class DemoDataConfig {
                 livro.setEditora("Editora Acadêmica");
                 livro.setAno((Integer) l[2]);
                 livro.setIdioma("Português");
-                livro.setIsbn("978-" + (1000 + (int)(Math.random()*8999)));
+                livro.setIsbn(String.format("978-85-0000-%03d-0", numeroIsbn++));
                 Autor a = new Autor();
                 a.setNome((String) l[1]);
                 a.setNomeNormalizado(((String) l[1]).toLowerCase().trim());
@@ -127,7 +128,19 @@ public class DemoDataConfig {
             pd.setTitulo("Artigo sobre POO"); pd.setDoi("10.1000/xyz"); pd.setUrlExterna("https://exemplo.local/artigo");
             pd.setAno(2023); pd.setIdioma("Português"); materiais.add(pd);
 
+            Categoria literatura = criarCategoria(itemAcervoRepository, "Literatura");
+            Categoria tecnologia = criarCategoria(itemAcervoRepository, "Tecnologia");
+            Categoria periodicos = criarCategoria(itemAcervoRepository, "Periódicos");
+            Categoria multimidia = criarCategoria(itemAcervoRepository, "Multimídia");
+            Categoria digital = criarCategoria(itemAcervoRepository, "Publicações digitais");
+            int indice = 0;
             for (ItemAcervo m : materiais) {
+                m.setCategoria(switch (m.getTipo()) {
+                    case LIVRO -> indice++ < 2 ? literatura : tecnologia;
+                    case REVISTA -> periodicos;
+                    case DVD -> multimidia;
+                    case DIGITAL -> digital;
+                });
                 itemAcervoRepository.salvar(m);
                 if (m.getTipo() != com.gabriel.bublo.model.TipoMaterial.DIGITAL) {
                     int qtd = 1 + (int)(Math.random() * 2);
@@ -168,6 +181,11 @@ public class DemoDataConfig {
                 LocalDateTime prevista = LocalDateTime.now().plusDays(5);
                 emprestimoRepository.criar(leitores.get(0).getId(), exemplares.get(0).getId(), prevista);
             }
+            var exemplaresAtrasado = exemplarRepository.listarPorItem(materiais.get(1).getId());
+            if (!exemplaresAtrasado.isEmpty() && leitores.size() > 1) {
+                emprestimoRepository.criar(leitores.get(1).getId(), exemplaresAtrasado.get(0).getId(),
+                    LocalDateTime.now().minusDays(3));
+            }
 
             // 6. Configurações iniciais (ON CONFLICT já lida com idempotência)
             configuracaoService.salvar("nome_instituicao", "Biblioteca Acadêmica", "sistema", "Carga inicial");
@@ -178,8 +196,15 @@ public class DemoDataConfig {
             configuracaoService.salvar("prazo_professores", "14", "sistema", "Carga inicial");
             configuracaoService.salvar("taxa_diaria_multa", "2.00", "sistema", "Carga inicial");
             configuracaoService.salvar("prazo_retirada_reserva", "3", "sistema", "Carga inicial");
-            configuracaoService.salvar("tema_usuario", "claro", "sistema", "Carga inicial");
 
         };
+    }
+
+    private Categoria criarCategoria(ItemAcervoRepository repository, String nome) {
+        Categoria categoria = new Categoria();
+        categoria.setId(repository.criarCategoria(nome));
+        categoria.setNome(nome);
+        categoria.setAtivo(true);
+        return categoria;
     }
 }
