@@ -22,6 +22,11 @@ public class AuthUtil {
         return auth;
     }
 
+    public static String usuarioAtual() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null ? auth.getName() : "sistema";
+    }
+
     public static void logout(HttpServletRequest request, HttpServletResponse response) {
         new SecurityContextLogoutHandler().logout(request, response, SecurityContextHolder.getContext().getAuthentication());
     }

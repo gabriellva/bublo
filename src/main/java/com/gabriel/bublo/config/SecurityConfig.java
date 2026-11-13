@@ -1,6 +1,7 @@
 package com.gabriel.bublo.config;
 
 import com.gabriel.bublo.repository.UsuarioRepository;
+import com.gabriel.bublo.security.AuthAuditService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,8 +16,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 /**
  * Configuração de segurança do Bublo.
  * - Acesso restrito ao administrador autenticado.
@@ -28,25 +27,34 @@ import jakarta.servlet.http.HttpServletRequest;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final UsuarioRepository usuarioRepository;
+    private static final int USERNAME_AUDIT_MAX_LENGTH = 100;
 
-    public SecurityConfig(UsuarioRepository usuarioRepository) {
+    private final UsuarioRepository usuarioRepository;
+    private final AuthAuditService authAuditService;
+
+    public SecurityConfig(UsuarioRepository usuarioRepository, AuthAuditService authAuditService) {
         this.usuarioRepository = usuarioRepository;
+        this.authAuditService = authAuditService;
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/css/**", "/js/**", "/lib/**", "/images/**", "/static/**", "/error", "/favicon.ico").permitAll()
-                .requestMatchers("/ws/**").permitAll()
+                .requestMatchers("/login", "/css/**", "/js/**", "/lib/**", "/images/**", "/error", "/favicon.ico").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login")
                 .loginProcessingUrl("/login")
-                .defaultSuccessUrl("/dashboard", true)
-                .failureUrl("/login?error=true")
+                .successHandler((request, response, authentication) -> {
+                    authAuditService.registrarSucesso(authentication.getName());
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                })
+                .failureHandler((request, response, exception) -> {
+                    authAuditService.registrarFalha(nomeParaAuditoria(request.getParameter("username")));
+                    response.sendRedirect(request.getContextPath() + "/login?error=true");
+                })
                 .permitAll()
             )
             .logout(logout -> logout
@@ -58,12 +66,17 @@ public class SecurityConfig {
             )
             .sessionManagement(session -> session
                 .maximumSessions(1)
-            )
-            .csrf(csrf -> csrf
-                .disable()
+                .expiredUrl("/login?expirada=true")
             );
 
         return http.build();
+    }
+
+    private String nomeParaAuditoria(String username) {
+        if (username == null || username.isBlank()) return "desconhecido";
+        return username.length() > USERNAME_AUDIT_MAX_LENGTH
+            ? username.substring(0, USERNAME_AUDIT_MAX_LENGTH)
+            : username;
     }
 
     @Bean
