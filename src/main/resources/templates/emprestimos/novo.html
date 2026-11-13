@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Novo empréstimo - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='emprestimos')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Novo empréstimo</h1>
+        <p class="subtitulo">Fluxo guiado: leitor → exemplares → confirmação</p>
+      </div>
+
+      <div th:if="${leitor}" class="card-bublo" style="padding:1rem;margin-bottom:1rem;">
+        <h4 style="margin:0 0 0.5rem 0;">Leitor selecionado</h4>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+          <strong th:text="${leitor.nome}">Nome</strong>
+          <span class="badge-bublo" th:text="${leitor.tipo}">Aluno</span>
+          <span th:text="${leitor.matricula}">Matrícula</span>
+          <span id="statusBloqueio" style="font-size:0.85rem;font-weight:600;"></span>
+        </div>
+      </div>
+
+      <div th:if="${erro}" class="toast erro" style="margin-bottom:1rem;">
+        <i class="bi bi-exclamation-circle-fill icone"></i>
+        <div class="conteudo"><div class="titulo" th:text="${erro}">Erro</div></div>
+      </div>
+
+      <form th:action="@{/emprestimos}" method="post" novalidate>
+        <input type="hidden" name="leitorId" th:value="${leitorId ?: ''}" />
+
+        <div style="margin-bottom:1rem;">
+          <label class="form-label">Exemplares disponíveis</label>
+          <select name="exemplares" class="form-control" size="6" multiple required>
+            <option th:each="a : ${acervo}" th:value="${a.id}" th:text="${a.titulo} + ' (tipo: ' + ${a.tipo} + ')'">Material</option>
+          </select>
+          <p class="texto-ajuda">Selecione um ou mais exemplares (Ctrl/clique para múltiplos).</p>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Data prevista de devolução</label>
+          <input type="date" name="dataPrevista" class="form-control" required />
+        </div>
+
+        <div style="display:flex;gap:0.75rem;margin-top:1.5rem;">
+          <button type="submit" class="btn-bublo">Confirmar empréstimo</button>
+          <a th:href="@{/emprestimos}" class="btn-bublo-secundario">Cancelar</a>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const leitorId = document.querySelector('input[name="leitorId"]');
+      const status = document.getElementById('statusBloqueio');
+      if (leitorId && leitorId.value) {
+        fetch('/emprestimos/restricao/' + leitorId.value)
+          .then(r => r.json())
+          .then(d => {
+            if (d.bloqueado) {
+              status.textContent = 'BLOQUEADO (dívida pendente)';
+              status.style.color = '#c62828';
+            } else {
+              status.textContent = 'Sem pendências';
+              status.style.color = '#2e7d32';
+            }
+          });
+      }
+    });
+  </script>
+</body>
+</html>

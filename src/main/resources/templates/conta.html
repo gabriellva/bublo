@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
+  <title>Minha conta - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='configuracoes')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Minha conta</h1>
+        <p class="subtitulo">Dados do administrador e alteração de senha</p>
+      </div>
+
+      <div class="formulario-card" style="max-width:560px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+          <h2 style="margin:0;">Alterar senha</h2>
+          <span class="badge-bublo badge-ativo">Administrador</span>
+        </div>
+
+        <div th:if="${sucesso}" class="toast sucesso" style="margin-bottom:1rem;">
+          <i class="bi bi-check-circle-fill icone"></i>
+          <div class="conteudo"><div class="titulo" th:text="${sucesso}">Senha alterada.</div></div>
+        </div>
+        <div th:if="${erroSenha}" class="toast erro" style="margin-bottom:1rem;">
+          <i class="bi bi-exclamation-circle-fill icone"></i>
+          <div class="conteudo"><div class="titulo" th:text="${erroSenha}">Erro.</div></div>
+        </div>
+
+        <form th:action="@{/troca-senha}" method="post" novalidate>
+          <div class="mb-3">
+            <label class="form-label">Senha atual</label>
+            <input type="password" name="senhaAtual" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nova senha (mín. 8 caracteres, letras e números)</label>
+            <input type="password" name="novaSenha" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirmar nova senha</label>
+            <input type="password" name="confirmaNovaSenha" class="form-control" required />
+          </div>
+          <button type="submit" class="btn-bublo w-100">Alterar senha</button>
+        </form>
+        <p class="texto-ajuda mt-3">Após a alteração, você será desconectado e deverá entrar novamente.</p>
+      </div>
+    </main>
+  </div>
+
+  <script th:src="@{/js/bublo.js"></script>
+</body>
+</html>

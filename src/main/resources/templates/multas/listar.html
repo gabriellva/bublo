@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Multas - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='multas')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Multas e pagamentos</h1>
+        <p class="subtitulo">Multas pendentes, pagamentos e estornos</p>
+      </div>
+
+      <table class="tabela">
+        <thead>
+          <tr><th>#</th><th>Leitor</th><th>Valor</th><th>Pago</th><th>Saldo</th><th>Status</th><th>Gerada em</th><th>Ação</th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="m : ${resultado.conteudo}">
+            <td th:text="${m.id}">-</td>
+            <td th:text="${m.leitorId}">-</td>
+            <td th:text="${m.valor}">0,00</td>
+            <td th:text="${m.valorPago}">0,00</td>
+            <td th:text="${m.saldoPendente}">0,00</td>
+            <td><span class="badge-bublo" th:class="${m.status == 'PAGA'} ? 'badge-paga' : (m.status == 'PAGA_PARCIAL') ? 'badge-parcial' : 'badge-pendente'" th:text="${m.status}">Pendente</span></td>
+            <td th:text="${#temporals.format(m.dataGeracao, 'dd/MM/yyyy')}">-</td>
+            <td>
+              <a th:href="@{/multas/{id}/pagar(id=${m.id})}" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.82rem;" th:if="${m.status != 'PAGA'}">Pagar</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+</body>
+</html>

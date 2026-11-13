@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Cadastrar leitor - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='leitores')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1>Cadastrar leitor</h1>
+        <p class="subtitulo">Aluno ou professor</p>
+      </div>
+
+      <div th:if="${erro}" class="toast erro" style="margin-bottom:1rem;">
+        <i class="bi bi-exclamation-circle-fill icone"></i>
+        <div class="conteudo"><div class="titulo" th:text="${erro}">Erro</div></div>
+      </div>
+
+      <form th:action="@{/leitores}" method="post" novalidate>
+        <input type="hidden" name="id" th:value="${leitor.id ?: ''}" />
+        <div class="form-grid">
+          <div>
+            <label class="form-label">Tipo</label>
+            <select name="tipo" class="form-control" required>
+              <option value="ALUNO" th:selected="${leitor.tipo == 'ALUNO'}" th:text="'Aluno'">Aluno</option>
+              <option value="PROFESSOR" th:selected="${leitor.tipo == 'PROFESSOR'}" th:text="'Professor'">Professor</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Nome completo</label>
+            <input type="text" name="nome" class="form-control" th:value="${leitor.nome ?: ''}" required />
+          </div>
+          <div>
+            <label class="form-label">E-mail</label>
+            <input type="email" name="email" class="form-control" th:value="${leitor.email ?: ''}" required />
+          </div>
+          <div>
+            <label class="form-label">Matrícula (gerada automaticamente)</label>
+            <input type="text" name="matricula" class="form-control" th:value="${leitor.matricula ?: ''}" readonly />
+          </div>
+          <div>
+            <label class="form-label">CPF (opcional)</label>
+            <input type="text" name="cpf" class="form-control" th:value="${leitor.cpf ?: ''}" placeholder="Somente se necessário" />
+          </div>
+          <div>
+            <label class="form-label">Endereço</label>
+            <input type="text" name="endereco" class="form-control" th:value="${leitor.endereco ?: ''}" />
+          </div>
+          <div>
+            <label class="form-label">Telefone</label>
+            <input type="text" name="telefone" class="form-control" th:value="${leitor.telefone ?: ''}" />
+          </div>
+          <div>
+            <label class="form-label">Curso / Departamento</label>
+            <input type="text" name="cursoDepartamento" class="form-control" th:value="${leitor.cursoDepartamento ?: ''}" />
+          </div>
+          <div>
+            <label class="form-label">Ativo</label>
+            <select name="ativo" class="form-control">
+              <option value="true" th:selected="${leitor.ativo != false}">Sim</option>
+              <option value="false" th:selected="${leitor.ativo == false}">Não</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:1.5rem;">
+          <button type="submit" class="btn-bublo">Salvar leitor</button>
+          <a th:href="@{/leitores}" class="btn-bublo-secundario">Cancelar</a>
+        </div>
+      </form>
+    </main>
+  </div>
+</body>
+</html>

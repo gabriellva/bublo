@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app-head :: [](#~{layout/app-head}~{::head})}">
+<head>
+  <th:block th:replace="~{layout/app-head :: head}"></th:block>
+  <title>Empréstimos - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='emprestimos')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h1>Empréstimos</h1>
+          <p class="subtitulo">Controle de empréstimos ativos e histórico</p>
+        </div>
+        <a th:href="@{/emprestimos/novo}" class="btn-bublo"><i class="bi bi-plus-lg"></i> Novo empréstimo</a>
+      </div>
+
+      <table class="tabela">
+        <thead>
+          <tr><th>#</th><th>Leitor</th><th>Exemplar / Tombamento</th><th>Data</th><th>Prevista</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="e : ${resultado.conteudo}">
+            <td th:text="${e.id}">-</td>
+            <td th:text="${e.leitorId}">-</td>
+            <td th:text="${e.exemplarId}">-</td>
+            <td th:text="${#temporals.format(e.dataEmprestimo, 'dd/MM/yyyy')}">-</td>
+            <td th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
+            <td><span class="badge-bublo" th:class="${e.status == 'ATIVO'} ? 'badge-ativo' : 'badge-inativo'" th:text="${e.status}">Ativo</span></td>
+            <td>
+              <a th:href="@{/emprestimos/{id}/renovar(id=${e.id})}" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.8rem;" th:if="${e.status == 'ATIVO'}">Renovar</a>
+              <a th:href="@{/emprestimos/{id}/cancelar(id=${e.id})}" class="btn-bublo btn-sm" style="padding:0.25rem 0.6rem;font-size:0.8rem;background:transparent;border:1px solid #c62828;color:#c62828;" th:if="${e.status == 'ATIVO'}" onclick="return confirm('Cancelar empréstimo?')">Cancelar</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div th:if="${resultado.conteudo.empty}" class="estado-vazio" style="margin-top:1rem;">
+        <div class="simbolo"><i class="bi bi-book"></i></div>
+        <h3>Sem empréstimos</h3>
+        <p>Inicie um novo empréstimo selecionando um leitor e exemplares disponíveis.</p>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

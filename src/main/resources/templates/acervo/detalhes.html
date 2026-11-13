@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:replace="~{layout/base :: head}"></th:block>
+  <title>Detalhes do material - Bublo</title>
+</head>
+<body>
+
+  <th:block th:replace="~{layout::sidebar(modulo='acervo')}"></th:block>
+  <th:block th:replace="~{layout::topbar}"></th:block>
+
+  <div class="main">
+    <main class="conteudo">
+      <div class="page-header">
+        <h1 th:text="${item.titulo}">Título do material</h1>
+        <p class="subtitulo" th:text="${item.tipo}">Tipo</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:1.5rem;align-content:start;">
+        <div class="card-bublo" style="padding:1rem;">
+          <div style="height:220px;background:#f0ece6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#7b1f35;font-size:2rem;">
+            <i class="bi bi-book"></i>
+          </div>
+          <div style="margin-top:1rem;">
+            <a th:href="@{/acervo/{id}/exemplar(id=${item.id})?quantidade=1}" class="btn-bublo btn-sm w-100 mb-2" style="display:block;">+ Novo exemplar</a>
+            <button class="btn-bublo btn-sm w-100" style="display:block;background:transparent;border:1px solid var(--bublo-borda);color:var(--bublo-texto);">Cadastro em lote</button>
+          </div>
+        </div>
+
+        <div class="card-bublo" style="padding:1.25rem;">
+          <table class="tabela">
+            <tr><th style="width:140px;">Tipo</th><td th:text="${item.tipo}">Livro</td></tr>
+            <tr><th>Editora</th><td th:text="${item.editora ?: '-'}">-</td></tr>
+            <tr><th>Ano</th><td th:text="${item.ano ?: '-'}">-</td></tr>
+            <tr><th>Idioma</th><td th:text="${item.idioma ?: '-'}">-</td></tr>
+            <tr><th>Categoria</th><td th:text="${item.categoria?.nome ?: '-'}">-</td></tr>
+            <tr th:if="${item.isbn}"><th>ISBN</th><td th:text="${item.isbn}">-</td></tr>
+            <tr th:if="${item.issn}"><th>ISSN</th><td th:text="${item.issn}">-</td></tr>
+            <tr th:if="${item.doi}"><th>DOI</th><td th:text="${item.doi}">-</td></tr>
+            <tr th:if="${item.autores && !item.autores.empty}"><th>Autores</th><td><span th:each="a : ${item.autores}" th:text="${a.nome}" class="chip">Autor</span></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-bublo" style="margin-top:1.5rem;padding:1.25rem;">
+        <h3 style="margin-top:0;">Exemplares</h3>
+        <div class="estado-vazio" style="padding:1.5rem;">
+          <div class="simbolo"><i class="bi bi-box-seam"></i></div>
+          <h4 style="margin:0.5rem 0;">Nenhum exemplar cadastrado</h4>
+          <p style="margin:0;">Cadastre o primeiro exemplar para permitir empréstimos físicos.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
