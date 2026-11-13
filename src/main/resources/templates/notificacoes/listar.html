@@ -1,82 +1,77 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <th:block th:replace="~{layout/base :: head}"></th:block>
-  <title>Notificações - Bublo</title>
-</head>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: shell('Notificações', 'notificacoes', ~{::conteudo}, ~{})}">
+<head><title>Notificações</title></head>
 <body>
-  <th:block th:replace="~{layout/sidebar :: sidebar('notificacoes')}"></th:block>
-
-  <div class="main">
-    <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
-      <div class="page-header cabecalho-pagina">
-        <div>
-          <h1>Notificações</h1>
-          <p class="subtitulo">Central de notificações do sistema</p>
-        </div>
-        <form th:action="@{/notificacoes/ler-todas}" method="post" class="form-inline" th:if="${naoLidas gt 0}">
-          <button type="submit" class="btn-bublo btn-contorno"><i class="bi bi-check2-all"></i> Marcar todas como lidas</button>
-        </form>
-      </div>
-
-      <div class="card-bublo p-3 mb-3">
-        <form th:action="@{/notificacoes}" method="get" class="form-grid" style="align-items:end;">
-          <div>
-            <label class="form-label" for="categoria">Categoria</label>
-            <select id="categoria" name="categoria" class="form-control">
-              <option value="">Todas</option>
-              <option value="EMPRESTIMO" th:selected="${categoria == 'EMPRESTIMO'}">Empréstimos</option>
-              <option value="RESERVA" th:selected="${categoria == 'RESERVA'}">Reservas</option>
-              <option value="MULTA" th:selected="${categoria == 'MULTA'}">Multas</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" for="lida">Situação</label>
-            <select id="lida" name="lida" class="form-control">
-              <option value="">Todas</option>
-              <option value="false" th:selected="${lida != null and !lida}">Não lidas</option>
-              <option value="true" th:selected="${lida != null and lida}">Lidas</option>
-            </select>
-          </div>
-          <div class="acoes-linha">
-            <button type="submit" class="btn-bublo">Filtrar</button>
-            <a th:href="@{/notificacoes}" class="btn-bublo btn-contorno">Limpar</a>
-          </div>
-        </form>
-      </div>
-
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
-          <thead>
-            <tr><th>Categoria</th><th>Prioridade</th><th>Título</th><th>Mensagem</th><th>Data</th><th>Situação</th><th>Ação</th></tr>
-          </thead>
-          <tbody>
-            <tr th:each="n : ${resultado.conteudo}">
-              <td th:text="${n.categoria}">-</td>
-              <td><span class="badge-bublo" th:classappend="${n.prioridade == 'ATENCAO'} ? 'badge-pendente' : 'badge-neutro'" th:text="${n.prioridade}">Info</span></td>
-              <td th:text="${n.titulo}">-</td>
-              <td th:text="${n.mensagem}">-</td>
-              <td th:text="${#temporals.format(n.dataCriacao, 'dd/MM/yyyy HH:mm')}">-</td>
-              <td><span class="badge-bublo" th:classappend="${n.lida} ? 'badge-neutro' : 'badge-pendente'" th:text="${n.lida ? 'Lida' : 'Não lida'}">Não lida</span></td>
-              <td>
-                <form th:action="@{/notificacoes/{id}/ler(id=${n.id})}" method="post" class="form-inline" th:unless="${n.lida}">
-                  <button type="submit" class="btn-bublo btn-acao">Marcar como lida</button>
-                </form>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
-        <div class="simbolo"><i class="bi bi-bell-slash"></i></div>
-        <h3>Nenhuma notificação</h3>
-        <p>Novas notificações de empréstimos, reservas e multas aparecerão aqui.</p>
-      </div>
-      <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/notificacoes')}"></th:block>
-    </main>
+<th:block th:fragment="conteudo" th:with="temFiltro=${!#strings.isEmpty(categoria) or !#strings.isEmpty(prioridade) or lida != null}">
+  <div class="pagina-cabeca">
+    <div>
+      <h1>Notificações</h1>
+      <p class="pagina-sub"><span th:text="${naoLidas == 0 ? 'Tudo em dia.' : (naoLidas == 1 ? '1 notificação não lida.' : naoLidas + ' notificações não lidas.')}">Tudo em dia.</span> O histórico completo fica guardado aqui.</p>
+    </div>
+    <div class="pagina-acoes">
+      <form th:action="@{/notificacoes/ler-todas}" method="post" th:if="${naoLidas gt 0}">
+        <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-check2-all"></i>Marcar todas como lidas</button>
+      </form>
+    </div>
   </div>
 
-  <th:block th:replace="~{layout/base :: scripts}"></th:block>
+  <form th:action="@{/notificacoes}" method="get" class="barra-ferramentas">
+    <input type="hidden" name="tamanho" th:if="${param.tamanho != null}" th:value="${param.tamanho[0]}" />
+    <div>
+      <label class="sr-only" for="categoria">Categoria</label>
+      <select id="categoria" name="categoria" class="form-select" onchange="this.form.requestSubmit()">
+        <option value="">Todas as categorias</option>
+        <option value="EMPRESTIMO" th:selected="${categoria == 'EMPRESTIMO'}">Empréstimos</option>
+        <option value="RESERVA" th:selected="${categoria == 'RESERVA'}">Reservas</option>
+        <option value="MULTA" th:selected="${categoria == 'MULTA'}">Multas</option>
+      </select>
+    </div>
+    <div>
+      <label class="sr-only" for="prioridade">Prioridade</label>
+      <select id="prioridade" name="prioridade" class="form-select" onchange="this.form.requestSubmit()">
+        <option value="">Todas as prioridades</option>
+        <option value="CRITICO" th:selected="${prioridade == 'CRITICO'}">Crítico</option>
+        <option value="ATENCAO" th:selected="${prioridade == 'ATENCAO'}">Atenção</option>
+        <option value="INFORMATIVO" th:selected="${prioridade == 'INFORMATIVO'}">Informativo</option>
+      </select>
+    </div>
+    <div>
+      <label class="sr-only" for="lida">Situação</label>
+      <select id="lida" name="lida" class="form-select" onchange="this.form.requestSubmit()">
+        <option value="">Lidas e não lidas</option>
+        <option value="false" th:selected="${lida != null and !lida}">Não lidas</option>
+        <option value="true" th:selected="${lida != null and lida}">Lidas</option>
+      </select>
+    </div>
+    <a th:href="@{/notificacoes}" class="btn btn-link" th:if="${temFiltro}">Limpar filtros</a>
+  </form>
+
+  <div th:if="${resultado.conteudo.empty}">
+    <div th:replace="~{layout/componentes :: vazio(${temFiltro} ? 'Nenhuma notificação encontrada' : 'Nenhuma notificação', ${temFiltro} ? 'Nada corresponde aos filtros escolhidos.' : 'Avisos de empréstimos, reservas e multas aparecem aqui.', ${temFiltro} ? 'Limpar filtros' : null, '/notificacoes')}"></div>
+  </div>
+
+  <section class="painel painel-lista" th:unless="${resultado.conteudo.empty}">
+    <article class="notif-linha" th:each="n : ${resultado.conteudo}" th:classappend="${!n.lida} ? 'nao-lida'">
+      <div class="corpo">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+          <span class="badge-b" th:classappend="${n.prioridade == 'CRITICO'} ? 'st-erro' : (${n.prioridade == 'ATENCAO'} ? 'st-aviso' : 'st-info')"
+                th:text="${n.prioridade == 'CRITICO' ? 'Crítico' : (n.prioridade == 'ATENCAO' ? 'Atenção' : 'Informativo')}">Informativo</span>
+          <span class="badge-b st-sem-icone" th:text="${n.categoria == 'EMPRESTIMO' ? 'Empréstimo' : (n.categoria == 'RESERVA' ? 'Reserva' : (n.categoria == 'MULTA' ? 'Multa' : n.categoria))}">Categoria</span>
+          <span class="badge-b st-vinho" th:unless="${n.lida}">Nova</span>
+        </div>
+        <div class="titulo" th:text="${n.titulo}">Título</div>
+        <div class="texto-suave" th:text="${n.mensagem}">Mensagem</div>
+      </div>
+      <div class="d-flex flex-column align-items-end gap-2">
+        <span class="quando" th:text="${#temporals.format(n.dataCriacao, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</span>
+        <form th:action="@{/notificacoes/{id}/ler(id=${n.id})}" method="post" th:unless="${n.lida}">
+          <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-check2"></i>Marcar como lida</button>
+        </form>
+      </div>
+    </article>
+  </section>
+  <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/notificacoes')}"></th:block>
+</th:block>
 </body>
 </html>
