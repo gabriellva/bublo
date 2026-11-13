@@ -82,4 +82,22 @@ class LeitorServiceTest {
         assertThat(resultado.getErros()).hasSize(1);
         assertThat(resultado.getErros().get(0).getLinha()).isEqualTo(2);
     }
+
+    @Test
+    @DisplayName("Importação aceita CSV com ponto e vírgula e continua após erro de gravação em uma linha")
+    void importacaoContinuaAposErroDeBanco() throws Exception {
+        String csv = "\uFEFFTipo;Nome;Email\nALUNO;Um;um@x.com\nALUNO;Dois;dois@x.com\nPROFESSOR;Tres;tres@x.com\n";
+        MultipartFile arquivo = mock(MultipartFile.class);
+        when(arquivo.getBytes()).thenReturn(csv.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        when(leitorRepository.salvar(any(Leitor.class)))
+            .thenAnswer(inv -> inv.getArgument(0))
+            .thenThrow(new org.springframework.dao.DataIntegrityViolationException("PreparedStatementCallback; SQL [insert ...]"))
+            .thenAnswer(inv -> inv.getArgument(0));
+
+        ImportacaoResultadoDTO resultado = service.importarCSV(arquivo, "admin");
+
+        assertThat(resultado.getImportados()).isEqualTo(2);
+        assertThat(resultado.getRejeitados()).isEqualTo(1);
+        assertThat(resultado.getErros().get(0).getMotivo()).doesNotContain("SQL").doesNotContain("PreparedStatement");
+    }
 }

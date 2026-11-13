@@ -66,4 +66,55 @@ class ConfiguracaoServiceTest {
         assertThat(resultado).hasSize(1);
         assertThat(resultado.get(0).getChave()).isEqualTo("taxa_diaria_multa");
     }
+
+    @Test
+    @DisplayName("Chave desconhecida é recusada")
+    void chaveDesconhecida() {
+        assertThatIllegalArgumentException().isThrownBy(() ->
+            service.salvar("qualquer_coisa", "1", "admin", "teste"));
+        verify(configuracaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("Valor numérico inválido ou zero é recusado")
+    void valorNumericoInvalido() {
+        assertThatIllegalArgumentException().isThrownBy(() ->
+            service.salvar("limite_alunos", "abc", "admin", "teste"));
+        assertThatIllegalArgumentException().isThrownBy(() ->
+            service.salvar("prazo_alunos", "0", "admin", "teste"));
+        assertThatIllegalArgumentException().isThrownBy(() ->
+            service.salvar("taxa_diaria_multa", "-1", "admin", "teste"));
+    }
+
+    @Test
+    @DisplayName("Valor inteiro lido da configuração, com padrão quando ausente ou inválido")
+    void buscarInteiroComPadrao() {
+        Configuracao c = new Configuracao();
+        c.setChave("limite_alunos");
+        c.setValor("4");
+        when(configuracaoRepository.buscar("limite_alunos")).thenReturn(Optional.of(c));
+        when(configuracaoRepository.buscar("prazo_alunos")).thenReturn(Optional.empty());
+
+        assertThat(service.buscarInteiro("limite_alunos", 3)).isEqualTo(4);
+        assertThat(service.buscarInteiro("prazo_alunos", 7)).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("Salvar várias configurações grava apenas as que mudaram")
+    void salvarVariasGravaSoAlteradas() {
+        Configuracao atual = new Configuracao();
+        atual.setChave("limite_alunos");
+        atual.setValor("3");
+        when(configuracaoRepository.buscar("limite_alunos")).thenReturn(Optional.of(atual));
+        Configuracao prazo = new Configuracao();
+        prazo.setChave("prazo_alunos");
+        prazo.setValor("7");
+        when(configuracaoRepository.buscar("prazo_alunos")).thenReturn(Optional.of(prazo));
+
+        int alteradas = service.salvarVarias(
+            java.util.Map.of("limite_alunos", "3", "prazo_alunos", "10"), "admin", "ajuste");
+
+        assertThat(alteradas).isEqualTo(1);
+        verify(configuracaoRepository).salvar(argThat(c -> c.getChave().equals("prazo_alunos") && c.getValor().equals("10")));
+    }
 }
