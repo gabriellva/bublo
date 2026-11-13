@@ -1,0 +1,174 @@
+/* =========================================================================
+   Bublo — Tokens do design system
+   Direção: "ficha de biblioteca". Vinho profundo como cor de lombada, dourado
+   em fios finos (como o filete de uma encadernação), neutros quentes de papel.
+   Tudo é variável CSS; componentes nunca usam cor literal.
+
+   Escalas
+   - Espaço: 4px base -> --sp-1 (4) … --sp-8 (64)
+   - Raio:   --r-sm 6 | --r-md 10 | --r-lg 14 | --r-pill 999
+   - Tipo:   --fs-xs 12 | sm 13.5 | base 15 | md 16.5 | lg 19 | xl 24 | 2xl 32 | 3xl 40
+   - Movimento: --t-fast 150ms | --t-base 200ms | --t-slow 250ms (todos ease-out)
+   Os pares texto/fundo abaixo foram medidos: >= 4.5:1 em ambos os temas.
+   ========================================================================= */
+
+:root {
+  --vinho-50: #fbf1f3;
+  --vinho-100: #f4dde3;
+  --vinho-200: #e7b9c5;
+  --vinho-400: #b8506b;
+  --vinho-500: #9a3250;
+  --vinho-600: #7f2540;
+  --vinho-700: #671c33;
+  --vinho-800: #4e1426;
+  --vinho-900: #360d1a;
+  --ouro-300: #e3cd91;
+  --ouro-400: #c9a74f;
+  --ouro-500: #b08d3c;
+  --ouro-700: #7a5c14;
+
+  --fonte-titulo: "Newsreader", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --fonte-corpo: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --fonte-numero: "Newsreader", Georgia, serif;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.84rem;
+  --fs-base: 0.94rem;
+  --fs-md: 1.03rem;
+  --fs-lg: 1.2rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 2rem;
+  --fs-3xl: 2.5rem;
+
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --t-fast: 150ms;
+  --t-base: 200ms;
+  --t-slow: 250ms;
+
+  --sidebar-w: 268px;
+  --sidebar-w-mini: 76px;
+  --topbar-h: 64px;
+  --conteudo-max: 1320px;
+
+  /* Tema claro (padrão) */
+  --fundo: #f3f0ee;
+  --fundo-sutil: #eae5e2;
+  --superficie: #fffefd;
+  --superficie-2: #f8f5f3;
+  --borda: #ddd5d1;
+  --borda-forte: #c4b9b4;
+  --texto: #221b1e;
+  --texto-suave: #5b4f54;
+  --texto-fraco: #6d6065;
+  --primaria: var(--vinho-700);
+  --primaria-hover: var(--vinho-800);
+  --primaria-texto: #ffffff;
+  --primaria-suave: var(--vinho-50);
+  --primaria-borda: var(--vinho-200);
+  --destaque: var(--ouro-500);
+  --destaque-texto: var(--ouro-700);
+  --link: var(--vinho-600);
+  --foco: #8a5a00;
+  --hover-linha: rgba(103, 28, 51, 0.045);
+
+  --sidebar-bg: var(--vinho-900);
+  --sidebar-texto: #e9d8dd;
+  --sidebar-texto-fraco: #c9b0b8;
+  --sidebar-hover: rgba(255, 255, 255, 0.07);
+  --sidebar-ativo-bg: rgba(255, 255, 255, 0.1);
+  --sidebar-borda: rgba(255, 255, 255, 0.1);
+
+  --ok: #1d6b34;
+  --ok-bg: #e5f2e8;
+  --erro: #aa2420;
+  --erro-bg: #fbe9e7;
+  --aviso: #8a4300;
+  --aviso-bg: #fdf0d9;
+  --info: #1e5a99;
+  --info-bg: #e5eefa;
+  --neutro: #51464b;
+  --neutro-bg: #ebe6e3;
+
+  --sombra-1: 0 1px 2px rgba(54, 13, 26, 0.06), 0 1px 1px rgba(54, 13, 26, 0.04);
+  --sombra-2: 0 6px 20px rgba(54, 13, 26, 0.1), 0 2px 6px rgba(54, 13, 26, 0.06);
+  --sombra-3: 0 18px 48px rgba(54, 13, 26, 0.2);
+
+  --grafico-1: #7f2540;
+  --grafico-2: #c9a74f;
+  --grafico-3: #2f7a78;
+  --grafico-4: #566a9c;
+  --grafico-5: #c98a9c;
+  --grafico-6: #8a7f78;
+  --skeleton-a: #ece7e4;
+  --skeleton-b: #f6f3f1;
+
+  color-scheme: light;
+}
+
+[data-tema="escuro"] {
+  --fundo: #151013;
+  --fundo-sutil: #1d1519;
+  --superficie: #1f171b;
+  --superficie-2: #271d22;
+  --borda: #3a2d34;
+  --borda-forte: #52414a;
+  --texto: #f1e9ec;
+  --texto-suave: #c4b4ba;
+  --texto-fraco: #ad9ca3;
+  --primaria: #a8324f;
+  --primaria-hover: #bc3d5c;
+  --primaria-texto: #ffffff;
+  --primaria-suave: rgba(184, 80, 107, 0.16);
+  --primaria-borda: rgba(184, 80, 107, 0.45);
+  --destaque: var(--ouro-400);
+  --destaque-texto: var(--ouro-300);
+  --link: #eba3b5;
+  --foco: #e3cd91;
+  --hover-linha: rgba(255, 255, 255, 0.045);
+
+  --sidebar-bg: #0e090b;
+  --sidebar-texto: #e6d3d9;
+  --sidebar-texto-fraco: #b79ea7;
+  --sidebar-borda: rgba(255, 255, 255, 0.09);
+
+  --ok: #86d99b;
+  --ok-bg: rgba(79, 175, 106, 0.16);
+  --erro: #ff9d95;
+  --erro-bg: rgba(229, 83, 74, 0.17);
+  --aviso: #f5bf72;
+  --aviso-bg: rgba(226, 150, 40, 0.17);
+  --info: #9bc3f2;
+  --info-bg: rgba(86, 140, 214, 0.18);
+  --neutro: #d1c2c8;
+  --neutro-bg: rgba(255, 255, 255, 0.08);
+
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-2: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --sombra-3: 0 20px 56px rgba(0, 0, 0, 0.6);
+
+  --grafico-1: #d9728e;
+  --grafico-2: #d8b960;
+  --grafico-3: #55b5b0;
+  --grafico-4: #8ea2d6;
+  --grafico-5: #e5aebd;
+  --grafico-6: #a99d96;
+  --skeleton-a: #261d22;
+  --skeleton-b: #33262d;
+
+  color-scheme: dark;
+}
