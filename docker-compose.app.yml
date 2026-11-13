@@ -1,0 +1,38 @@
+# Run with: docker compose -p bublo-work -f docker-compose.app.yml up -d --build
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: bublo
+      POSTGRES_USER: bublo
+      POSTGRES_PASSWORD: bublo
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - bublo_work_pgdata:/var/lib/postgresql/data
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bublo -d bublo"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/bublo
+      DB_USERNAME: bublo
+      DB_PASSWORD: bublo
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: Mudar@1234
+      DEMO_DATA_ENABLED: "true"
+      JAVA_TOOL_OPTIONS: -Xmx384m
+    ports:
+      - "127.0.0.1:8090:8080"
+    mem_limit: 640m
+
+volumes:
+  bublo_work_pgdata:
