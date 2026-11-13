@@ -99,6 +99,15 @@ public class ExemplarRepository {
         return lista;
     }
 
+    public List<com.gabriel.bublo.dto.ExemplarOpcaoDTO> listarDisponiveisParaEmprestimo() {
+        return jdbc.query(
+            "SELECT ex.id, ex.tombamento, ia.titulo, ia.tipo FROM exemplares ex " +
+            "JOIN item_acervo ia ON ia.id = ex.item_acervo_id " +
+            "WHERE ex.disponivel = TRUE AND ia.ativo = TRUE ORDER BY ia.titulo, ex.tombamento",
+            (rs, rowNum) -> new com.gabriel.bublo.dto.ExemplarOpcaoDTO(
+                rs.getLong("id"), rs.getString("tombamento"), rs.getString("titulo"), rs.getString("tipo")));
+    }
+
     private void vincularItem(Exemplar e) {
         ItemAcervo item = itemAcervoRepository.buscarPorId(e.getItemAcervoId()).orElse(null);
         e.setItemAcervo(item);
@@ -110,6 +119,15 @@ public class ExemplarRepository {
 
     public void registrarObservacao(Long exemplarId, String observacoes) {
         jdbc.update("UPDATE exemplares SET observacoes = ? WHERE id = ?", observacoes, exemplarId);
+    }
+
+    public long contarPorItem(Long itemId) {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM exemplares WHERE item_acervo_id = ?", Long.class, itemId);
+    }
+
+    public long contarDisponiveisPorItem(Long itemId) {
+        return jdbc.queryForObject(
+            "SELECT COUNT(*) FROM exemplares WHERE item_acervo_id = ? AND disponivel = TRUE", Long.class, itemId);
     }
 
     public long contarDisponiveis() {

@@ -23,6 +23,9 @@ import java.util.Optional;
 @Repository
 public class MultaRepository {
 
+    private static final java.util.Set<String> COLUNAS_ORDENAVEIS =
+        java.util.Set.of("data_geracao", "valor", "valor_pago", "status", "dias_atraso");
+
     private final JdbcTemplate jdbc;
     private static final RowMapper<Multa> MAPPER = (rs, rowNum) -> {
         Multa m = new Multa();
@@ -79,7 +82,7 @@ public class MultaRepository {
             where.append(" AND m.status = ?"); args.add(status);
         }
         String sql = "SELECT * FROM multas m " + where +
-            " ORDER BY " + (ordenacao != null ? ordenacao : "m.data_geracao ASC") +
+            " ORDER BY " + OrdenacaoSegura.resolver(ordenacao, "m.", COLUNAS_ORDENAVEIS, "m.data_geracao DESC") +
             " LIMIT ? OFFSET ?";
         args.add(tamanho);
         args.add((long) pagina * tamanho);

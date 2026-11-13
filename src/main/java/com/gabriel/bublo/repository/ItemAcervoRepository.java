@@ -31,6 +31,9 @@ import java.util.Optional;
 @Repository
 public class ItemAcervoRepository {
 
+    private static final java.util.Set<String> COLUNAS_ORDENAVEIS =
+        java.util.Set.of("titulo", "tipo", "ano", "editora", "idioma", "data_cadastro");
+
     private final JdbcTemplate jdbc;
 
     private static final String BASE_SELECT = "SELECT ia.id, ia.tipo, ia.titulo, ia.descricao, ia.editora, " +
@@ -87,20 +90,20 @@ public class ItemAcervoRepository {
         if (item.getId() == null) {
             Long id = insertReturnId(
                 "INSERT INTO item_acervo (tipo, titulo, descricao, editora, ano, data_publicacao, " +
-                "paginas, idioma, categoria_id, isbn, issn, duracao_minutos, doi, url_externa, ativo) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)",
+                "paginas, volume, idioma, categoria_id, isbn, issn, duracao_minutos, doi, url_externa, ativo) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)",
                 item.getTipo().name(), item.getTitulo(), item.getDescricao(), item.getEditora(),
-                item.getAno(), item.getDataPublicacao(), item.getPaginas(), item.getIdioma(),
+                item.getAno(), item.getDataPublicacao(), item.getPaginas(), volumeDe(item), item.getIdioma(),
                 item.getCategoria() != null ? item.getCategoria().getId() : null,
                 isbnDe(item), issnDe(item), duracaoDe(item), doiDe(item), urlDe(item));
             item.setId(id);
         } else {
             jdbc.update(
                 "UPDATE item_acervo SET tipo=?, titulo=?, descricao=?, editora=?, ano=?, data_publicacao=?, " +
-                "paginas=?, idioma=?, categoria_id=?, isbn=?, issn=?, duracao_minutos=?, doi=?, url_externa=? " +
+                "paginas=?, volume=?, idioma=?, categoria_id=?, isbn=?, issn=?, duracao_minutos=?, doi=?, url_externa=? " +
                 "WHERE id=?",
                 item.getTipo().name(), item.getTitulo(), item.getDescricao(), item.getEditora(),
-                item.getAno(), item.getDataPublicacao(), item.getPaginas(), item.getIdioma(),
+                item.getAno(), item.getDataPublicacao(), item.getPaginas(), volumeDe(item), item.getIdioma(),
                 item.getCategoria() != null ? item.getCategoria().getId() : null,
                 isbnDe(item), issnDe(item), duracaoDe(item), doiDe(item), urlDe(item), item.getId());
         }
@@ -128,7 +131,36 @@ public class ItemAcervoRepository {
     }
 
     public void deletar(Long id) {
-        jdbc.update("DELETE FROM item_acervo WHERE id = ?", id);
+        jdbc.update("UPDATE item_acervo SET ativo = FALSE WHERE id = ?", id);
+    }
+
+    public List<Categoria> listarCategorias() {
+        return jdbc.query("SELECT id, nome, ativo FROM categorias WHERE ativo = TRUE ORDER BY nome", (rs, rowNum) -> {
+            Categoria c = new Categoria();
+            c.setId(rs.getLong("id"));
+            c.setNome(rs.getString("nome"));
+            c.setAtivo(rs.getBoolean("ativo"));
+            return c;
+        });
+    }
+
+    public Long criarCategoria(String nome) {
+        return insertReturnId("INSERT INTO categorias (nome, ativo) VALUES (?, TRUE)", nome);
+    }
+
+    public boolean estaAtivo(Long id) {
+        Integer total = jdbc.queryForObject("SELECT COUNT(*) FROM item_acervo WHERE id = ? AND ativo = TRUE", Integer.class, id);
+        return total != null && total > 0;
+    }
+
+    public long contarTitulos() {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM item_acervo WHERE ativo = TRUE", Long.class);
+    }
+
+    public List<Object[]> contarPorTipo() {
+        return jdbc.query(
+            "SELECT tipo, COUNT(*) AS total FROM item_acervo WHERE ativo = TRUE GROUP BY tipo ORDER BY tipo",
+            (rs, rowNum) -> new Object[] {rs.getString("tipo"), rs.getLong("total")});
     }
 
     public boolean existeEmprestimoAtivo(Long itemId) {
@@ -166,7 +198,7 @@ public class ItemAcervoRepository {
         }
 
         String sql = BASE_SELECT + " " + where +
-            " ORDER BY " + (ordenacao != null ? ordenacao : "ia.titulo ASC") +
+            " ORDER BY " + OrdenacaoSegura.resolver(ordenacao, "ia.", COLUNAS_ORDENAVEIS, "ia.titulo ASC") +
             " LIMIT ? OFFSET ?";
         args.add(tamanho);
         args.add((long) pagina * tamanho);
@@ -181,7 +213,7 @@ public class ItemAcervoRepository {
     }
 
     public List<ItemAcervo> listarTodos() {
-        List<ItemAcervo> lista = jdbc.query(BASE_SELECT + " ORDER BY ia.titulo ASC", ITEM_MAPPER);
+        List<ItemAcervo> lista = jdbc.query(BASE_SELECT + " WHERE ia.ativo = TRUE ORDER BY ia.titulo ASC", ITEM_MAPPER);
         lista.forEach(this::carregarAutores);
         return lista;
     }
@@ -252,6 +284,7 @@ public class ItemAcervoRepository {
         return s == null ? "" : s.trim().toLowerCase();
     }
 
+    private Integer volumeDe(ItemAcervo i) { return i instanceof Revista ? ((Revista) i).getVolume() : null; }
     private String isbnDe(ItemAcervo i) { return i instanceof Livro ? ((Livro) i).getIsbn() : null; }
     private String issnDe(ItemAcervo i) { return i instanceof Revista ? ((Revista) i).getIssn() : null; }
     private Integer duracaoDe(ItemAcervo i) { return i instanceof DVD ? ((DVD) i).getDuracaoMinutos() : null; }

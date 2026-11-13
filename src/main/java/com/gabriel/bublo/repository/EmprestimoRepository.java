@@ -3,7 +3,6 @@ package com.gabriel.bublo.repository;
 import com.gabriel.bublo.dto.Paginacao;
 import com.gabriel.bublo.model.Emprestimo;
 import com.gabriel.bublo.model.Exemplar;
-import com.gabriel.bublo.model.Leitor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -25,6 +24,9 @@ import java.util.Optional;
  */
 @Repository
 public class EmprestimoRepository {
+
+    private static final java.util.Set<String> COLUNAS_ORDENAVEIS =
+        java.util.Set.of("data_emprestimo", "data_prevista_devolucao", "data_devolucao_real", "status", "renovacoes");
 
     private final JdbcTemplate jdbc;
     private final ExemplarRepository exemplarRepository;
@@ -93,16 +95,19 @@ public class EmprestimoRepository {
         List<Object> args = new ArrayList<>();
         StringBuilder where = new StringBuilder("WHERE 1=1");
         if (termo != null && !termo.isBlank()) {
-            where.append(" AND (e.id::text = ? OR e.leitor_id IN (SELECT id FROM leitores WHERE nome ILIKE ? OR matricula ILIKE ?))");
-            args.add(termo);
-            String t = "%" + termo + "%";
-            args.add(t); args.add(t);
+            where.append(" AND (e.id::text = ? OR e.leitor_id IN (SELECT id FROM leitores WHERE nome ILIKE ? OR matricula ILIKE ?)" +
+                " OR e.exemplar_id IN (SELECT id FROM exemplares WHERE tombamento ILIKE ?))");
+            args.add(termo.trim());
+            String t = "%" + termo.trim() + "%";
+            args.add(t); args.add(t); args.add(t);
         }
-        if (status != null && !status.isBlank()) {
+        if ("ATRASADO".equals(status)) {
+            where.append(" AND e.status = 'ATIVO' AND e.data_prevista_devolucao < NOW()");
+        } else if (status != null && !status.isBlank()) {
             where.append(" AND e.status = ?"); args.add(status);
         }
         String sql = "SELECT * FROM emprestimos e " + where +
-            " ORDER BY " + (ordenacao != null ? ordenacao : "e.data_emprestimo DESC") +
+            " ORDER BY " + OrdenacaoSegura.resolver(ordenacao, "e.", COLUNAS_ORDENAVEIS, "e.data_emprestimo DESC") +
             " LIMIT ? OFFSET ?";
         args.add(tamanho);
         args.add((long) pagina * tamanho);
@@ -160,12 +165,19 @@ public class EmprestimoRepository {
     }
 
     private void vincular(Emprestimo e) {
-        Leitor l = leitorRepository.buscarPorId(e != null ? buscarLeitorId(e.getId()) : null).orElse(null);
-        // Simplificado: leitor e exemplar serão carregados pelo Service quando necessário
+        Long[] ids = jdbc.queryForObject(
+            "SELECT leitor_id, exemplar_id FROM emprestimos WHERE id = ?",
+            (rs, rowNum) -> new Long[] {rs.getLong("leitor_id"), rs.getLong("exemplar_id")}, e.getId());
+        e.setLeitor(leitorRepository.buscarPorId(ids[0]).orElse(null));
+        e.setExemplar(exemplarRepository.buscarPorId(ids[1]).orElse(null));
     }
 
-    private Long buscarLeitorId(Long emprestimoId) {
-        return jdbc.queryForObject("SELECT leitor_id FROM emprestimos WHERE id = ?", Long.class, emprestimoId);
+    public List<Object[]> contarPorMes(int meses) {
+        return jdbc.query(
+            "SELECT to_char(date_trunc('month', data_emprestimo), 'MM/YYYY') AS mes, COUNT(*) AS total " +
+            "FROM emprestimos WHERE data_emprestimo >= date_trunc('month', NOW()) - make_interval(months => ?) " +
+            "GROUP BY date_trunc('month', data_emprestimo) ORDER BY date_trunc('month', data_emprestimo)",
+            (rs, rowNum) -> new Object[] {rs.getString("mes"), rs.getLong("total")}, meses - 1);
     }
 
     private Long insertReturnId(String sql, Object... args) {
