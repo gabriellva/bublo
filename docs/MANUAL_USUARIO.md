@@ -19,7 +19,7 @@ Não há login de leitores nem catálogo público. Todo o acesso é restrito ao 
 ## 2. Dashboard
 
 Exibe:
-- **Indicadores:** títulos, exemplares, disponíveis/indisponíveis, empréstimos ativos/atrasados, multas pendentes, valores arrecadados, reservas aguardando, leitores cadastrados.
+- **Indicadores:** títulos, exemplares, disponíveis/indisponíveis, empréstimos ativos/atrasados, multas pendentes, reservas aguardando, leitores cadastrados.
 - **Gráficos:** empréstimos ao longo do tempo e materiais por tipo.
 - **Atividades recentes** e **ações rápidas** (cadastrar material, leitor, empréstimo, devolução, reservas, pagamento de multa, relatórios).
 
@@ -72,6 +72,9 @@ Regras:
 - Professores: até 5 exemplares, prazo 14 dias.
 - Uma renovação por empréstimo.
 - Saldo de multa pendente bloqueia novos empréstimos.
+- A data prevista não pode ultrapassar o prazo do tipo de leitor (7 dias para alunos, 14 para professores, conforme as configurações).
+- Publicações digitais não são emprestadas e não possuem exemplares.
+- Se o material tem fila de reservas, só quem está à frente da fila pode retirá-lo; ao emprestar, a reserva passa a "Atendida".
 
 ---
 
@@ -83,7 +86,7 @@ Regras:
 
 ## 7. Reservas
 
-**Reservas → Nova reserva:** informe leitor, material e prazo de retirada. A reserva entra na fila FIFO. Quando um exemplar é devolvido, o primeiro da fila é atendido. Reservas podem ser canceladas pelo administrador e expiram automaticamente se não retiradas no prazo.
+**Reservas → Nova reserva:** informe leitor, material e prazo de retirada. A reserva entra na fila FIFO. Quando um exemplar é devolvido, o primeiro da fila é atendido. Reservas podem ser canceladas pelo administrador e expiram automaticamente ao fim do dia do prazo de retirada (verificação a cada hora). As posições da fila são renumeradas quando uma reserva sai.
 
 ---
 
@@ -92,13 +95,13 @@ Regras:
 Multas são geradas automaticamente na devolução atrasada.
 - **Multas:** lista de pendentes, pagas parciais e pagas.
 - **Pagar:** informe valor (integral ou parcial) e forma (dinheiro ou outro meio). Pagamento parcial não remove o bloqueio enquanto houver saldo.
-- **Estornar:** exige justificativa obrigatória. O pagamento original permanece no histórico, marcado como estornado, e o saldo é recalculado.
+- **Estornar:** na tela da multa (botão **Pagar** ou **Pagamentos**), no histórico de pagamentos, informe a justificativa e clique em **Estornar**. Cada pagamento só pode ser estornado uma vez. O pagamento original permanece no histórico, marcado como estornado, e o saldo é recalculado.
 
 ---
 
 ## 9. Relatórios
 
-Acesse **Relatórios**. Cada relatório pode ser exportado em **CSV** (UTF-8, delimitador vírgula) ou **Excel (.xlsx)**. Os relatórios incluem empréstimos por período, atrasados, multas pendentes, materiais mais emprestados, disponíveis/indisponíveis, leitores cadastrados e reservas.
+Acesse **Relatórios**. Cada relatório pode ser exportado em **CSV** (UTF-8, delimitador ponto e vírgula, para abrir direto no Excel em português) ou **Excel (.xlsx)**. Os relatórios incluem empréstimos por período, atrasados, multas pendentes, materiais mais emprestados, disponíveis/indisponíveis, leitores cadastrados e reservas.
 
 ---
 
@@ -134,4 +137,4 @@ Clique em **Sair** no topo para encerrar a sessão. A sessão expira ao fechar o
 
 ## 15. Dados de demonstração
 
-A primeira inicialização carrega dados fictícios (~30 materiais, 15 leitores, empréstimos, multas, reservas, notificações) para demonstração imediata. Existe opção administrativa para restaurar esses dados (exige digitar `RESTAURAR`).
+A primeira inicialização carrega dados fictícios (13 materiais, 15 leitores e 2 empréstimos) para demonstração imediata. Para recarregar, recrie o banco de dados.
