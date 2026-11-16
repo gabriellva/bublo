@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1 th:text="${leitor.id != null} ? 'Editar leitor' : 'Cadastrar leitor'">Cadastrar leitor</h1>
         <p class="subtitulo">Aluno ou professor</p>
@@ -20,10 +20,12 @@
         <div class="form-grid">
           <div>
             <label class="form-label" for="tipo">Tipo</label>
-            <select th:field="*{tipo}" class="form-control" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" required>
+            <select th:field="*{tipo}" class="form-control" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" th:disabled="*{id != null}" required>
               <option value="ALUNO">Aluno</option>
               <option value="PROFESSOR">Professor</option>
             </select>
+            <input type="hidden" name="tipo" th:if="*{id != null}" th:value="*{tipo}" />
+            <small class="texto-ajuda" th:if="*{id != null}">O tipo não pode ser alterado depois do cadastro.</small>
             <small class="erro-campo" th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}">Erro</small>
           </div>
           <div>
@@ -42,7 +44,7 @@
           </div>
           <div>
             <label class="form-label" for="cpf">CPF (opcional)</label>
-            <input type="text" th:field="*{cpf}" class="form-control" placeholder="Somente se necessário" />
+            <input type="text" th:field="*{cpf}" class="form-control" th:classappend="${#fields.hasErrors('cpf')} ? 'is-invalid'" placeholder="Somente se necessário" inputmode="numeric" autocomplete="off" maxlength="14" />
             <small class="erro-campo" th:if="${#fields.hasErrors('cpf')}" th:errors="*{cpf}">Erro</small>
           </div>
           <div>
@@ -52,7 +54,7 @@
           </div>
           <div>
             <label class="form-label" for="telefone">Telefone</label>
-            <input type="text" th:field="*{telefone}" class="form-control" />
+            <input type="tel" th:field="*{telefone}" class="form-control" th:classappend="${#fields.hasErrors('telefone')} ? 'is-invalid'" autocomplete="tel" maxlength="30" />
             <small class="erro-campo" th:if="${#fields.hasErrors('telefone')}" th:errors="*{telefone}">Erro</small>
           </div>
           <div>

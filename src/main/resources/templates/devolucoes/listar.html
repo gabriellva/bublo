@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1>Devoluções</h1>
         <p class="subtitulo">Registrar devolução de empréstimos ativos</p>
@@ -26,20 +26,20 @@
         </form>
       </div>
 
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
+      <div class="tabela-bloco bloco-cartoes" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela tabela-cartoes">
           <thead>
             <tr><th>Empréstimo</th><th>Leitor</th><th>Material</th><th>Tombamento</th><th>Prevista</th><th>Situação</th><th>Ação</th></tr>
           </thead>
           <tbody>
             <tr th:each="e : ${resultado.conteudo}">
-              <td th:text="${e.id}">-</td>
-              <td th:text="${e.leitorNome ?: '-'}">Leitor</td>
-              <td th:text="${e.titulo ?: '-'}">Material</td>
-              <td th:text="${e.tombamento ?: '-'}">BA-000001</td>
-              <td th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
-              <td><span class="badge-bublo" th:classappend="${e.atrasado} ? 'badge-atrasado' : 'badge-ativo'" th:text="${e.atrasado} ? 'Em atraso' : 'No prazo'">No prazo</span></td>
-              <td>
+              <td data-label="Empréstimo" th:text="${e.id}">-</td>
+              <td data-label="Leitor" th:text="${e.leitorNome ?: '-'}">Leitor</td>
+              <td data-label="Material" th:text="${e.titulo ?: '-'}">Material</td>
+              <td data-label="Tombamento" th:text="${e.tombamento ?: '-'}">BA-000001</td>
+              <td data-label="Prevista" th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
+              <td data-label="Situação"><span class="badge-bublo" th:classappend="${e.atrasado} ? 'badge-atrasado' : 'badge-ativo'" th:text="${e.atrasado} ? 'Em atraso' : 'No prazo'">No prazo</span></td>
+              <td class="celula-acoes">
                 <form th:action="@{/devolucoes/{id}/devolver(id=${e.id})}" method="post" class="form-inline"
                       th:attr="data-confirmar=${e.atrasado} ? 'Este empréstimo está em atraso e uma multa será gerada. Registrar a devolução?' : 'Registrar a devolução deste exemplar?'"
                       data-confirmar-titulo="Registrar devolução">

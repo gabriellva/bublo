@@ -1,47 +1,51 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="sidebar(modulo)">
-  <aside class="sidebar" id="sidebar">
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <aside class="sidebar" id="sidebar" aria-label="Menu principal">
     <div class="marca">
       <span class="simbolo"><i class="bi bi-book"></i></span>
       <span th:text="${nomeInstituicao ?: 'Bublo'}">Bublo</span>
     </div>
     <nav>
-      <a class="nav-item" th:classappend="${modulo == 'dashboard'} ? 'ativo'" th:href="@{/dashboard}">
+      <a class="nav-item" th:classappend="${modulo == 'dashboard'} ? 'ativo'" th:aria-current="${modulo == 'dashboard'} ? 'page'" th:href="@{/dashboard}">
         <span class="icone"><i class="bi bi-speedometer2"></i></span>Dashboard
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'acervo'} ? 'ativo'" th:href="@{/acervo}">
+      <a class="nav-item" th:classappend="${modulo == 'acervo'} ? 'ativo'" th:aria-current="${modulo == 'acervo'} ? 'page'" th:href="@{/acervo}">
         <span class="icone"><i class="bi bi-book-half"></i></span>Acervo
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'leitores'} ? 'ativo'" th:href="@{/leitores}">
+      <a class="nav-item" th:classappend="${modulo == 'leitores'} ? 'ativo'" th:aria-current="${modulo == 'leitores'} ? 'page'" th:href="@{/leitores}">
         <span class="icone"><i class="bi bi-people"></i></span>Leitores
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'emprestimos'} ? 'ativo'" th:href="@{/emprestimos}">
+      <a class="nav-item" th:classappend="${modulo == 'emprestimos'} ? 'ativo'" th:aria-current="${modulo == 'emprestimos'} ? 'page'" th:href="@{/emprestimos}">
         <span class="icone"><i class="bi bi-box-arrow-right"></i></span>Empréstimos
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'devolucoes'} ? 'ativo'" th:href="@{/devolucoes}">
+      <a class="nav-item" th:classappend="${modulo == 'devolucoes'} ? 'ativo'" th:aria-current="${modulo == 'devolucoes'} ? 'page'" th:href="@{/devolucoes}">
         <span class="icone"><i class="bi bi-box-arrow-left"></i></span>Devoluções
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'reservas'} ? 'ativo'" th:href="@{/reservas}">
+      <a class="nav-item" th:classappend="${modulo == 'reservas'} ? 'ativo'" th:aria-current="${modulo == 'reservas'} ? 'page'" th:href="@{/reservas}">
         <span class="icone"><i class="bi bi-calendar-check"></i></span>Reservas
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'multas'} ? 'ativo'" th:href="@{/multas}">
+      <a class="nav-item" th:classappend="${modulo == 'multas'} ? 'ativo'" th:aria-current="${modulo == 'multas'} ? 'page'" th:href="@{/multas}">
         <span class="icone"><i class="bi bi-currency-dollar"></i></span>Multas
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'relatorios'} ? 'ativo'" th:href="@{/relatorios}">
+      <a class="nav-item" th:classappend="${modulo == 'relatorios'} ? 'ativo'" th:aria-current="${modulo == 'relatorios'} ? 'page'" th:href="@{/relatorios}">
         <span class="icone"><i class="bi bi-file-earmark-bar-graph"></i></span>Relatórios
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'notificacoes'} ? 'ativo'" th:href="@{/notificacoes}">
+      <a class="nav-item" th:classappend="${modulo == 'notificacoes'} ? 'ativo'" th:aria-current="${modulo == 'notificacoes'} ? 'page'" th:href="@{/notificacoes}">
         <span class="icone"><i class="bi bi-bell"></i></span>Notificações
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'configuracoes'} ? 'ativo'" th:href="@{/configuracoes}">
+      <a class="nav-item" th:classappend="${modulo == 'configuracoes'} ? 'ativo'" th:aria-current="${modulo == 'configuracoes'} ? 'page'" th:href="@{/configuracoes}">
         <span class="icone"><i class="bi bi-gear"></i></span>Configurações
       </a>
-      <a class="nav-item" th:classappend="${modulo == 'auditoria'} ? 'ativo'" th:href="@{/auditoria}">
+      <a class="nav-item" th:classappend="${modulo == 'auditoria'} ? 'ativo'" th:aria-current="${modulo == 'auditoria'} ? 'page'" th:href="@{/auditoria}">
         <span class="icone"><i class="bi bi-journal-text"></i></span>Auditoria
+      </a>
+      <a class="nav-item" th:classappend="${modulo == 'conta'} ? 'ativo'" th:aria-current="${modulo == 'conta'} ? 'page'" th:href="@{/conta}">
+        <span class="icone"><i class="bi bi-person-gear"></i></span>Minha conta
       </a>
     </nav>
     <div class="rodape">
       <strong th:text="${usuario ?: 'Administrador'}"></strong><br/>
-      <span>Biblioteca Acadêmica</span>
+      <span th:text="${nomeInstituicao ?: 'Bublo'}">Biblioteca Acadêmica</span>
     </div>
   </aside>
 </th:block>

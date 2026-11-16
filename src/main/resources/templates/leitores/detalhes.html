@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header cabecalho-pagina">
         <div>
           <h1 th:text="${leitor.nome}">Nome do leitor</h1>
@@ -24,7 +24,7 @@
 
       <div class="grid-duas-colunas">
         <div class="card-bublo p-4">
-          <table class="tabela">
+          <table class="tabela tabela-detalhe">
             <tr><th style="width:160px;">Matrícula</th><td th:text="${leitor.matricula}">-</td></tr>
             <tr><th>E-mail</th><td th:text="${leitor.email}">-</td></tr>
             <tr><th>CPF</th><td th:text="${leitor.cpf ?: '-'}">-</td></tr>

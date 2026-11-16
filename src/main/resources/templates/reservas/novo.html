@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1>Nova reserva</h1>
         <p class="subtitulo">Reservar material sem exemplares disponíveis</p>
@@ -35,7 +35,8 @@
           </div>
           <div>
             <label class="form-label" for="prazo">Prazo para retirada</label>
-            <input type="date" id="prazo" name="prazo" class="form-control" required th:min="${hoje}" th:value="${prazoSelecionado}" />
+            <input type="date" id="prazo" name="prazo" class="form-control" required th:min="${hoje}" th:max="${hoje.plusDays(30)}" th:value="${prazoSelecionado}" />
+            <p class="texto-ajuda">No máximo 30 dias a partir de hoje.</p>
           </div>
         </div>
         <div class="acoes-linha mt-4">

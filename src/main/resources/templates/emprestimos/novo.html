@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1>Novo empréstimo</h1>
         <p class="subtitulo">Selecione o leitor, os exemplares e a data prevista de devolução</p>
@@ -30,16 +30,21 @@
             <label class="form-label" for="dataPrevista">Data prevista de devolução</label>
             <input type="date" id="dataPrevista" name="dataPrevista" class="form-control" required
                    th:min="${hoje}" th:value="${dataSelecionada}" />
+            <p class="texto-ajuda">Não pode passar do prazo do tipo de leitor (aluno/professor).</p>
           </div>
         </div>
 
         <div class="mt-3">
-          <label class="form-label" for="exemplares">Exemplares disponíveis</label>
-          <select id="exemplares" name="exemplares" class="form-control" size="8" multiple required>
-            <option th:each="x : ${exemplaresDisponiveis}" th:value="${x.id}" th:text="${x.rotulo}"
-                    th:selected="${exemplaresSelecionados != null and exemplaresSelecionados.contains(x.id)}">BA-000001 — Título</option>
-          </select>
-          <p class="texto-ajuda">Segure Ctrl (ou Cmd) para selecionar vários. Somente exemplares livres aparecem aqui.</p>
+          <label class="form-label" for="filtroExemplares">Exemplares disponíveis</label>
+          <input type="search" id="filtroExemplares" class="form-control mb-2" placeholder="Filtrar por título ou tombamento" autocomplete="off" />
+          <div class="lista-selecao" role="group" aria-label="Exemplares disponíveis" id="listaExemplares">
+            <label th:each="x : ${exemplaresDisponiveis}" th:attr="data-busca=${#strings.toLowerCase(x.rotulo)}">
+              <input type="checkbox" name="exemplares" th:value="${x.id}"
+                     th:checked="${exemplaresSelecionados != null and exemplaresSelecionados.contains(x.id)}" />
+              <span th:text="${x.rotulo}">BA-000001 — Título</span>
+            </label>
+          </div>
+          <p class="texto-ajuda" aria-live="polite"><span id="contadorSelecao">0</span> exemplar(es) selecionado(s). Somente exemplares livres aparecem aqui.</p>
           <p class="texto-ajuda" th:if="${exemplaresDisponiveis.empty}">Não há exemplares disponíveis no momento.</p>
         </div>
 
@@ -59,38 +64,74 @@
       const data = document.getElementById('dataPrevista');
       const status = document.getElementById('statusBloqueio');
       const confirmar = document.getElementById('btnConfirmar');
+      const filtro = document.getElementById('filtroExemplares');
+      const caixas = Array.from(document.querySelectorAll('#listaExemplares input[type=checkbox]'));
+      const contador = document.getElementById('contadorSelecao');
+      let restricao = null;
 
-      function sugerirData() {
-        if (data.value || !leitor.value) return;
-        const tipo = leitor.selectedOptions[0].dataset.tipo;
-        const dias = parseInt(tipo === 'PROFESSOR' ? form.dataset.prazoProfessor : form.dataset.prazoAluno, 10);
-        const previsao = new Date();
-        previsao.setDate(previsao.getDate() + dias);
-        data.value = previsao.toISOString().slice(0, 10);
+      // Data local (toISOString usaria UTC e, à noite no Brasil, sugeriria um dia a mais).
+      function dataLocal(dias) {
+        const d = new Date();
+        d.setDate(d.getDate() + dias);
+        const dois = (n) => String(n).padStart(2, '0');
+        return d.getFullYear() + '-' + dois(d.getMonth() + 1) + '-' + dois(d.getDate());
+      }
+
+      function diasDoPrazo() {
+        if (restricao) return restricao.prazoDias;
+        const tipo = leitor.selectedOptions[0] ? leitor.selectedOptions[0].dataset.tipo : 'ALUNO';
+        return parseInt(tipo === 'PROFESSOR' ? form.dataset.prazoProfessor : form.dataset.prazoAluno, 10);
+      }
+
+      function atualizarSelecao() {
+        const marcados = caixas.filter((c) => c.checked).length;
+        contador.textContent = marcados;
+        confirmar.disabled = !!(restricao && restricao.bloqueado);
+        if (restricao && !restricao.bloqueado && restricao.ativos + marcados > restricao.limite) {
+          status.textContent = 'Limite excedido: o leitor tem ' + restricao.ativos + ' ativo(s) e o limite é ' + restricao.limite + '.';
+          status.style.color = 'var(--bublo-perigo)';
+          confirmar.disabled = true;
+        } else if (restricao && !restricao.bloqueado) {
+          status.textContent = 'Sem pendências. Empréstimos ativos: ' + restricao.ativos + ' de ' + restricao.limite + '.';
+          status.style.color = 'var(--bublo-sucesso)';
+        }
+      }
+
+      function ajustarData() {
+        data.max = dataLocal(diasDoPrazo());
+        if (!data.value) data.value = dataLocal(diasDoPrazo());
       }
 
       function verificarRestricao() {
         status.textContent = '';
+        restricao = null;
         confirmar.disabled = false;
         if (!leitor.value) return;
-        sugerirData();
+        ajustarData();
         fetch('/emprestimos/restricao/' + encodeURIComponent(leitor.value), { credentials: 'same-origin' })
           .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
           .then((d) => {
+            restricao = d;
+            ajustarData();
             if (d.bloqueado) {
               status.textContent = 'Leitor bloqueado: possui multa pendente.';
               status.style.color = 'var(--bublo-perigo)';
               confirmar.disabled = true;
               return;
             }
-            status.textContent = 'Sem pendências. Empréstimos ativos: ' + d.ativos + '.';
-            status.style.color = 'var(--bublo-sucesso)';
+            atualizarSelecao();
           })
           .catch(() => { Bublo.Toasts.atencao('Não foi possível verificar as pendências do leitor.'); });
       }
 
+      filtro.addEventListener('input', () => {
+        const termo = filtro.value.trim().toLowerCase();
+        caixas.forEach((c) => { c.parentElement.hidden = termo !== '' && !c.parentElement.dataset.busca.includes(termo); });
+      });
+      caixas.forEach((c) => c.addEventListener('change', atualizarSelecao));
       leitor.addEventListener('change', () => { data.value = ''; verificarRestricao(); });
       verificarRestricao();
+      atualizarSelecao();
     });
   </script>
 </body>

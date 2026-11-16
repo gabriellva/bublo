@@ -9,14 +9,14 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1>Dashboard</h1>
         <p class="subtitulo">Visão executiva da biblioteca</p>
       </div>
 
       <div class="grid-indicadores">
-        <div class="indicador" th:each="ind : ${indicadores}">
+        <div class="indicador" th:each="ind : ${indicadores}" th:style="'border-left-color:' + ${ind.cor}">
           <div class="valor" th:text="${ind.valor}">0</div>
           <div class="rotulo" th:text="${ind.rotulo}">Títulos</div>
           <div class="subtitulo" th:text="${ind.subtitulo}">Itens do acervo</div>
@@ -27,7 +27,7 @@
         <div class="card-bublo p-4">
           <h3 class="mt-0">Empréstimos nos últimos meses</h3>
           <canvas id="graficoLinha" height="120" aria-label="Empréstimos por mês" role="img"></canvas>
-          <p class="texto-ajuda" th:if="${#lists.isEmpty(valoresMes)}">Ainda não há empréstimos registrados.</p>
+          <p class="texto-ajuda" th:if="${semEmprestimos}">Ainda não há empréstimos registrados neste período.</p>
         </div>
         <div class="card-bublo p-4">
           <h3 class="mt-0">Materiais por tipo</h3>
@@ -45,7 +45,7 @@
         </div>
         <ul class="list-unstyled mb-0" th:unless="${#lists.isEmpty(atividadesRecentes)}">
           <li class="py-2" style="border-bottom:1px solid var(--bublo-borda);" th:each="a : ${atividadesRecentes}">
-            <strong th:text="${a.tipoOperacao}">OPERACAO</strong>
+            <strong th:text="${#strings.capitalize(#strings.toLowerCase(#strings.replace(a.tipoOperacao, '_', ' ')))}">Operação</strong>
             <span class="texto-ajuda" th:text="${a.modulo + ' · ' + a.adminUsuario + ' · ' + #temporals.format(a.dataHora, 'dd/MM/yyyy HH:mm')}">Módulo</span>
           </li>
         </ul>

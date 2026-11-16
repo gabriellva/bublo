@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1>Pagamento de multa</h1>
         <p class="subtitulo">Registro de pagamento (dinheiro ou outro meio)</p>
@@ -20,7 +20,8 @@
         <p class="texto-ajuda">Valor: <strong th:text="${#numbers.formatCurrency(multa.valor)}">R$ 0,00</strong>
           · Saldo pendente: <strong th:text="${#numbers.formatCurrency(multa.saldoPendente)}">R$ 0,00</strong></p>
 
-        <form th:action="@{/multas/{id}/pagar(id=${multa.id})}" method="post" novalidate>
+        <form th:action="@{/multas/{id}/pagar(id=${multa.id})}" method="post" novalidate
+              th:if="${multa.status == 'PENDENTE' or multa.status == 'PAGA_PARCIAL'}">
           <div class="mb-3">
             <label class="form-label" for="valor">Valor a pagar (R$)</label>
             <input type="number" id="valor" name="valor" step="0.01" min="0.01" th:max="${multa.saldoPendente}" class="form-control" required th:value="${multa.saldoPendente}" />
@@ -37,6 +38,36 @@
             <a th:href="@{/multas}" class="btn-bublo btn-contorno">Voltar</a>
           </div>
         </form>
+        <p class="texto-ajuda" th:unless="${multa.status == 'PENDENTE' or multa.status == 'PAGA_PARCIAL'}">
+          Esta multa está quitada. <a th:href="@{/multas}">Voltar</a>
+        </p>
+      </div>
+
+      <div class="formulario-card mt-3" th:unless="${#lists.isEmpty(pagamentos)}">
+        <h3 class="mt-0">Histórico de pagamentos</h3>
+        <table class="tabela tabela-cartoes">
+          <thead><tr><th>#</th><th>Data</th><th>Valor</th><th>Forma</th><th>Situação</th><th>Ação</th></tr></thead>
+          <tbody>
+            <tr th:each="p : ${pagamentos}">
+              <td data-label="#" th:text="${p.id}">1</td>
+              <td data-label="Data" th:text="${#temporals.format(p.dataPagamento, 'dd/MM/yyyy HH:mm')}">-</td>
+              <td data-label="Valor" th:text="${#numbers.formatCurrency(p.valor)}">R$ 0,00</td>
+              <td data-label="Forma" th:text="${p.formaPagamento}">Dinheiro</td>
+              <td data-label="Situação">
+                <span class="badge-bublo badge-neutro" th:if="${p.estornado}" th:title="${p.estornoJustificativa}">Estornado</span>
+                <span class="badge-bublo badge-ativo" th:unless="${p.estornado}">Válido</span>
+              </td>
+              <td class="celula-acoes">
+                <form th:action="@{/multas/{id}/pagamentos/{pid}/estornar(id=${multa.id}, pid=${p.id})}" method="post"
+                      class="d-flex flex-wrap gap-2" th:unless="${p.estornado}">
+                  <input type="text" name="justificativa" class="form-control" placeholder="Justificativa" required maxlength="500"
+                         aria-label="Justificativa do estorno" />
+                  <button type="submit" class="btn-bublo btn-acao btn-contorno perigo">Estornar</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </main>
   </div>

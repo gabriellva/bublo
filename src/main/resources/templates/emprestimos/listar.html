@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header cabecalho-pagina">
         <div>
           <h1>Empréstimos</h1>
@@ -41,28 +41,29 @@
         </form>
       </div>
 
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
+      <div class="tabela-bloco bloco-cartoes" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela tabela-cartoes">
           <thead>
             <tr><th>#</th><th>Leitor</th><th>Material</th><th>Tombamento</th><th>Data</th><th>Prevista</th><th>Situação</th><th>Ações</th></tr>
           </thead>
           <tbody>
             <tr th:each="e : ${resultado.conteudo}">
-              <td th:text="${e.id}">-</td>
-              <td><a th:href="@{/leitores/{id}(id=${e.leitorId})}" th:text="${e.leitorNome ?: '-'}">Leitor</a></td>
-              <td th:text="${e.titulo ?: '-'}">Material</td>
-              <td th:text="${e.tombamento ?: '-'}">BA-000001</td>
-              <td th:text="${#temporals.format(e.dataEmprestimo, 'dd/MM/yyyy')}">-</td>
-              <td th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
-              <td>
+              <td data-label="#" th:text="${e.id}">-</td>
+              <td data-label="Leitor"><a th:href="@{/leitores/{id}(id=${e.leitorId})}" th:text="${e.leitorNome ?: '-'}">Leitor</a></td>
+              <td data-label="Material" th:text="${e.titulo ?: '-'}">Material</td>
+              <td data-label="Tombamento" th:text="${e.tombamento ?: '-'}">BA-000001</td>
+              <td data-label="Data" th:text="${#temporals.format(e.dataEmprestimo, 'dd/MM/yyyy')}">-</td>
+              <td data-label="Prevista" th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
+              <td data-label="Situação">
                 <span class="badge-bublo"
                       th:classappend="${e.atrasado} ? 'badge-atrasado' : (${e.status == 'ATIVO'} ? 'badge-ativo' : 'badge-neutro')"
                       th:text="${e.atrasado} ? 'Em atraso' : (${e.status == 'ATIVO'} ? 'Ativo' : (${e.status == 'DEVOLVIDO'} ? 'Devolvido' : 'Cancelado'))">Ativo</span>
               </td>
-              <td>
+              <td class="celula-acoes">
                 <div class="acoes-linha" th:if="${e.status == 'ATIVO'}">
                   <form th:action="@{/emprestimos/{id}/renovar(id=${e.id})}" method="post" class="form-inline">
-                    <button type="submit" class="btn-bublo btn-acao" th:disabled="${e.renovacoes != null and e.renovacoes >= 1}">Renovar</button>
+                    <button type="submit" class="btn-bublo btn-acao" th:disabled="${e.renovacoes != null and e.renovacoes >= 1}"
+                            th:title="${e.renovacoes != null and e.renovacoes >= 1} ? 'Este empréstimo já foi renovado uma vez.' : 'Renovar pelo prazo padrão do leitor'">Renovar</button>
                   </form>
                   <form th:action="@{/emprestimos/{id}/cancelar(id=${e.id})}" method="post" class="form-inline"
                         data-confirmar="Cancelar este empréstimo? O exemplar voltará a ficar disponível."
