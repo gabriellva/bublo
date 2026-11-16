@@ -27,7 +27,7 @@ public class AuditoriaController {
                          @RequestParam(defaultValue = "0") int pagina,
                          @RequestParam(defaultValue = "10") int tamanho,
                          Model model) {
-        var resultado = auditoriaRepository.buscar(termo, modulo, tipoOperacao, pagina, tamanho);
+        var resultado = auditoriaRepository.buscar(termo, modulo, tipoOperacao, Math.max(pagina, 0), Math.min(Math.max(tamanho, 1), 100));
         model.addAttribute("resultado", resultado);
         model.addAttribute("termo", termo);
         model.addAttribute("modulo", modulo);

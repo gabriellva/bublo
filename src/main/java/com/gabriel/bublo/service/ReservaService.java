@@ -10,6 +10,7 @@ import com.gabriel.bublo.repository.LeitorRepository;
 import com.gabriel.bublo.repository.NotificacaoRepository;
 import com.gabriel.bublo.repository.ExemplarRepository;
 import com.gabriel.bublo.repository.EmprestimoRepository;
+import com.gabriel.bublo.repository.AuditoriaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,25 +24,31 @@ import java.util.stream.Collectors;
 @Service
 public class ReservaService {
 
+    /** Teto do prazo de retirada: uma reserva sem teto seguraria a fila do título indefinidamente. */
+    static final int PRAZO_RETIRADA_MAXIMO_DIAS = 30;
+
     private final ReservaRepository reservaRepository;
     private final ItemAcervoRepository itemAcervoRepository;
     private final LeitorRepository leitorRepository;
     private final NotificacaoRepository notificacaoRepository;
     private final ExemplarRepository exemplarRepository;
     private final EmprestimoRepository emprestimoRepository;
+    private final AuditoriaRepository auditoriaRepository;
 
     public ReservaService(ReservaRepository reservaRepository,
                           ItemAcervoRepository itemAcervoRepository,
                           LeitorRepository leitorRepository,
                           NotificacaoRepository notificacaoRepository,
                           ExemplarRepository exemplarRepository,
-                          EmprestimoRepository emprestimoRepository) {
+                          EmprestimoRepository emprestimoRepository,
+                          AuditoriaRepository auditoriaRepository) {
         this.reservaRepository = reservaRepository;
         this.itemAcervoRepository = itemAcervoRepository;
         this.leitorRepository = leitorRepository;
         this.notificacaoRepository = notificacaoRepository;
         this.exemplarRepository = exemplarRepository;
         this.emprestimoRepository = emprestimoRepository;
+        this.auditoriaRepository = auditoriaRepository;
     }
 
     @Transactional(readOnly = true)
@@ -70,20 +77,38 @@ public class ReservaService {
         }
         var item = itemAcervoRepository.buscarPorId(itemId)
             .orElseThrow(() -> new IllegalStateException("Material não encontrado"));
+        if (!itemAcervoRepository.estaAtivo(itemId)) {
+            throw new IllegalStateException("Material excluído do acervo. Não é possível reservar.");
+        }
         if (item.getTipo() == com.gabriel.bublo.model.TipoMaterial.DIGITAL) {
             throw new IllegalStateException("Publicações digitais não podem ser reservadas.");
         }
         if (prazoRetirada == null || prazoRetirada.toLocalDate().isBefore(java.time.LocalDate.now())) {
             throw new IllegalStateException("O prazo de retirada não pode ser anterior a hoje.");
         }
-        if (!exemplarRepository.buscarDisponiveisPorItem(itemId).isEmpty()) {
+        if (prazoRetirada.toLocalDate().isAfter(java.time.LocalDate.now().plusDays(PRAZO_RETIRADA_MAXIMO_DIAS))) {
+            throw new IllegalStateException("O prazo de retirada não pode passar de " + PRAZO_RETIRADA_MAXIMO_DIAS + " dias.");
+        }
+        if (emprestimoRepository.leitorTemEmprestimoAtivoDoItem(leitorId, itemId)) {
+            throw new IllegalStateException("O leitor já está com um exemplar deste material emprestado.");
+        }
+        if (exemplarRepository.contarPorItem(itemId) == 0) {
+            throw new IllegalStateException("Este material não possui exemplares cadastrados. Cadastre um exemplar antes de reservar.");
+        }
+        // Exemplares livres já comprometidos com a fila não contam como disponíveis para novas reservas.
+        int livres = exemplarRepository.buscarDisponiveisPorItem(itemId).size();
+        int naFila = reservaRepository.listarPendentesPorItem(itemId).size();
+        if (livres > naFila) {
             throw new IllegalStateException("Este material possui exemplares disponíveis. Registre um empréstimo em vez de uma reserva.");
         }
         Reserva r = reservaRepository.criar(leitorId, itemId, prazoRetirada);
         notificacaoRepository.salvar(new com.gabriel.bublo.model.Notificacao(
             null, "RESERVA", "INFORMATIVO", "Nova reserva",
-            "Reserva #" + r.getId() + " criada para o item " + itemId + ". Posição na fila: " + r.getPosicao(),
+            "Reserva #" + r.getId() + " de \"" + item.getTitulo() + "\" para " + leitor.getNome()
+                + ". Posição na fila: " + r.getPosicao(),
             "RESERVA", r.getId()));
+        auditoriaRepository.registrar(adminUsuario, "CRIACAO_RESERVA", "Reservas", "Reserva #" + r.getId(),
+            null, leitor.getNome() + " -> " + item.getTitulo() + " (posição " + r.getPosicao() + ")", null);
         return toDTO(r);
     }
 
@@ -98,6 +123,23 @@ public class ReservaService {
         notificacaoRepository.salvar(new com.gabriel.bublo.model.Notificacao(
             null, "RESERVA", "INFORMATIVO", "Reserva cancelada",
             "Reserva #" + reservaId + " foi cancelada", "RESERVA", reservaId));
+        auditoriaRepository.registrar(adminUsuario, "CANCELAMENTO_RESERVA", "Reservas", "Reserva #" + reservaId,
+            "AGUARDANDO", "CANCELADA", null);
+    }
+
+    /** Expira as reservas cujo prazo de retirada já passou (o prazo vale até o fim do dia). */
+    @Transactional
+    public int expirarVencidas() {
+        var vencidas = reservaRepository.listarExpiradasNaoProcessadas();
+        for (Reserva r : vencidas) {
+            reservaRepository.expirar(r.getId());
+            notificacaoRepository.salvar(new com.gabriel.bublo.model.Notificacao(
+                null, "RESERVA", "INFORMATIVO", "Reserva expirada",
+                "Reserva #" + r.getId() + " expirou por falta de retirada no prazo.", "RESERVA", r.getId()));
+            auditoriaRepository.registrar("sistema", "EXPIRACAO_RESERVA", "Reservas", "Reserva #" + r.getId(),
+                "AGUARDANDO", "EXPIRADA", "Prazo de retirada vencido");
+        }
+        return vencidas.size();
     }
 
     @Transactional
@@ -108,6 +150,8 @@ public class ReservaService {
     @Transactional
     public void atender(Long reservaId, String adminUsuario) {
         reservaRepository.atender(reservaId);
+        auditoriaRepository.registrar(adminUsuario, "ATENDIMENTO_RESERVA", "Reservas", "Reserva #" + reservaId,
+            "AGUARDANDO", "ATENDIDA", null);
     }
 
     private ReservaDTO toDTO(Reserva r) {

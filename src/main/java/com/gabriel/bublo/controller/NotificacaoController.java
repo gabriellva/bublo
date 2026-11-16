@@ -31,7 +31,7 @@ public class NotificacaoController {
                          @RequestParam(defaultValue = "0") int pagina,
                          @RequestParam(defaultValue = "10") int tamanho,
                          Model model) {
-        var resultado = notificacaoService.listar(categoria, prioridade, lida, null, pagina, tamanho);
+        var resultado = notificacaoService.listar(categoria, prioridade, lida, null, Math.max(pagina, 0), Math.min(Math.max(tamanho, 1), 100));
         model.addAttribute("resultado", resultado);
         model.addAttribute("categoria", categoria);
         model.addAttribute("prioridade", prioridade);

@@ -40,7 +40,7 @@ class MultaServiceTest {
         emprestimoRepository = mock(EmprestimoRepository.class);
         notificacaoRepository = mock(NotificacaoRepository.class);
         service = new MultaService(multaRepository, pagamentoRepository, leitorRepository,
-                emprestimoRepository, notificacaoRepository);
+                emprestimoRepository, notificacaoRepository, mock(com.gabriel.bublo.repository.AuditoriaRepository.class));
     }
 
     @Test
@@ -54,7 +54,7 @@ class MultaServiceTest {
         m.setStatus("PENDENTE");
         m.setDataGeracao(LocalDateTime.now());
 
-        when(multaRepository.buscarPorId(1L)).thenReturn(Optional.of(m));
+        when(multaRepository.buscarPorIdParaAtualizar(1L)).thenReturn(Optional.of(m));
         when(pagamentoRepository.buscarPorId(any())).thenReturn(null);
 
         service.pagar(1L, new BigDecimal("10.00"), "Dinheiro", "admin");
@@ -73,7 +73,7 @@ class MultaServiceTest {
         m.setValorPago(BigDecimal.ZERO);
         m.setStatus("PENDENTE");
 
-        when(multaRepository.buscarPorId(1L)).thenReturn(Optional.of(m));
+        when(multaRepository.buscarPorIdParaAtualizar(1L)).thenReturn(Optional.of(m));
         when(pagamentoRepository.buscarPorId(any())).thenReturn(null);
 
         service.pagar(1L, new BigDecimal("4.00"), "Dinheiro", "admin");
@@ -91,7 +91,7 @@ class MultaServiceTest {
         m.setValorPago(BigDecimal.ZERO);
         m.setStatus("PENDENTE");
 
-        when(multaRepository.buscarPorId(1L)).thenReturn(Optional.of(m));
+        when(multaRepository.buscarPorIdParaAtualizar(1L)).thenReturn(Optional.of(m));
 
         assertThatIllegalStateException().isThrownBy(() ->
             service.pagar(1L, new BigDecimal("20.00"), "Dinheiro", "admin"));
@@ -112,7 +112,8 @@ class MultaServiceTest {
         p.setValor(new BigDecimal("10.00"));
 
         when(pagamentoRepository.buscarPorId(100L)).thenReturn(p);
-        when(multaRepository.buscarPorId(1L)).thenReturn(Optional.of(m));
+        when(multaRepository.buscarPorIdParaAtualizar(1L)).thenReturn(Optional.of(m));
+        when(pagamentoRepository.marcarEstornado(100L, "admin", "Erro de lançamento")).thenReturn(true);
 
         service.estornar(100L, "Erro de lançamento", "admin");
 
@@ -150,5 +151,72 @@ class MultaServiceTest {
     void estornoExigeJustificativa() {
         assertThatIllegalStateException().isThrownBy(() ->
             service.estornar(1L, null, "admin"));
+    }
+
+    @Test
+    @DisplayName("O mesmo pagamento não pode ser estornado duas vezes")
+    void estornoDuplicadoRejeitado() {
+        Multa m = new Multa();
+        m.setId(1L);
+        m.setValor(new BigDecimal("10.00"));
+        m.setValorPago(new BigDecimal("5.00"));
+        m.setStatus("PAGA_PARCIAL");
+        Pagamento p = new Pagamento();
+        p.setId(100L);
+        p.setMultaId(1L);
+        p.setValor(new BigDecimal("5.00"));
+        when(pagamentoRepository.buscarPorId(100L)).thenReturn(p);
+        when(multaRepository.buscarPorIdParaAtualizar(1L)).thenReturn(Optional.of(m));
+        when(pagamentoRepository.marcarEstornado(any(), any(), any())).thenReturn(false);
+
+        assertThatThrownBy(() -> service.estornar(100L, "de novo", "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("já foi estornado");
+        assertThat(m.getValorPago()).isEqualByComparingTo("5.00");
+        verify(multaRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("Pagamento com mais de duas casas decimais é rejeitado")
+    void pagamentoComTresCasasRejeitado() {
+        Multa m = new Multa();
+        m.setId(1L);
+        m.setValor(new BigDecimal("10.00"));
+        m.setValorPago(BigDecimal.ZERO);
+        m.setStatus("PENDENTE");
+        when(multaRepository.buscarPorIdParaAtualizar(1L)).thenReturn(Optional.of(m));
+
+        assertThatThrownBy(() -> service.pagar(1L, new BigDecimal("0.005"), "Dinheiro", "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("duas casas");
+        verify(pagamentoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("Pagamento sem valor informado é rejeitado sem NullPointerException")
+    void pagamentoSemValor() {
+        Multa m = new Multa();
+        m.setId(1L);
+        m.setValor(new BigDecimal("10.00"));
+        m.setStatus("PENDENTE");
+        when(multaRepository.buscarPorIdParaAtualizar(1L)).thenReturn(Optional.of(m));
+
+        assertThatThrownBy(() -> service.pagar(1L, null, "Dinheiro", "admin"))
+            .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("Forma de pagamento com mais de 50 caracteres é rejeitada")
+    void formaGrande() {
+        Multa m = new Multa();
+        m.setId(1L);
+        m.setValor(new BigDecimal("10.00"));
+        m.setValorPago(BigDecimal.ZERO);
+        m.setStatus("PENDENTE");
+        when(multaRepository.buscarPorIdParaAtualizar(1L)).thenReturn(Optional.of(m));
+
+        assertThatThrownBy(() -> service.pagar(1L, new BigDecimal("1.00"), "x".repeat(51), "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("50");
     }
 }

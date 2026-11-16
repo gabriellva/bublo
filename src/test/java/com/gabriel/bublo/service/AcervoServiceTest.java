@@ -21,12 +21,17 @@ import static org.mockito.Mockito.when;
 class AcervoServiceTest {
 
     private ItemAcervoRepository itemAcervoRepository;
+    private ExemplarRepository exemplarRepository;
+    private ConfiguracaoService configuracaoService;
     private AcervoService service;
 
     @BeforeEach
     void setUp() {
         itemAcervoRepository = mock(ItemAcervoRepository.class);
-        service = new AcervoService(itemAcervoRepository, mock(ExemplarRepository.class));
+        exemplarRepository = mock(ExemplarRepository.class);
+        configuracaoService = mock(ConfiguracaoService.class);
+        service = new AcervoService(itemAcervoRepository, exemplarRepository, configuracaoService,
+            mock(com.gabriel.bublo.repository.AuditoriaRepository.class));
         when(itemAcervoRepository.salvar(any())).thenAnswer(inv -> {
             ItemAcervo item = inv.getArgument(0);
             item.setId(1L);
@@ -88,5 +93,102 @@ class AcervoServiceTest {
     void loteLimitado() {
         assertThatThrownBy(() -> service.cadastrarExemplaresLote(1L, 101, "admin"))
             .isInstanceOf(IllegalStateException.class);
+    }
+
+    private ItemAcervo itemDoTipo(com.gabriel.bublo.model.TipoMaterial tipo, boolean ativo) {
+        Livro l = new Livro();
+        l.setId(7L);
+        l.setTipo(tipo);
+        l.setTitulo("Titulo");
+        when(itemAcervoRepository.buscarPorId(7L)).thenReturn(java.util.Optional.of(l));
+        when(itemAcervoRepository.estaAtivo(7L)).thenReturn(ativo);
+        return l;
+    }
+
+    @Test
+    @DisplayName("Publicação digital não recebe exemplares")
+    void digitalSemExemplares() {
+        itemDoTipo(com.gabriel.bublo.model.TipoMaterial.DIGITAL, true);
+
+        assertThatThrownBy(() -> service.cadastrarExemplaresLote(7L, 1, "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("digitais");
+        org.mockito.Mockito.verifyNoInteractions(exemplarRepository);
+    }
+
+    @Test
+    @DisplayName("Material excluído não recebe exemplares")
+    void excluidoSemExemplares() {
+        itemDoTipo(com.gabriel.bublo.model.TipoMaterial.LIVRO, false);
+
+        assertThatThrownBy(() -> service.cadastrarExemplaresLote(7L, 1, "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("excluído");
+    }
+
+    @Test
+    @DisplayName("Novos exemplares usam o prefixo de tombamento configurado")
+    void usaPrefixoConfigurado() {
+        ItemAcervo item = itemDoTipo(com.gabriel.bublo.model.TipoMaterial.LIVRO, true);
+        com.gabriel.bublo.dto.ConfiguracaoDTO cfg = new com.gabriel.bublo.dto.ConfiguracaoDTO();
+        cfg.setChave("prefixo_tombamento");
+        cfg.setValor("lib");
+        when(configuracaoService.buscar("prefixo_tombamento")).thenReturn(cfg);
+
+        service.cadastrarExemplaresLote(7L, 2, "admin");
+
+        verify(exemplarRepository).salvarLote(item, 2, "LIB");
+    }
+
+    @Test
+    @DisplayName("Prefixo inválido na configuração cai no padrão BA")
+    void prefixoInvalidoUsaPadrao() {
+        ItemAcervo item = itemDoTipo(com.gabriel.bublo.model.TipoMaterial.LIVRO, true);
+        com.gabriel.bublo.dto.ConfiguracaoDTO cfg = new com.gabriel.bublo.dto.ConfiguracaoDTO();
+        cfg.setValor("12!");
+        when(configuracaoService.buscar("prefixo_tombamento")).thenReturn(cfg);
+
+        service.cadastrarExemplaresLote(7L, 1, "admin");
+
+        verify(exemplarRepository).salvarLote(item, 1, "BA");
+    }
+
+    @Test
+    @DisplayName("O tipo do material não pode mudar na edição")
+    void tipoImutavel() {
+        itemDoTipo(com.gabriel.bublo.model.TipoMaterial.LIVRO, true);
+        ItemAcervoDTO dto = new ItemAcervoDTO();
+        dto.setId(7L);
+        dto.setTipo("DVD");
+        dto.setTitulo("Titulo");
+
+        assertThatThrownBy(() -> service.salvar(dto, "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("tipo");
+    }
+
+    @Test
+    @DisplayName("Mesmo autor digitado com outra caixa ou espaços entra uma única vez")
+    void autorDuplicadoColapsa() {
+        when(itemAcervoRepository.criarOuReutilizarAutor(any())).thenReturn(10L);
+        ItemAcervoDTO dto = livro();
+        dto.setNovosAutores(new java.util.ArrayList<>(java.util.List.of("Machado de Assis", "machado  de assis ")));
+
+        service.salvar(dto, "admin");
+
+        ArgumentCaptor<ItemAcervo> captor = ArgumentCaptor.forClass(ItemAcervo.class);
+        verify(itemAcervoRepository).salvar(captor.capture());
+        assertThat(captor.getValue().getAutores()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Nome de autor maior que 150 caracteres é recusado")
+    void autorGrande() {
+        ItemAcervoDTO dto = livro();
+        dto.setNovosAutores(new java.util.ArrayList<>(java.util.List.of("a".repeat(151))));
+
+        assertThatThrownBy(() -> service.salvar(dto, "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("150");
     }
 }

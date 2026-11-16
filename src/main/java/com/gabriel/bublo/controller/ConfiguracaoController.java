@@ -31,7 +31,19 @@ public class ConfiguracaoController {
         Map<String, String> valores = new LinkedHashMap<>();
         configuracaoService.listarTodas().forEach(c -> valores.put(c.getChave(), c.getValor()));
         model.addAttribute("valores", valores);
+        model.addAttribute("reversivel", configuracaoService.ultimaAlteracaoReversivel());
         return "configuracoes/listar";
+    }
+
+    @PostMapping("/reverter")
+    public String reverter(@RequestParam(required = false) String justificativa, RedirectAttributes redirect) {
+        try {
+            String chave = configuracaoService.reverterUltima(AuthUtil.usuarioAtual(), justificativa);
+            redirect.addFlashAttribute("sucesso", "Última alteração desfeita (" + chave + ").");
+        } catch (IllegalArgumentException e) {
+            redirect.addFlashAttribute("erro", e.getMessage());
+        }
+        return "redirect:/configuracoes";
     }
 
     @PostMapping("/salvar")

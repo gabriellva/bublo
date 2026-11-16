@@ -79,6 +79,7 @@ public class DashboardController {
         var porMes = emprestimoRepository.contarPorMes(MESES_NO_GRAFICO);
         model.addAttribute("rotulosMes", porMes.stream().map(linha -> linha[0]).toList());
         model.addAttribute("valoresMes", porMes.stream().map(linha -> linha[1]).toList());
+        model.addAttribute("semEmprestimos", porMes.stream().allMatch(linha -> ((Long) linha[1]) == 0L));
         var porTipo = itemAcervoRepository.contarPorTipo();
         model.addAttribute("rotulosTipo", porTipo.stream().map(linha -> rotuloDoTipo((String) linha[0])).toList());
         model.addAttribute("valoresTipo", porTipo.stream().map(linha -> linha[1]).toList());

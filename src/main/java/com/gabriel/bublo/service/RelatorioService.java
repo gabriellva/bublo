@@ -28,7 +28,7 @@ import java.time.format.DateTimeFormatter;
 public class RelatorioService {
 
     private static final char BOM_UTF8 = '\uFEFF';
-    private static final String FORMULA_PREFIXOS = "=+-@";
+    private static final String FORMULA_PREFIXOS = "=+-@\t\r";
 
     private final EmprestimoRepository emprestimoRepository;
     private final MultaRepository multaRepository;
@@ -121,7 +121,7 @@ public class RelatorioService {
         try (PrintWriter out = new PrintWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8))) {
             out.print(BOM_UTF8);
             out.println("Título;Tipo;Editora;Ano;Categoria;ISBN/ISSN");
-            var lista = itemAcervoRepository.listarTodos();
+            var lista = itemAcervoRepository.buscar(termo, null, null, null, 0, 10000, "titulo ASC").getConteudo();
             for (var m : lista) {
                 out.println(csv(m.getTitulo()) + ";" + csv(m.getTipo().name()) + ";" + csv(m.getEditora()) + ";"
                     + csv(m.getAno()) + ";" + csv(m.getCategoria() != null ? m.getCategoria().getNome() : "") + ";"
@@ -194,7 +194,7 @@ public class RelatorioService {
         if (!s.isEmpty() && FORMULA_PREFIXOS.indexOf(s.charAt(0)) >= 0) {
             s = "'" + s;
         }
-        if (s.contains(";") || s.contains("\"") || s.contains("\n")) {
+        if (s.contains(";") || s.contains("\"") || s.contains("\n") || s.contains("\r")) {
             return "\"" + s.replace("\"", "\"\"") + "\"";
         }
         return s;

@@ -39,7 +39,7 @@ server:
         name: BUBLO_SESSION
         http-only: true
         same-site: LAX
-      timeout: 0
+      timeout: 60m
 
 # Configurações próprias do Bublo (senhas do administrador via variáveis de ambiente)
 bublo:

@@ -50,6 +50,9 @@ public class ReservaRepository {
     }
 
     public Reserva criar(Long leitorId, Long itemId, LocalDateTime prazoRetirada) {
+        // Serializa reservas do mesmo título: evita duas reservas com a mesma posição na fila.
+        jdbc.query("SELECT id FROM item_acervo WHERE id = ? FOR UPDATE", rs -> { }, itemId);
+
         // Verifica duplicidade: mesma reserva ativa não pode existir
         Integer existente = jdbc.queryForObject(
             "SELECT COUNT(*) FROM reservas WHERE leitor_id = ? AND item_acervo_id = ? AND status = 'AGUARDANDO'",
@@ -125,15 +128,40 @@ public class ReservaRepository {
     }
 
     public void atender(Long reservaId) {
-        jdbc.update("UPDATE reservas SET status = 'ATENDIDA' WHERE id = ?", reservaId);
+        encerrar(reservaId, "ATENDIDA");
     }
 
     public void cancelar(Long reservaId) {
-        jdbc.update("UPDATE reservas SET status = 'CANCELADA' WHERE id = ?", reservaId);
+        encerrar(reservaId, "CANCELADA");
     }
 
     public void expirar(Long reservaId) {
-        jdbc.update("UPDATE reservas SET status = 'EXPIRADA' WHERE id = ?", reservaId);
+        encerrar(reservaId, "EXPIRADA");
+    }
+
+    /** Sai da fila (somente se ainda aguardando) e renumera as posições restantes do título. */
+    private void encerrar(Long reservaId, String novoStatus) {
+        List<Long> itens = jdbc.query("SELECT item_acervo_id FROM reservas WHERE id = ? AND status = 'AGUARDANDO'",
+            (rs, rowNum) -> rs.getLong(1), reservaId);
+        if (itens.isEmpty()) return;
+        jdbc.update("UPDATE reservas SET status = ? WHERE id = ? AND status = 'AGUARDANDO'", novoStatus, reservaId);
+        reordenarFila(itens.get(0));
+    }
+
+    /** Mantém a fila FIFO sem buracos: 1, 2, 3... pela ordem original de posição. */
+    void reordenarFila(Long itemId) {
+        jdbc.update(
+            "UPDATE reservas r SET posicao = n.nova FROM (" +
+            "SELECT id, ROW_NUMBER() OVER (ORDER BY posicao, id) AS nova FROM reservas " +
+            "WHERE item_acervo_id = ? AND status = 'AGUARDANDO') n WHERE r.id = n.id AND r.posicao <> n.nova", itemId);
+    }
+
+    /** Cancela as reservas aguardando de um leitor (ex.: ao inativá-lo) e renumera as filas afetadas. */
+    public int cancelarAguardandoDoLeitor(Long leitorId) {
+        List<Long> ids = jdbc.query("SELECT id FROM reservas WHERE leitor_id = ? AND status = 'AGUARDANDO'",
+            (rs, rowNum) -> rs.getLong(1), leitorId);
+        ids.forEach(this::cancelar);
+        return ids.size();
     }
 
     public long contarAguardando() {
@@ -142,7 +170,7 @@ public class ReservaRepository {
 
     public List<Reserva> listarExpiradasNaoProcessadas() {
         return jdbc.query(
-            "SELECT * FROM reservas WHERE status = 'AGUARDANDO' AND prazo_retirada < NOW() ORDER BY data_reserva ASC",
+            "SELECT * FROM reservas WHERE status = 'AGUARDANDO' AND prazo_retirada::date < CURRENT_DATE ORDER BY data_reserva ASC",
             MAPPER);
     }
 
