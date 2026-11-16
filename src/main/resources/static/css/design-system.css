@@ -504,6 +504,15 @@ table.tabela tr:hover td { background: var(--bublo-hover-linha); }
   box-shadow: 0 12px 32px rgba(123,31,53,0.16);
   border: 1px solid var(--bublo-borda);
 }
+.login-coluna { width: 100%; max-width: 360px; }
+.login-erro {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin-bottom: 1rem; padding: 0.75rem 1rem;
+  border-radius: var(--bublo-radius);
+  background: var(--badge-erro-bg); color: var(--badge-erro-fg);
+  border: 1px solid var(--bublo-perigo);
+  font-weight: 600; font-size: 0.92rem;
+}
 .login-card h2 { font-family: var(--fonte-titulos); font-size: 1.75rem; margin: 0 0 0.5rem 0; color: var(--bublo-destaque); }
 .login-card .subtitulo { font-size: 0.88rem; color: var(--bublo-texto-suave); margin-bottom: 1.75rem; }
 

@@ -61,6 +61,12 @@ for page in $PAGES; do
   check_status "GET $page" 200 "$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$BASE_URL$page")"
 done
 
+login_error_page=$(curl -s "$BASE_URL/login?error=true")
+if echo "$login_error_page" | grep -q 'role="alert"' && ! echo "$login_error_page" | grep -q 'data-erro="[^"]'; then
+  check_status "wrong login shows inline error (no toast)" ok ok
+else
+  check_status "wrong login shows inline error (no toast)" ok fail
+fi
 check_status "negative page number does not break notifications" 200 \
   "$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$BASE_URL/notificacoes?pagina=-1")"
 check_status "negative page number does not break the audit log" 200 \
