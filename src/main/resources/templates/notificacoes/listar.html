@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header cabecalho-pagina">
         <div>
           <h1>Notificações</h1>
@@ -46,20 +46,20 @@
         </form>
       </div>
 
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
+      <div class="tabela-bloco bloco-cartoes" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela tabela-cartoes">
           <thead>
             <tr><th>Categoria</th><th>Prioridade</th><th>Título</th><th>Mensagem</th><th>Data</th><th>Situação</th><th>Ação</th></tr>
           </thead>
           <tbody>
             <tr th:each="n : ${resultado.conteudo}">
-              <td th:text="${n.categoria}">-</td>
-              <td><span class="badge-bublo" th:classappend="${n.prioridade == 'ATENCAO'} ? 'badge-pendente' : 'badge-neutro'" th:text="${n.prioridade}">Info</span></td>
-              <td th:text="${n.titulo}">-</td>
-              <td th:text="${n.mensagem}">-</td>
-              <td th:text="${#temporals.format(n.dataCriacao, 'dd/MM/yyyy HH:mm')}">-</td>
-              <td><span class="badge-bublo" th:classappend="${n.lida} ? 'badge-neutro' : 'badge-pendente'" th:text="${n.lida ? 'Lida' : 'Não lida'}">Não lida</span></td>
-              <td>
+              <td data-label="Categoria" th:text="${n.categoria == 'EMPRESTIMO' ? 'Empréstimo' : (n.categoria == 'RESERVA' ? 'Reserva' : (n.categoria == 'MULTA' ? 'Multa' : n.categoria))}">-</td>
+              <td data-label="Prioridade"><span class="badge-bublo" th:classappend="${n.prioridade == 'ATENCAO'} ? 'badge-pendente' : 'badge-neutro'" th:text="${n.prioridade == 'ATENCAO' ? 'Atenção' : 'Informativo'}">Info</span></td>
+              <td data-label="Título" th:text="${n.titulo}">-</td>
+              <td data-label="Mensagem" th:text="${n.mensagem}">-</td>
+              <td data-label="Data" th:text="${#temporals.format(n.dataCriacao, 'dd/MM/yyyy HH:mm')}">-</td>
+              <td data-label="Situação"><span class="badge-bublo" th:classappend="${n.lida} ? 'badge-neutro' : 'badge-pendente'" th:text="${n.lida ? 'Lida' : 'Não lida'}">Não lida</span></td>
+              <td class="celula-acoes">
                 <form th:action="@{/notificacoes/{id}/ler(id=${n.id})}" method="post" class="form-inline" th:unless="${n.lida}">
                   <button type="submit" class="btn-bublo btn-acao">Marcar como lida</button>
                 </form>

@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header cabecalho-pagina">
         <div>
           <h1>Acervo</h1>
@@ -68,7 +68,7 @@
                 <div class="capa-generica"><i class="bi bi-book"></i></div>
               </div>
               <div class="p-3 d-flex flex-column flex-grow-1">
-                <span class="chip align-self-start mb-2" th:text="${item.tipo}">LIVRO</span>
+                <span class="chip align-self-start mb-2" th:text="${item.tipoRotulo}">Livro</span>
                 <h4 th:text="${item.titulo}" style="margin:0 0 0.4rem 0;font-size:1rem;">Título</h4>
                 <div class="texto-ajuda" th:text="${item.autoresNomes.empty ? '-' : #strings.listJoin(item.autoresNomes, ', ')}">Autor</div>
                 <div class="texto-ajuda" th:text="${item.categoriaNome ?: 'Sem categoria'}">Categoria</div>

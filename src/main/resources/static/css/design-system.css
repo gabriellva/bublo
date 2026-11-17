@@ -2,6 +2,8 @@
    Bublo - Design System
    Identidade visual: vinho/bordeaux principal, dourado sutil como destaque,
    tons neutros. Tipografia: serif em títulos editoriais, sans-serif no corpo.
+   As fontes não são empacotadas: usa Playfair Display/Inter se instaladas e,
+   caso contrário, Georgia e a fonte de sistema (sem depender de CDN).
    Tema claro/escuro com preferência persistida. Sem CDN: tudo local.
    ========================================================================= */
 
@@ -102,7 +104,9 @@ a:hover { color: var(--bublo-ouro); }
   gap: 0.5rem;
   justify-content: center;
 }
-.btn-bublo:hover { background: var(--bublo-ouro); color: var(--bublo-vinho-escuro); transform: translateY(-1px); box-shadow: var(--bublo-sombra); }
+@media (hover: hover) {
+  .btn-bublo:hover { background: var(--bublo-ouro); color: var(--bublo-vinho-escuro); transform: translateY(-1px); box-shadow: var(--bublo-sombra); }
+}
 .btn-bublo:active { transform: translateY(0); }
 .btn-bublo:focus-visible { outline: 3px solid var(--bublo-ouro-suave); outline-offset: 2px; }
 
@@ -165,10 +169,12 @@ a:hover { color: var(--bublo-ouro); }
   border: 1px solid var(--bublo-borda);
   border-radius: var(--bublo-radius);
   box-shadow: var(--bublo-sombra);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease;
 }
-.card-bublo:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(123,31,53,0.12); }
-[data-tema="escuro"] .card-bublo:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.55); }
+@media (hover: hover) {
+  .card-bublo:hover { box-shadow: 0 8px 20px rgba(123,31,53,0.12); }
+  [data-tema="escuro"] .card-bublo:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.55); }
+}
 
 /* ---------- Indicadores dashboard ---------- */
 .indicador {
@@ -194,6 +200,7 @@ a:hover { color: var(--bublo-ouro); }
   top: 0; left: 0;
   width: 260px;
   height: 100vh;
+  height: 100dvh;
   background: var(--bublo-vinho);
   color: #fff;
   z-index: 100;
@@ -238,7 +245,7 @@ a:hover { color: var(--bublo-ouro); }
   z-index: 90;
   box-shadow: var(--bublo-sombra);
 }
-.topbar-esquerda { display: flex; align-items: center; gap: 0.75rem; }
+.topbar-esquerda { display: flex; align-items: center; gap: 0.75rem; min-width: 0; flex: 1 1 auto; }
 .btn-toggle-tema.btn-menu { display: none; }
 .topbar .titulo-app {
   font-family: var(--fonte-titulos);
@@ -246,8 +253,9 @@ a:hover { color: var(--bublo-ouro); }
   color: var(--bublo-texto);
   font-weight: 600;
   letter-spacing: 0.02em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
-.topbar .actions { display: flex; align-items: center; gap: 0.85rem; }
+.topbar .actions { display: flex; align-items: center; gap: 0.85rem; flex-shrink: 0; }
 
 .btn-toggle-tema {
   background: transparent;
@@ -278,6 +286,7 @@ a:hover { color: var(--bublo-ouro); }
 .main {
   margin-left: 260px;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 main.conteudo { max-width: 1400px; margin: 0 auto; padding: 2rem; }
@@ -313,6 +322,8 @@ table.tabela th {
 }
 table.tabela td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--bublo-borda); font-size: 0.92rem; }
 table.tabela tr:last-child td { border-bottom: none; }
+table.tabela td.celula-acoes { white-space: nowrap; }
+table.tabela td.celula-acoes .acoes-linha { flex-wrap: nowrap; }
 table.tabela tr:hover td { background: var(--bublo-hover-linha); }
 
 /* ---------- Formulários ---------- */
@@ -420,7 +431,7 @@ table.tabela tr:hover td { background: var(--bublo-hover-linha); }
 .skeleton-titulo { height: 1.4rem; width: 60%; margin-bottom: 1rem; }
 
 /* ---------- Paginacao ---------- */
-.paginacao { display: flex; justify-content: center; gap: 0.4rem; margin-top: 1.5rem; }
+.paginacao { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.5rem; }
 .paginacao a, .paginacao span {
   padding: 0.45rem 0.8rem;
   border: 1px solid var(--bublo-borda);
@@ -428,6 +439,7 @@ table.tabela tr:hover td { background: var(--bublo-hover-linha); }
   color: var(--bublo-texto-suave);
   font-size: 0.88rem;
 }
+.paginacao span.reticencias { border-color: transparent; }
 .paginacao a.ativo { background: var(--bublo-vinho); color: #fff; border-color: var(--bublo-vinho); }
 .paginacao a:hover { background: var(--bublo-vinho); color: #fff; border-color: var(--bublo-vinho); }
 
@@ -459,6 +471,7 @@ table.tabela tr:hover td { background: var(--bublo-hover-linha); }
 /* ---------- Login ---------- */
 .login-container {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   position: relative;
   overflow: hidden;
@@ -536,21 +549,127 @@ table.tabela tr:hover td { background: var(--bublo-hover-linha); }
 }
 
 /* ---------- Responsividade ---------- */
+.sidebar-fundo {
+  position: fixed; inset: 0; z-index: 99;
+  background: rgba(27, 22, 26, 0.55);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+}
+.sidebar-fundo.visivel { opacity: 1; visibility: visible; transition-delay: 0s; }
+body.menu-aberto { overflow: hidden; }
+.sidebar .nav-item .icone { flex-shrink: 0; }
+
 @media (max-width: 992px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.aberta { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+  /* Menu fechado fica oculto também para teclado e leitor de tela (visibility), não só fora da tela. */
+  .sidebar { transform: translateX(-100%); visibility: hidden; transition: transform 0.28s ease, visibility 0s linear 0.28s; }
+  .sidebar.aberta { transform: translateX(0); visibility: visible; transition-delay: 0s; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
   .main { margin-left: 0; }
   main.conteudo { padding: 1rem; }
   .topbar { padding: 0 1rem; }
   .btn-toggle-tema.btn-menu { display: flex; }
   .topbar .usuario span, .topbar .btn-contorno:not([type=submit]) { display: none; }
   .dropdown-notificacoes { position: fixed; right: 0.5rem; left: 0.5rem; width: auto; top: 64px; }
+
+  /* Alvos de toque de 44 px e campos de 16 px (abaixo disso o iPhone dá zoom ao focar). */
+  .form-control { font-size: 16px; min-height: 44px; }
+  .btn-toggle-tema { width: 44px; height: 44px; }
+  .btn-bublo { min-height: 44px; }
+  .btn-acao, .btn-sm { min-height: 44px; padding: 0.5rem 0.9rem; font-size: 0.9rem; }
+  .paginacao a, .paginacao span { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  .toast .fechar { min-width: 32px; min-height: 32px; }
+  select.form-control { background-position: right 0.75rem center; }
 }
-@media (max-width: 576px) {
+
+@media (max-width: 768px) {
   .login-area-editorial { display: none; }
   .login-area-form { flex: 1; }
-  .login-card { padding: 1.75rem 1.25rem; }
+
+  /* Tabelas viram cartões: cada linha é um bloco e cada célula mostra o rótulo da coluna (data-label). */
+  .bloco-cartoes { border: 0; overflow: visible; }
+  table.tabela-cartoes, table.tabela-cartoes tbody, table.tabela-cartoes tr, table.tabela-cartoes td { display: block; width: 100%; }
+  table.tabela-cartoes thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+  table.tabela-cartoes { background: transparent; }
+  table.tabela-cartoes tr {
+    background: var(--bublo-superficie);
+    border: 1px solid var(--bublo-borda);
+    border-radius: var(--bublo-radius);
+    margin-bottom: 0.75rem;
+    padding: 0.35rem 0;
+    box-shadow: var(--bublo-sombra);
+  }
+  table.tabela-cartoes tr:last-child td { border-bottom: 1px dashed var(--bublo-borda); }
+  table.tabela-cartoes tr:last-child td:last-child, table.tabela-cartoes td:last-child { border-bottom: none; }
+  table.tabela-cartoes td {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    padding: 0.55rem 1rem; text-align: right; border-bottom: 1px dashed var(--bublo-borda);
+    overflow-wrap: anywhere;
+  }
+  table.tabela-cartoes td::before {
+    content: attr(data-label);
+    flex: 0 0 34%; text-align: left;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--bublo-texto-suave);
+  }
+  table.tabela-cartoes td.celula-acoes { display: block; text-align: left; white-space: normal; }
+  table.tabela-cartoes td.celula-acoes::before { display: none; }
+  table.tabela-cartoes td.celula-acoes .acoes-linha { flex-wrap: wrap; }
+  table.tabela-cartoes td.celula-acoes:not(:has(*)) { display: none; }
+  table.tabela-cartoes tr:hover td { background: transparent; }
 }
+
+@media (max-width: 576px) {
+  .login-card { padding: 1.75rem 1.25rem; }
+  .topbar .usuario { display: none; }
+  .topbar .actions { gap: 0.4rem; }
+  .topbar .btn-sair .rotulo-sair { display: none; }
+  .btn-sair { padding-left: 0.6rem; padding-right: 0.6rem; }
+  .page-header h1 { font-size: 1.5rem; }
+
+  .grid-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+  .indicador { padding: 0.9rem; }
+  .indicador .valor { font-size: 1.5rem; }
+
+  /* Botões do cabeçalho e das linhas de ação ocupam a largura, com tamanhos iguais. */
+  .cabecalho-pagina > .btn-bublo, .cabecalho-pagina > .acoes-linha, .cabecalho-pagina > form { width: 100%; }
+  .acoes-linha > .btn-bublo, .acoes-linha > form { flex: 1 1 auto; }
+  .acoes-linha > form > .btn-bublo { width: 100%; }
+  .formulario-card { padding: 1.25rem; }
+
+  .toast-container { left: 0.75rem; right: 0.75rem; }
+  .toast, .toast:not(.show) { min-width: 0; width: 100%; max-width: none; }
+
+  /* Detalhes (rótulo/valor) empilham em vez de espremer o valor. */
+  table.tabela-detalhe, table.tabela-detalhe tbody, table.tabela-detalhe tr, table.tabela-detalhe th, table.tabela-detalhe td { display: block; width: 100% !important; }
+  table.tabela-detalhe th { border-bottom: none; padding: 0.6rem 0 0.1rem; background: transparent; }
+  table.tabela-detalhe td { padding: 0.1rem 0 0.6rem; overflow-wrap: anywhere; }
+}
+
+/* ---------- Foco visível, link de pular e feedback de envio ---------- */
+a:focus-visible, button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--bublo-ouro); outline-offset: 2px; }
+.sidebar a:focus-visible { outline-color: #fff; outline-offset: -3px; }
+.skip-link {
+  position: absolute; left: 0.5rem; top: -4rem; z-index: 2000;
+  background: var(--bublo-vinho); color: #fff; padding: 0.6rem 1rem; border-radius: 8px; font-weight: 600;
+}
+.skip-link:focus { top: 0.5rem; color: #fff; }
+.btn-bublo.carregando { position: relative; pointer-events: none; opacity: 0.8; }
+.btn-bublo.carregando::after {
+  content: ""; width: 0.9em; height: 0.9em; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+  animation: girar 0.7s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+input[type=file].form-control { padding: 0.4rem 0.6rem; }
+input[type=file].form-control::file-selector-button {
+  margin-right: 0.75rem; border: 0; border-radius: 6px; padding: 0.4rem 0.8rem;
+  background: var(--bublo-vinho); color: #fff; font-weight: 600; cursor: pointer;
+}
+.lista-selecao { max-height: 280px; overflow-y: auto; border: 1px solid var(--bublo-borda); border-radius: 8px; background: var(--bublo-superficie); }
+.lista-selecao label { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 0.9rem; min-height: 44px; border-bottom: 1px solid var(--bublo-borda); margin: 0; cursor: pointer; }
+.lista-selecao label[hidden] { display: none; }
+.lista-selecao label:last-child { border-bottom: none; }
+.lista-selecao input[type=checkbox] { width: 1.15rem; height: 1.15rem; flex-shrink: 0; accent-color: var(--bublo-vinho); }
+.lista-selecao label:has(input:checked) { background: var(--bublo-hover-linha); font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

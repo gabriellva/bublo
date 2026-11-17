@@ -40,11 +40,17 @@ check_status "POST without CSRF token is rejected" 403 \
   "$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' -X POST "$BASE_URL/emprestimos/1/cancelar")"
 
 reader_id=$(curl -s -b "$JAR" "$BASE_URL/emprestimos/novo" | grep -o '<option value="[0-9]*" data-tipo' | head -1 | grep -o '[0-9]*')
-copy_id=$(curl -s -b "$JAR" "$BASE_URL/emprestimos/novo" | grep -o '<option value="[0-9]*"[^>]*>BA-' | head -1 | grep -o 'value="[0-9]*"' | grep -o '[0-9]*')
+copy_id=$(curl -s -b "$JAR" "$BASE_URL/emprestimos/novo" | grep -o 'name="exemplares" value="[0-9]*"' | head -1 | grep -o '[0-9]*')
 due_date=$(date -d '+7 days' +%F)
 
 check_status "create loan (also creates a notification)" 302 \
   "$(post_form /emprestimos -d "leitorId=$reader_id" -d "exemplares=$copy_id" -d "dataPrevista=$due_date")"
+
+# Keep the script repeatable: cancel the loan it just created so the reader's limit is not exhausted.
+loan_id=$(curl -s -b "$JAR" "$BASE_URL/emprestimos?status=ATIVO" | grep -o '/emprestimos/[0-9]*/cancelar' | head -1 | grep -o '[0-9]*')
+if [ -n "$loan_id" ]; then
+  check_status "cancel the loan created above" 302 "$(post_form "/emprestimos/$loan_id/cancelar")"
+fi
 
 PAGES="/dashboard /acervo /acervo/novo /acervo/1 /acervo/1/editar /leitores /leitores/novo /leitores/1 /leitores/1/editar
 /emprestimos /emprestimos/novo /devolucoes /reservas /reservas/novo /multas /relatorios /configuracoes /auditoria
@@ -55,6 +61,10 @@ for page in $PAGES; do
   check_status "GET $page" 200 "$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$BASE_URL$page")"
 done
 
+check_status "negative page number does not break notifications" 200 \
+  "$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$BASE_URL/notificacoes?pagina=-1")"
+check_status "negative page number does not break the audit log" 200 \
+  "$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$BASE_URL/auditoria?pagina=-1&tamanho=0")"
 check_status "GET unknown page renders the error page" 404 \
   "$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$BASE_URL/nao-existe")"
 check_status "ORDER BY injection attempt is ignored" 200 \

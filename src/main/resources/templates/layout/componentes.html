@@ -1,12 +1,26 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <body>
-  <nav th:fragment="paginacao(resultado, url)" class="paginacao" th:if="${resultado.totalPaginas gt 1}" aria-label="Paginação">
-    <a th:each="i : ${#numbers.sequence(0, resultado.totalPaginas - 1)}"
+  <!-- Paginação com janela: primeira, atual ±2, última, anterior/próxima e reticências. -->
+  <nav th:fragment="paginacao(resultado, url)" class="paginacao" th:if="${resultado.totalPaginas gt 1}" aria-label="Paginação"
+       th:with="atual=${resultado.pagina}, total=${resultado.totalPaginas},
+                inicio=${resultado.pagina - 2 gt 0 ? resultado.pagina - 2 : 0},
+                fim=${resultado.pagina + 2 lt resultado.totalPaginas - 1 ? resultado.pagina + 2 : resultado.totalPaginas - 1}">
+    <a th:if="${atual gt 0}" aria-label="Página anterior" rel="prev"
+       th:href="@{${url}(pagina=${atual - 1}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida})}">&lsaquo;</a>
+    <a th:if="${inicio gt 0}" aria-label="Página 1"
+       th:href="@{${url}(pagina=0, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida})}">1</a>
+    <span class="reticencias" th:if="${inicio gt 1}" aria-hidden="true">&hellip;</span>
+    <a th:each="i : ${#numbers.sequence(inicio, fim)}"
        th:href="@{${url}(pagina=${i}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida})}"
-       th:classappend="${resultado.pagina == i} ? 'ativo'"
-       th:text="${i + 1}">1</a>
+       th:classappend="${atual == i} ? 'ativo'" th:aria-current="${atual == i} ? 'page'"
+       th:aria-label="${'Página ' + (i + 1)}" th:text="${i + 1}">1</a>
+    <span class="reticencias" th:if="${fim lt total - 2}" aria-hidden="true">&hellip;</span>
+    <a th:if="${fim lt total - 1}" th:aria-label="${'Página ' + total}"
+       th:href="@{${url}(pagina=${total - 1}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida})}"
+       th:text="${total}">10</a>
+    <a th:if="${atual lt total - 1}" aria-label="Próxima página" rel="next"
+       th:href="@{${url}(pagina=${atual + 1}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida})}">&rsaquo;</a>
   </nav>
-
 </body>
 </html>

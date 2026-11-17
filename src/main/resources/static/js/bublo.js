@@ -294,12 +294,73 @@ const Bublo = (function () {
     const btn = document.getElementById("btn-menu");
     const sidebar = document.getElementById("sidebar");
     if (!btn || !sidebar) return;
+    const fundo = document.createElement("div");
+    fundo.className = "sidebar-fundo";
+    document.body.appendChild(fundo);
+    btn.setAttribute("aria-controls", "sidebar");
+    btn.setAttribute("aria-expanded", "false");
+
+    function definir(aberto) {
+      sidebar.classList.toggle("aberta", aberto);
+      fundo.classList.toggle("visivel", aberto);
+      document.body.classList.toggle("menu-aberto", aberto);
+      btn.setAttribute("aria-expanded", aberto ? "true" : "false");
+      btn.setAttribute("aria-label", aberto ? "Fechar menu" : "Abrir menu");
+      if (aberto) {
+        const primeiro = sidebar.querySelector("a");
+        if (primeiro) primeiro.focus();
+      }
+    }
+
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      sidebar.classList.toggle("aberta");
+      definir(!sidebar.classList.contains("aberta"));
     });
-    document.addEventListener("click", (e) => {
-      if (!sidebar.contains(e.target)) sidebar.classList.remove("aberta");
+    fundo.addEventListener("click", () => definir(false));
+    sidebar.addEventListener("click", (e) => { if (e.target.closest("a")) definir(false); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && sidebar.classList.contains("aberta")) {
+        definir(false);
+        btn.focus();
+      }
+    });
+    // Ao voltar para o layout largo, o estado do menu móvel não pode ficar preso.
+    window.matchMedia("(min-width: 993px)").addEventListener("change", (e) => { if (e.matches) definir(false); });
+  }
+
+  // ---------- Envio de formulários: feedback e proteção contra duplo clique ----------
+  function iniciarEnvios() {
+    document.addEventListener("submit", (e) => {
+      const form = e.target;
+      // Confirmações cancelam o envio e reenviam depois; só reage ao envio que realmente segue.
+      if (e.defaultPrevented || !(form instanceof HTMLFormElement)) return;
+      if ((form.method || "get").toLowerCase() !== "post") return;
+      if (form.dataset.enviando) {
+        e.preventDefault();
+        return;
+      }
+      form.dataset.enviando = "1";
+      const botao = e.submitter || form.querySelector('button[type="submit"]');
+      if (botao) {
+        botao.classList.add("carregando");
+        botao.setAttribute("aria-busy", "true");
+      }
+      // Desabilita depois do envio começar (desabilitar antes descartaria o valor do botão).
+      setTimeout(() => {
+        form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = true; });
+      }, 0);
+    });
+    // Voltar pelo histórico (bfcache) não pode deixar o formulário travado.
+    window.addEventListener("pageshow", (e) => {
+      if (!e.persisted) return;
+      document.querySelectorAll("form[data-enviando]").forEach((form) => {
+        delete form.dataset.enviando;
+        form.querySelectorAll('button[type="submit"]').forEach((b) => {
+          b.disabled = false;
+          b.classList.remove("carregando");
+          b.removeAttribute("aria-busy");
+        });
+      });
     });
   }
 
@@ -309,6 +370,7 @@ const Bublo = (function () {
     Confirmacoes.init();
     Notificacoes.init();
     iniciarMenuMobile();
+    iniciarEnvios();
     Toasts.exibirFlash();
   });
 

@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1>Multas e pagamentos</h1>
         <p class="subtitulo">Multas por atraso e registro de pagamentos</p>
@@ -37,23 +37,26 @@
         </form>
       </div>
 
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
+      <div class="tabela-bloco bloco-cartoes" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela tabela-cartoes">
           <thead>
             <tr><th>#</th><th>Leitor</th><th>Dias</th><th>Valor</th><th>Pago</th><th>Saldo</th><th>Situação</th><th>Gerada em</th><th>Ação</th></tr>
           </thead>
           <tbody>
             <tr th:each="m : ${resultado.conteudo}">
-              <td th:text="${m.id}">-</td>
-              <td th:text="${m.leitorNome ?: '-'}">Leitor</td>
-              <td th:text="${m.diasAtraso}">-</td>
-              <td th:text="${#numbers.formatCurrency(m.valor)}">R$ 0,00</td>
-              <td th:text="${#numbers.formatCurrency(m.valorPago)}">R$ 0,00</td>
-              <td th:text="${#numbers.formatCurrency(m.saldoPendente)}">R$ 0,00</td>
-              <td><span class="badge-bublo" th:classappend="${m.status == 'PAGA'} ? 'badge-paga' : (${m.status == 'PAGA_PARCIAL'} ? 'badge-parcial' : 'badge-pendente')"
+              <td data-label="#" th:text="${m.id}">-</td>
+              <td data-label="Leitor" th:text="${m.leitorNome ?: '-'}">Leitor</td>
+              <td data-label="Dias" th:text="${m.diasAtraso}">-</td>
+              <td data-label="Valor" th:text="${#numbers.formatCurrency(m.valor)}">R$ 0,00</td>
+              <td data-label="Pago" th:text="${#numbers.formatCurrency(m.valorPago)}">R$ 0,00</td>
+              <td data-label="Saldo" th:text="${#numbers.formatCurrency(m.saldoPendente)}">R$ 0,00</td>
+              <td data-label="Situação"><span class="badge-bublo" th:classappend="${m.status == 'PAGA'} ? 'badge-paga' : (${m.status == 'PAGA_PARCIAL'} ? 'badge-parcial' : 'badge-pendente')"
                         th:text="${m.status == 'PAGA'} ? 'Paga' : (${m.status == 'PAGA_PARCIAL'} ? 'Paga parcialmente' : 'Pendente')">Pendente</span></td>
-              <td th:text="${#temporals.format(m.dataGeracao, 'dd/MM/yyyy')}">-</td>
-              <td><a th:href="@{/multas/{id}/pagar(id=${m.id})}" class="btn-bublo btn-acao" th:if="${m.status == 'PENDENTE' or m.status == 'PAGA_PARCIAL'}">Pagar</a></td>
+              <td data-label="Gerada em" th:text="${#temporals.format(m.dataGeracao, 'dd/MM/yyyy')}">-</td>
+              <td class="celula-acoes">
+                <a th:href="@{/multas/{id}/pagar(id=${m.id})}" class="btn-bublo btn-acao" th:if="${m.status == 'PENDENTE' or m.status == 'PAGA_PARCIAL'}">Pagar</a>
+                <a th:href="@{/multas/{id}/pagar(id=${m.id})}" class="btn-bublo btn-acao btn-contorno" th:if="${m.status == 'PAGA'}">Pagamentos</a>
+              </td>
             </tr>
           </tbody>
         </table>

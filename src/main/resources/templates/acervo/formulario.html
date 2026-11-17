@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1 th:text="${item.id != null} ? 'Editar material' : 'Cadastrar material'">Cadastrar material</h1>
         <p class="subtitulo">Item do acervo bibliográfico</p>
@@ -21,9 +21,11 @@
         <div class="form-grid">
           <div>
             <label class="form-label" for="tipoMaterial">Tipo de material</label>
-            <select th:field="*{tipo}" id="tipoMaterial" class="form-control" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" required>
+            <select th:field="*{tipo}" id="tipoMaterial" class="form-control" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" th:disabled="*{id != null}" required>
               <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.label}">Livro</option>
             </select>
+            <input type="hidden" name="tipo" th:if="*{id != null}" th:value="*{tipo}" />
+            <small class="texto-ajuda" th:if="*{id != null}">O tipo não pode ser alterado depois do cadastro.</small>
             <small class="erro-campo" th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}">Erro</small>
           </div>
           <div>
@@ -38,7 +40,8 @@
           </div>
           <div>
             <label class="form-label" for="ano">Ano</label>
-            <input type="number" th:field="*{ano}" class="form-control" min="1000" max="2100" />
+            <input type="number" th:field="*{ano}" class="form-control" th:classappend="${#fields.hasErrors('ano')} ? 'is-invalid'" min="1000" max="2100" inputmode="numeric" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('ano')}" th:errors="*{ano}">Erro</small>
           </div>
           <div>
             <label class="form-label" for="idioma">Idioma</label>
@@ -63,7 +66,7 @@
         <div class="form-grid mt-3 campos-tipo" data-tipo="LIVRO">
           <div>
             <label class="form-label" for="isbn">ISBN</label>
-            <input type="text" th:field="*{isbn}" class="form-control" />
+            <input type="text" th:field="*{isbn}" class="form-control" th:classappend="${#fields.hasErrors('isbn')} ? 'is-invalid'" inputmode="text" autocomplete="off" />
             <small class="erro-campo" th:if="${#fields.hasErrors('isbn')}" th:errors="*{isbn}">Erro</small>
           </div>
         </div>
@@ -75,13 +78,15 @@
           </div>
           <div>
             <label class="form-label" for="volume">Volume</label>
-            <input type="number" th:field="*{volume}" class="form-control" min="1" />
+            <input type="number" th:field="*{volume}" class="form-control" th:classappend="${#fields.hasErrors('volume')} ? 'is-invalid'" min="1" inputmode="numeric" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('volume')}" th:errors="*{volume}">Erro</small>
           </div>
         </div>
         <div class="form-grid mt-3 campos-tipo" data-tipo="DVD">
           <div>
             <label class="form-label" for="duracaoMinutos">Duração (min)</label>
-            <input type="number" th:field="*{duracaoMinutos}" class="form-control" min="1" />
+            <input type="number" th:field="*{duracaoMinutos}" class="form-control" th:classappend="${#fields.hasErrors('duracaoMinutos')} ? 'is-invalid'" min="1" inputmode="numeric" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('duracaoMinutos')}" th:errors="*{duracaoMinutos}">Erro</small>
           </div>
         </div>
         <div class="form-grid mt-3 campos-tipo" data-tipo="DIGITAL">
@@ -100,8 +105,8 @@
         <div class="mt-4">
           <label class="form-label" for="novoAutor">Autores</label>
           <p class="texto-ajuda">Digite o nome e pressione Enter ou clique em "Adicionar".</p>
-          <div class="d-flex gap-2 mb-2">
-            <input type="text" id="novoAutor" class="form-control" placeholder="Nome do autor" list="sugestoesAutores" autocomplete="off" />
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            <input type="text" id="novoAutor" class="form-control" placeholder="Nome do autor" list="sugestoesAutores" autocomplete="off" maxlength="150" />
             <datalist id="sugestoesAutores"></datalist>
             <button type="button" class="btn-bublo btn-sm" id="btnAddAutor">Adicionar</button>
           </div>
@@ -162,7 +167,13 @@
 
       function adicionarAutor() {
         const nome = entrada.value.trim();
-        if (!nome || nomesAtuais().includes(nome)) return;
+        // Mesmo autor com outra caixa ou espaços extras não entra duas vezes (o servidor trata como um só).
+        const chave = nome.replace(/\s+/g, ' ').toLowerCase();
+        if (!nome || nomesAtuais().some((n) => n.replace(/\s+/g, ' ').toLowerCase() === chave)) {
+          if (nome) Bublo.Toasts.info('Autor já adicionado', nome);
+          entrada.value = '';
+          return;
+        }
         const campo = document.createElement('input');
         campo.type = 'hidden';
         campo.name = 'novosAutores';

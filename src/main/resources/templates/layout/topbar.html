@@ -1,7 +1,7 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="topbar">
   <header class="topbar" id="topbar">
     <div class="topbar-esquerda">
-      <button type="button" class="btn-toggle-tema btn-menu" id="btn-menu" aria-label="Abrir menu">
+      <button type="button" class="btn-toggle-tema btn-menu" id="btn-menu" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar">
         <i class="bi bi-list"></i>
       </button>
       <div class="titulo-app" th:text="${nomeInstituicao ?: 'Bublo'}">Bublo</div>
@@ -29,7 +29,7 @@
       </div>
       <a class="btn-bublo btn-sm btn-contorno" th:href="@{/conta}">Minha conta</a>
       <form th:action="@{/logout}" method="post" class="form-inline">
-        <button type="submit" class="btn-bublo btn-sm btn-contorno"><i class="bi bi-box-arrow-right"></i> Sair</button>
+        <button type="submit" class="btn-bublo btn-sm btn-contorno btn-sair" aria-label="Sair"><i class="bi bi-box-arrow-right"></i> <span class="rotulo-sair">Sair</span></button>
       </form>
     </div>
   </header>
