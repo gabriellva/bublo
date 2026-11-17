@@ -409,10 +409,13 @@ table.tabela tr:hover td { background: var(--bublo-hover-linha); }
 .toast.info .icone { color: var(--bublo-info); }
 .toast .icone { font-size: 1.4rem; }
 .toast .fechar { background: none; border: 0; color: var(--bublo-texto-suave); font-size: 1.2rem; line-height: 1; cursor: pointer; }
-.alerta-bublo { display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem 1rem; margin-bottom: 1rem; border-radius: var(--bublo-radius); border: 1px solid var(--bublo-borda); border-left-width: 4px; background: var(--bublo-superficie); color: var(--bublo-texto); }
+.alerta-bublo { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.8rem 1rem; margin-bottom: 1rem; border-radius: var(--bublo-radius); border: 1px solid var(--bublo-borda); border-left-width: 4px; background: var(--bublo-superficie); color: var(--bublo-texto); }
 .alerta-bublo.erro { border-left-color: var(--bublo-perigo); }
 .alerta-bublo.sucesso { border-left-color: var(--bublo-sucesso); }
 .alerta-bublo.info { border-left-color: var(--bublo-info); }
+.alerta-bublo.info > i { color: var(--bublo-info); font-size: 1.2rem; }
+.alerta-bublo.erro > i { color: var(--bublo-perigo); font-size: 1.2rem; }
+.alerta-bublo ul { margin-top: 0.25rem; }
 .toast .conteudo { flex: 1; }
 .toast .titulo { font-weight: 700; font-size: 0.95rem; }
 .toast .descricao { font-size: 0.82rem; color: var(--bublo-texto-suave); }

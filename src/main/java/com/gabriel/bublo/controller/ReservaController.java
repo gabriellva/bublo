@@ -75,7 +75,8 @@ public class ReservaController {
             redirect.addFlashAttribute("sucesso", "Reserva criada. Posição na fila: " + reserva.getPosicao() + ".");
             return "redirect:/reservas";
         } catch (IllegalStateException e) {
-            model.addAttribute("erro", e.getMessage());
+            // Erro fixo no próprio formulário (um toast some em segundos e esta regra precisa ser lida com calma).
+            model.addAttribute("erroForm", e.getMessage());
             model.addAttribute("leitorSelecionado", leitorId);
             model.addAttribute("itemSelecionado", itemId);
             model.addAttribute("prazoSelecionado", prazo);
