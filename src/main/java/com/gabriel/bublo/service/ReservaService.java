@@ -58,6 +58,11 @@ public class ReservaService {
     }
 
     @Transactional(readOnly = true)
+    public List<ReservaDTO> historicoDoLeitor(Long leitorId) {
+        return reservaRepository.listarPorLeitor(leitorId, 100).stream().map(this::toDTO).toList();
+    }
+
+    @Transactional(readOnly = true)
     public ReservaDTO buscarDTO(Long id) {
         Reserva r = reservaRepository.buscarPorId(id).orElse(null);
         return r != null ? toDTO(r) : null;

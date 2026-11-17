@@ -18,8 +18,11 @@
         <a th:href="@{/emprestimos/novo}" class="btn-bublo"><i class="bi bi-plus-lg"></i> Novo empréstimo</a>
       </div>
 
+      <th:block th:replace="~{layout/componentes :: abas('/emprestimos', ${aba}, 'Em andamento', 'Histórico')}"></th:block>
+
       <div class="card-bublo p-3 mb-3">
         <form th:action="@{/emprestimos}" method="get" class="form-grid" style="align-items:end;">
+          <input type="hidden" name="aba" th:value="${aba}" />
           <div>
             <label class="form-label" for="termo">Buscar (leitor, matrícula, tombamento ou nº)</label>
             <input type="text" id="termo" name="termo" class="form-control" th:value="${termo}" />
@@ -27,16 +30,15 @@
           <div>
             <label class="form-label" for="status">Situação</label>
             <select id="status" name="status" class="form-control">
-              <option value="">Todas</option>
-              <option value="ATIVO" th:selected="${status == 'ATIVO'}">Ativos</option>
-              <option value="ATRASADO" th:selected="${status == 'ATRASADO'}">Em atraso</option>
-              <option value="DEVOLVIDO" th:selected="${status == 'DEVOLVIDO'}">Devolvidos</option>
-              <option value="CANCELADO" th:selected="${status == 'CANCELADO'}">Cancelados</option>
+              <option value="" th:text="${aba == 'historico' ? 'Devolvidos e cancelados' : 'Todos os ativos'}">Todos</option>
+              <option value="ATRASADO" th:if="${aba == 'andamento'}" th:selected="${status == 'ATRASADO'}">Em atraso</option>
+              <option value="DEVOLVIDO" th:if="${aba == 'historico'}" th:selected="${status == 'DEVOLVIDO'}">Devolvidos</option>
+              <option value="CANCELADO" th:if="${aba == 'historico'}" th:selected="${status == 'CANCELADO'}">Cancelados</option>
             </select>
           </div>
           <div class="acoes-linha">
             <button type="submit" class="btn-bublo">Filtrar</button>
-            <a th:href="@{/emprestimos}" class="btn-bublo btn-contorno">Limpar</a>
+            <a th:href="@{/emprestimos(aba=${aba})}" class="btn-bublo btn-contorno">Limpar</a>
           </div>
         </form>
       </div>
@@ -78,8 +80,8 @@
       </div>
       <div th:if="${resultado.conteudo.empty}" class="estado-vazio">
         <div class="simbolo"><i class="bi bi-book"></i></div>
-        <h3>Sem empréstimos</h3>
-        <p>Inicie um novo empréstimo selecionando um leitor e exemplares disponíveis.</p>
+        <h3 th:text="${aba == 'historico' ? 'Sem histórico de empréstimos' : 'Sem empréstimos em andamento'}">Sem empréstimos</h3>
+        <p th:text="${aba == 'historico' ? 'Empréstimos devolvidos ou cancelados aparecem aqui.' : 'Inicie um novo empréstimo selecionando um leitor e exemplares disponíveis.'}">Texto</p>
       </div>
       <th:block th:replace="~{layout/componentes :: paginacao(${resultado}, '/emprestimos')}"></th:block>
     </main>

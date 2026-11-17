@@ -656,6 +656,19 @@ body.menu-aberto { overflow: hidden; }
   table.tabela-detalhe td { padding: 0.1rem 0 0.6rem; overflow-wrap: anywhere; }
 }
 
+/* ---------- Abas (Em andamento / Histórico) ---------- */
+.abas { display: flex; gap: 0.25rem; margin: 0 0 1rem; border-bottom: 2px solid var(--bublo-borda); overflow-x: auto; overflow-y: hidden; }
+.abas > a, .abas > button {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.7rem 1.1rem; min-height: 44px;
+  background: transparent; border: 0; border-bottom: 3px solid transparent; margin-bottom: -2px;
+  color: var(--bublo-texto-suave); font: inherit; font-weight: 600; cursor: pointer;
+}
+.abas > a:hover, .abas > button:hover { color: var(--bublo-destaque); }
+.abas > .ativo, .abas > .active { color: var(--bublo-destaque); border-bottom-color: var(--bublo-vinho); }
+.abas .chip { margin: 0; }
+.tab-content > .tab-pane { padding-top: 0.25rem; }
+
 /* ---------- Foco visível, link de pular e feedback de envio ---------- */
 a:focus-visible, button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--bublo-ouro); outline-offset: 2px; }
 .sidebar a:focus-visible { outline-color: #fff; outline-offset: -3px; }

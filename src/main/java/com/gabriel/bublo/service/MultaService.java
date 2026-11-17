@@ -52,6 +52,11 @@ public class MultaService {
     }
 
     @Transactional(readOnly = true)
+    public List<MultaDTO> historicoDoLeitor(Long leitorId) {
+        return multaRepository.listarPorLeitor(leitorId, 100).stream().map(this::toDTO).toList();
+    }
+
+    @Transactional(readOnly = true)
     public MultaDTO buscarDTO(Long id) {
         Multa m = multaRepository.buscarPorId(id).orElse(null);
         return m != null ? toDTO(m) : null;
