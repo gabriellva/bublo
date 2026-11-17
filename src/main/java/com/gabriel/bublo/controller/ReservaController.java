@@ -42,14 +42,19 @@ public class ReservaController {
     @GetMapping
     public String listar(@RequestParam(required = false) String termo,
                          @RequestParam(required = false) String status,
+                         @RequestParam(defaultValue = "andamento") String aba,
                          @RequestParam(defaultValue = "0") int pagina,
                          @RequestParam(defaultValue = "10") int tamanho,
                          Model model) {
-        var resultado = reservaService.listar(termo, status, Math.max(pagina, 0),
+        boolean historico = "historico".equals(aba);
+        // Aba "Em andamento" = reservas aguardando; "Histórico" = atendidas, canceladas e expiradas.
+        String filtro = (status == null || status.isBlank()) ? (historico ? "HISTORICO" : "AGUARDANDO") : status;
+        var resultado = reservaService.listar(termo, filtro, Math.max(pagina, 0),
             Math.min(Math.max(tamanho, 1), 100), "data_reserva DESC");
         model.addAttribute("resultado", resultado);
         model.addAttribute("termo", termo);
         model.addAttribute("status", status);
+        model.addAttribute("aba", historico ? "historico" : "andamento");
         return "reservas/listar";
     }
 

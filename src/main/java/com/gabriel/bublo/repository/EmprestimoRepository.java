@@ -103,6 +103,8 @@ public class EmprestimoRepository {
         }
         if ("ATRASADO".equals(status)) {
             where.append(" AND e.status = 'ATIVO' AND e.data_prevista_devolucao::date < CURRENT_DATE");
+        } else if ("HISTORICO".equals(status)) {
+            where.append(" AND e.status IN ('DEVOLVIDO','CANCELADO')");
         } else if (status != null && !status.isBlank()) {
             where.append(" AND e.status = ?"); args.add(status);
         }
@@ -125,6 +127,15 @@ public class EmprestimoRepository {
         List<Emprestimo> lista = jdbc.query(
             "SELECT * FROM emprestimos WHERE leitor_id = ? AND status = 'ATIVO' ORDER BY data_prevista_devolucao ASC",
             MAPPER, leitorId);
+        lista.forEach(this::vincular);
+        return lista;
+    }
+
+    /** Todos os empréstimos do leitor (ativos e histórico), do mais recente para o mais antigo. */
+    public List<Emprestimo> listarPorLeitor(Long leitorId, int limite) {
+        List<Emprestimo> lista = jdbc.query(
+            "SELECT * FROM emprestimos WHERE leitor_id = ? ORDER BY data_emprestimo DESC, id DESC LIMIT ?",
+            MAPPER, leitorId, limite);
         lista.forEach(this::vincular);
         return lista;
     }

@@ -82,6 +82,11 @@ public class EmprestimoService {
     }
 
     @Transactional(readOnly = true)
+    public List<EmprestimoResumoDTO> historicoDoLeitor(Long leitorId) {
+        return emprestimoRepository.listarPorLeitor(leitorId, 100).stream().map(this::toResumoDTO).toList();
+    }
+
+    @Transactional(readOnly = true)
     public EmprestimoDTO buscarDTO(Long id) {
         Emprestimo e = emprestimoRepository.buscarPorId(id).orElse(null);
         return e != null ? toDTO(e) : null;

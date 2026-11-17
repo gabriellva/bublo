@@ -31,14 +31,19 @@ public class MultaController {
     @GetMapping
     public String listar(@RequestParam(required = false) String termo,
                          @RequestParam(required = false) String status,
+                         @RequestParam(defaultValue = "andamento") String aba,
                          @RequestParam(defaultValue = "0") int pagina,
                          @RequestParam(defaultValue = "10") int tamanho,
                          Model model) {
-        var resultado = multaService.listar(termo, status, Math.max(pagina, 0),
+        boolean historico = "historico".equals(aba);
+        // Aba "Em aberto" = pendentes e pagas parcialmente; "Histórico" = quitadas e canceladas.
+        String filtro = (status == null || status.isBlank()) ? (historico ? "HISTORICO" : "ABERTAS") : status;
+        var resultado = multaService.listar(termo, filtro, Math.max(pagina, 0),
             Math.min(Math.max(tamanho, 1), 100), "data_geracao DESC");
         model.addAttribute("resultado", resultado);
         model.addAttribute("termo", termo);
         model.addAttribute("status", status);
+        model.addAttribute("aba", historico ? "historico" : "andamento");
         return "multas/listar";
     }
 

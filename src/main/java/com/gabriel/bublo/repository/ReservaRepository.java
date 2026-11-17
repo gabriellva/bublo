@@ -101,7 +101,9 @@ public class ReservaRepository {
             String t = "%" + termo.trim() + "%";
             args.add(t); args.add(t); args.add(t);
         }
-        if (status != null && !status.isBlank()) {
+        if ("HISTORICO".equals(status)) {
+            where.append(" AND r.status IN ('ATENDIDA','CANCELADA','EXPIRADA')");
+        } else if (status != null && !status.isBlank()) {
             where.append(" AND r.status = ?"); args.add(status);
         }
         String sql = "SELECT * FROM reservas r " + where +
@@ -117,6 +119,13 @@ public class ReservaRepository {
         Long total = jdbc.queryForObject(csql.toString(), Long.class, args.subList(0, args.size() - 2).toArray());
 
         return new Paginacao<>(conteudo, total, pagina, tamanho);
+    }
+
+    public List<Reserva> listarPorLeitor(Long leitorId, int limite) {
+        List<Reserva> lista = jdbc.query(
+            "SELECT * FROM reservas WHERE leitor_id = ? ORDER BY data_reserva DESC, id DESC LIMIT ?", MAPPER, leitorId, limite);
+        lista.forEach(this::vincular);
+        return lista;
     }
 
     public List<Reserva> listarPendentesPorItem(Long itemId) {
