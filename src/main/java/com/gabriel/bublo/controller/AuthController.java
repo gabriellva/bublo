@@ -47,7 +47,8 @@ public class AuthController {
             return "redirect:/dashboard";
         }
         if (error != null) {
-            model.addAttribute("erro", "Usuário ou senha inválidos. Tente novamente.");
+            // Texto fixo acima do cartão de login (não é toast); a mensagem não revela qual dos dois campos errou.
+            model.addAttribute("erroLogin", "Usuário ou senha incorretos.");
         }
         if (logout != null) {
             model.addAttribute("sucesso", "Você saiu do sistema.");

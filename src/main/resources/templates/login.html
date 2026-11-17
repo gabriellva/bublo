@@ -17,6 +17,11 @@
   </div>
 
   <div class="login-area-form">
+    <div class="login-coluna">
+      <div class="login-erro" role="alert" th:if="${erroLogin}">
+        <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+        <span th:text="${erroLogin}">Usuário ou senha incorretos.</span>
+      </div>
     <div class="login-card">
       <h2>Entrar</h2>
       <p class="subtitulo">Acesso exclusivo do administrador da biblioteca</p>
@@ -32,6 +37,7 @@
         </div>
         <button type="submit" class="btn-bublo w-100 mt-3">Entrar</button>
       </form>
+    </div>
     </div>
   </div>
 
