@@ -86,7 +86,7 @@ Regras:
 
 ## 7. Reservas
 
-**Reservas → Nova reserva:** informe leitor, material e prazo de retirada. A reserva entra na fila FIFO. Quando um exemplar é devolvido, o primeiro da fila é atendido. Reservas podem ser canceladas pelo administrador e expiram automaticamente ao fim do dia do prazo de retirada (verificação a cada hora). As posições da fila são renumeradas quando uma reserva sai.
+**Reservas → Nova reserva:** informe leitor, material e prazo de retirada. A reserva entra na fila FIFO. Quando um exemplar é devolvido, o primeiro da fila é atendido. Só é possível reservar materiais em que **todos os exemplares estão emprestados**; se houver exemplar livre, registre um empréstimo. **Publicações digitais não podem ser reservadas** (são apenas para consulta). A tela de nova reserva explica essas regras e desabilita os materiais que não podem ser reservados. Reservas podem ser canceladas pelo administrador e expiram automaticamente ao fim do dia do prazo de retirada (verificação a cada hora). As posições da fila são renumeradas quando uma reserva sai.
 
 ---
 
@@ -125,7 +125,7 @@ O ícone de sino no topo mostra o contador de não lidas. Clique para ver notifi
 
 ## 13. Alterar senha (conta)
 
-Acesse **Minha conta** no topo. Informe senha atual, nova senha (mín. 8 caracteres, letras e números) e confirmação. Após a alteração, você será desconectado e deverá entrar novamente.
+Clique no seu usuário (ex.: **admin**) na barra superior, ou em **Minha conta** no menu. Informe a nova senha (mínimo de 4 caracteres) e repita para confirmar; a senha atual não é pedida. Após a alteração, você será desconectado e deverá entrar novamente.
 
 ---
 
@@ -138,3 +138,12 @@ Clique em **Sair** no topo para encerrar a sessão. A sessão expira ao fechar o
 ## 15. Dados de demonstração
 
 A primeira inicialização carrega dados fictícios (13 materiais, 15 leitores e 2 empréstimos) para demonstração imediata. Para recarregar, recrie o banco de dados.
+
+
+## 14. Excluir exemplares
+
+Na página do material, em **Exemplares**, use **Excluir** na linha do exemplar. Só exemplares **disponíveis** podem ser excluídos (devolva antes, se estiver emprestado). Um exemplar que nunca foi emprestado é apagado; um que já tem histórico de empréstimos recebe **baixa**: deixa de aparecer e de contar no acervo, mas o histórico é preservado e o tombamento nunca é reutilizado. O último exemplar de um material com reservas aguardando não pode ser excluído.
+
+## 15. Abas Em andamento e Histórico
+
+**Empréstimos**, **Reservas** e **Multas** têm duas abas: *Em andamento* (empréstimos ativos, reservas aguardando, multas em aberto) e *Histórico* (devolvidos e cancelados, atendidas/canceladas/expiradas, quitadas). Na página de cada **leitor** há o histórico completo de empréstimos, reservas e multas dele.

@@ -261,7 +261,7 @@ Cobertura focada em regras de negócio (`MultaService`, `ConfiguracaoService`, `
 No GitHub Actions, o PostgreSQL é sobe como serviço e os testes de integração validam migrations Flyway e persistência real.
 
 ```
-Tests run: 69, Failures: 0, Errors: 0
+Tests run: 91, Failures: 0, Errors: 0
 ```
 
 ---
