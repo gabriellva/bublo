@@ -10,9 +10,12 @@
 
 | Classe testada | Cenários |
 |----------------|----------|
-| `MultaServiceTest` | Pagamento integral quita multa; pagamento parcial; valor maior que saldo rejeitado; estorno volta multa para pendente; saldo pendente do leitor; bloqueio por saldo; justificativa obrigatória para estorno. |
+| `MultaServiceTest` | Pagamento integral quita multa; pagamento parcial; valor maior que saldo rejeitado; estorno volta multa para pendente; estorno duplicado rejeitado; pagamento com 3 casas decimais rejeitado; saldo pendente do leitor; bloqueio por saldo; justificativa obrigatória para estorno. |
 | `ConfiguracaoServiceTest` | Salvamento registra auditoria com antes/depois; justificativa obrigatória; listagem de configurações. |
 | `LeitorServiceTest` | E-mail duplicado rejeitado; e-mail disponível permite cadastro com matrícula automática; resultado de importação CSV. |
+| `EmprestimoServiceTest` | Fila de reservas, prazo máximo, digital e material excluído, devolução concorrente, taxa zero, renovação e cancelamento. |
+| `ReservaServiceTest` | Reserva com fila, título já emprestado, material excluído, expiração. |
+| `AcervoServiceTest` | ISBN em branco, digital/excluído sem exemplares, prefixo de tombamento. |
 | `BubloApplicationTests` | Classe da aplicação instanciável. |
 
 ## Execução
@@ -21,7 +24,7 @@
 mvn test
 ```
 
-Resultado esperado: `Tests run: 15, Failures: 0, Errors: 0`.
+Resultado esperado: `Tests run: 69, Failures: 0, Errors: 0`.
 
 ## Cobertura
 
