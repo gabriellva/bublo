@@ -97,7 +97,8 @@ public class ReservaController {
 
     private void carregarFormulario(Model model) {
         model.addAttribute("leitores", leitorService.listar(null, null, true, 0, 1000, "nome ASC").getConteudo());
-        model.addAttribute("acervo", acervoService.listarTodos());
+        model.addAttribute("acervo", acervoService.listarTodos().stream()
+            .filter(item -> !"DIGITAL".equals(item.getTipo())).toList());
         model.addAttribute("hoje", LocalDate.now());
     }
 }

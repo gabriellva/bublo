@@ -17,6 +17,8 @@ public class LeitorResumoDTO {
     private BigDecimal saldoPendente;
     private boolean bloqueado;
     private int reservas;
+    private int limiteEmprestimos;
+    private int prazoDias;
 
     public LeitorResumoDTO() {
         this.saldoPendente = BigDecimal.ZERO;
@@ -56,6 +58,10 @@ public class LeitorResumoDTO {
     public void setSaldoPendente(BigDecimal saldoPendente) { this.saldoPendente = saldoPendente; }
     public boolean isBloqueado() { return bloqueado; }
     public void setBloqueado(boolean bloqueado) { this.bloqueado = bloqueado; }
+    public int getLimiteEmprestimos() { return limiteEmprestimos; }
+    public void setLimiteEmprestimos(int limiteEmprestimos) { this.limiteEmprestimos = limiteEmprestimos; }
+    public int getPrazoDias() { return prazoDias; }
+    public void setPrazoDias(int prazoDias) { this.prazoDias = prazoDias; }
     public int getReservas() { return reservas; }
     public void setReservas(int reservas) { this.reservas = reservas; }
 }

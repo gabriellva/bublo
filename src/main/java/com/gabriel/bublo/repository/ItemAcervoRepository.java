@@ -183,7 +183,7 @@ public class ItemAcervoRepository {
         StringBuilder where = new StringBuilder("WHERE ia.ativo = TRUE");
         if (termo != null && !termo.isBlank()) {
             where.append(" AND (ia.titulo ILIKE ? OR ia.isbn ILIKE ? OR ia.issn ILIKE ?)");
-            String t = "%" + termo + "%";
+            String t = "%" + termo.trim() + "%";
             args.add(t); args.add(t); args.add(t);
         }
         if (categoriaId != null) {
@@ -193,8 +193,13 @@ public class ItemAcervoRepository {
             where.append(" AND ia.tipo = ?"); args.add(tipo.name());
         }
         if (disponivel != null) {
-            where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = ?)");
-            args.add(disponivel);
+            if (disponivel) {
+                where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = TRUE)");
+            } else {
+                // Indisponível = tem exemplares, mas nenhum livre (título com 1 de 3 emprestado ainda está disponível).
+                where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id)" +
+                    " AND NOT EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = TRUE)");
+            }
         }
 
         String sql = BASE_SELECT + " " + where +
@@ -281,7 +286,7 @@ public class ItemAcervoRepository {
     }
 
     private String normalizar(String s) {
-        return s == null ? "" : s.trim().toLowerCase();
+        return s == null ? "" : s.trim().replaceAll("\\s+", " ").toLowerCase();
     }
 
     private Integer volumeDe(ItemAcervo i) { return i instanceof Revista ? ((Revista) i).getVolume() : null; }

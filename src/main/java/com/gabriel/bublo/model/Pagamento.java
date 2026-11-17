@@ -14,6 +14,10 @@ public class Pagamento {
     private String formaPagamento;
     private LocalDateTime dataPagamento;
     private String responsavel;
+    private boolean estornado;
+    private LocalDateTime estornadoEm;
+    private String estornadoPor;
+    private String estornoJustificativa;
 
     public Long getId() {
         return id;
@@ -61,5 +65,37 @@ public class Pagamento {
 
     public void setResponsavel(String responsavel) {
         this.responsavel = responsavel;
+    }
+
+    public boolean isEstornado() {
+        return estornado;
+    }
+
+    public void setEstornado(boolean estornado) {
+        this.estornado = estornado;
+    }
+
+    public LocalDateTime getEstornadoEm() {
+        return estornadoEm;
+    }
+
+    public void setEstornadoEm(LocalDateTime estornadoEm) {
+        this.estornadoEm = estornadoEm;
+    }
+
+    public String getEstornadoPor() {
+        return estornadoPor;
+    }
+
+    public void setEstornadoPor(String estornadoPor) {
+        this.estornadoPor = estornadoPor;
+    }
+
+    public String getEstornoJustificativa() {
+        return estornoJustificativa;
+    }
+
+    public void setEstornoJustificativa(String estornoJustificativa) {
+        this.estornoJustificativa = estornoJustificativa;
     }
 }

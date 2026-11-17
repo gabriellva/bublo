@@ -70,12 +70,21 @@ public class MultaRepository {
         }
     }
 
+    /** Lê a multa travando a linha até o fim da transação (pagamento/estorno concorrentes). */
+    public Optional<Multa> buscarPorIdParaAtualizar(Long id) {
+        try {
+            return Optional.ofNullable(jdbc.queryForObject("SELECT * FROM multas WHERE id = ? FOR UPDATE", MAPPER, id));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
     public Paginacao<Multa> buscar(String termo, String status, int pagina, int tamanho, String ordenacao) {
         List<Object> args = new ArrayList<>();
         StringBuilder where = new StringBuilder("WHERE 1=1");
         if (termo != null && !termo.isBlank()) {
             where.append(" AND m.leitor_id IN (SELECT id FROM leitores WHERE nome ILIKE ? OR matricula ILIKE ?)");
-            String t = "%" + termo + "%";
+            String t = "%" + termo.trim() + "%";
             args.add(t); args.add(t);
         }
         if (status != null && !status.isBlank()) {

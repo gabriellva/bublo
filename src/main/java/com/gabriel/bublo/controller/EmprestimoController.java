@@ -111,7 +111,8 @@ public class EmprestimoController {
         var restricao = emprestimoService.restricaoLeitor(leitorId);
         if (restricao == null) return Map.of("encontrado", false, "bloqueado", false);
         return Map.of("encontrado", true, "bloqueado", restricao.isBloqueado(),
-            "ativos", restricao.getEmprestimosAtivos(), "saldo", restricao.getSaldoPendente());
+            "ativos", restricao.getEmprestimosAtivos(), "saldo", restricao.getSaldoPendente(),
+            "limite", restricao.getLimiteEmprestimos(), "prazoDias", restricao.getPrazoDias());
     }
 
     private void carregarFormulario(Model model) {

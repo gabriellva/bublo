@@ -49,13 +49,22 @@ public class AuditoriaRepository {
             adminUsuario, tipoOperacao, modulo, registroAfectado, valoresAntes, valoresDepois, justificativa);
     }
 
+    /** Último registro de alteração ou reversão de configuração (base do "desfazer última alteração"). */
+    public Auditoria ultimaDeConfiguracao() {
+        List<Auditoria> lista = jdbc.query(
+            "SELECT * FROM auditoria WHERE modulo = 'Configuracoes' " +
+            "AND tipo_operacao IN ('ALTERACAO_CONFIGURACAO','REVERSAO_CONFIGURACAO') " +
+            "ORDER BY data_hora DESC, id DESC LIMIT 1", MAPPER);
+        return lista.isEmpty() ? null : lista.get(0);
+    }
+
     public Paginacao<Auditoria> buscar(String termo, String modulo, String tipoOperacao,
                                        int pagina, int tamanho) {
         List<Object> args = new ArrayList<>();
         StringBuilder where = new StringBuilder("WHERE 1=1");
         if (termo != null && !termo.isBlank()) {
             where.append(" AND (admin_usuario ILIKE ? OR modulo ILIKE ? OR tipo_operacao ILIKE ?)");
-            String t = "%" + termo + "%";
+            String t = "%" + termo.trim() + "%";
             args.add(t); args.add(t); args.add(t);
         }
         if (modulo != null && !modulo.isBlank()) {

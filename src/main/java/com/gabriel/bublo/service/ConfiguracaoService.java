@@ -26,6 +26,10 @@ public class ConfiguracaoService {
     private static final java.util.Set<String> CHAVES_INTEIRAS = java.util.Set.of(
         "limite_alunos", "limite_professores", "prazo_alunos", "prazo_professores", "prazo_retirada_reserva");
 
+    private static final java.util.Map<String, Integer> MAXIMOS_INTEIROS = java.util.Map.of(
+        "limite_alunos", 50, "limite_professores", 50,
+        "prazo_alunos", 365, "prazo_professores", 365, "prazo_retirada_reserva", 30);
+
     private static final java.util.Set<String> CHAVES_TEXTO = java.util.Set.of("nome_instituicao", "prefixo_tombamento");
 
     private final ConfiguracaoRepository configuracaoRepository;
@@ -100,6 +104,39 @@ public class ConfiguracaoService {
             chave, anterior != null ? anterior.getValor() : null, valor, justificativa);
     }
 
+    /** Última alteração que ainda pode ser desfeita, ou null (não há, ou a última já foi uma reversão). */
+    @Transactional(readOnly = true)
+    public com.gabriel.bublo.model.Auditoria ultimaAlteracaoReversivel() {
+        var ultima = auditoriaRepository.ultimaDeConfiguracao();
+        if (ultima == null || !"ALTERACAO_CONFIGURACAO".equals(ultima.getTipoOperacao())
+            || ultima.getValoresAntes() == null) {
+            return null;
+        }
+        return ultima;
+    }
+
+    @Transactional
+    public String reverterUltima(String adminUsuario, String justificativa) {
+        if (justificativa == null || justificativa.isBlank()) {
+            throw new IllegalArgumentException("Justificativa é obrigatória para desfazer uma configuração");
+        }
+        var ultima = ultimaAlteracaoReversivel();
+        if (ultima == null) {
+            throw new IllegalArgumentException("Não há alteração de configuração que possa ser desfeita.");
+        }
+        String chave = ultima.getRegistroAfectado();
+        validarValor(chave, ultima.getValoresAntes());
+        Configuracao atual = configuracaoRepository.buscar(chave).orElse(null);
+        Configuracao c = new Configuracao();
+        c.setChave(chave);
+        c.setValor(ultima.getValoresAntes());
+        c.setAtualizadoPor(adminUsuario);
+        configuracaoRepository.salvar(c);
+        auditoriaRepository.registrar(adminUsuario, "REVERSAO_CONFIGURACAO", "Configuracoes",
+            chave, atual != null ? atual.getValor() : null, ultima.getValoresAntes(), justificativa.trim());
+        return chave;
+    }
+
     private void validarValor(String chave, String valor) {
         if (!CHAVES_INTEIRAS.contains(chave) && !CHAVES_TEXTO.contains(chave) && !"taxa_diaria_multa".equals(chave)) {
             throw new IllegalArgumentException("Configuração desconhecida: " + chave);
@@ -108,11 +145,30 @@ public class ConfiguracaoService {
             throw new IllegalArgumentException("O valor da configuração é obrigatório");
         }
         try {
-            if (CHAVES_INTEIRAS.contains(chave) && Integer.parseInt(valor.trim()) < 1) {
-                throw new IllegalArgumentException("O valor deve ser um número inteiro maior que zero");
+            if (CHAVES_INTEIRAS.contains(chave)) {
+                int numero = Integer.parseInt(valor.trim());
+                int maximo = MAXIMOS_INTEIROS.get(chave);
+                if (numero < 1 || numero > maximo) {
+                    throw new IllegalArgumentException("O valor de " + chave + " deve estar entre 1 e " + maximo);
+                }
             }
-            if ("taxa_diaria_multa".equals(chave) && new java.math.BigDecimal(valor.trim()).signum() < 0) {
-                throw new IllegalArgumentException("A taxa diária não pode ser negativa");
+            if ("nome_instituicao".equals(chave) && valor.trim().length() > 150) {
+                throw new IllegalArgumentException("O nome da instituição deve ter no máximo 150 caracteres");
+            }
+            if ("prefixo_tombamento".equals(chave) && !valor.trim().matches("[A-Za-z]{1,10}")) {
+                throw new IllegalArgumentException("O prefixo deve ter de 1 a 10 letras (sem números ou símbolos)");
+            }
+            if ("taxa_diaria_multa".equals(chave)) {
+                java.math.BigDecimal taxa = new java.math.BigDecimal(valor.trim());
+                if (taxa.signum() < 0) {
+                    throw new IllegalArgumentException("A taxa diária não pode ser negativa");
+                }
+                if (taxa.stripTrailingZeros().scale() > 2) {
+                    throw new IllegalArgumentException("A taxa diária aceita no máximo duas casas decimais");
+                }
+                if (taxa.compareTo(new java.math.BigDecimal("1000")) > 0) {
+                    throw new IllegalArgumentException("A taxa diária não pode passar de R$ 1.000,00");
+                }
             }
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Valor numérico inválido para " + chave);

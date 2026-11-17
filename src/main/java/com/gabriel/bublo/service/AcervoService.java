@@ -1,5 +1,6 @@
 package com.gabriel.bublo.service;
 
+import com.gabriel.bublo.dto.ConfiguracaoDTO;
 import com.gabriel.bublo.dto.ItemAcervoDTO;
 import com.gabriel.bublo.dto.Paginacao;
 import com.gabriel.bublo.model.Autor;
@@ -11,6 +12,7 @@ import com.gabriel.bublo.model.DVD;
 import com.gabriel.bublo.model.PublicacaoDigital;
 import com.gabriel.bublo.repository.ItemAcervoRepository;
 import com.gabriel.bublo.repository.ExemplarRepository;
+import com.gabriel.bublo.repository.AuditoriaRepository;
 import com.gabriel.bublo.model.Categoria;
 import com.gabriel.bublo.model.Exemplar;
 import org.springframework.dao.DuplicateKeyException;
@@ -31,14 +33,21 @@ public class AcervoService {
 
     private static final int QUANTIDADE_MAXIMA_LOTE = 100;
     private static final String IDIOMA_PADRAO = "Português";
+    private static final int TAMANHO_MAXIMO_AUTOR = 150;
 
     private final ItemAcervoRepository itemAcervoRepository;
     private final ExemplarRepository exemplarRepository;
+    private final ConfiguracaoService configuracaoService;
+    private final AuditoriaRepository auditoriaRepository;
 
     public AcervoService(ItemAcervoRepository itemAcervoRepository,
-                         ExemplarRepository exemplarRepository) {
+                         ExemplarRepository exemplarRepository,
+                         ConfiguracaoService configuracaoService,
+                         AuditoriaRepository auditoriaRepository) {
         this.itemAcervoRepository = itemAcervoRepository;
         this.exemplarRepository = exemplarRepository;
+        this.configuracaoService = configuracaoService;
+        this.auditoriaRepository = auditoriaRepository;
     }
 
     @Transactional(readOnly = true)
@@ -55,12 +64,27 @@ public class AcervoService {
 
     @Transactional
     public ItemAcervoDTO salvar(ItemAcervoDTO dto, String adminUsuario) {
+        boolean novo = dto.getId() == null;
+        if (!novo) {
+            // Trocar o tipo apagaria campos próprios (ISBN, ISSN...) e poderia deixar exemplares em material digital.
+            ItemAcervo atual = itemAcervoRepository.buscarPorId(dto.getId())
+                .orElseThrow(() -> new IllegalStateException("Item não encontrado"));
+            if (!atual.getTipo().name().equals(dto.getTipo())) {
+                throw new IllegalStateException("O tipo do material não pode ser alterado depois do cadastro.");
+            }
+        }
         ItemAcervo item = construirItem(dto);
         try {
             item = itemAcervoRepository.salvar(item);
         } catch (DuplicateKeyException e) {
-            throw new IllegalStateException("Já existe um material cadastrado com este ISBN/ISSN.");
+            String causa = String.valueOf(e.getMessage());
+            if (causa.contains("idx_item_acervo_isbn") || causa.contains("idx_item_acervo_issn")) {
+                throw new IllegalStateException("Já existe um material cadastrado com este ISBN/ISSN.");
+            }
+            throw e;
         }
+        auditoriaRepository.registrar(adminUsuario, novo ? "CADASTRO_MATERIAL" : "EDICAO_MATERIAL", "Acervo",
+            "Material #" + item.getId(), null, item.getTitulo(), null);
         return toDTO(item);
     }
 
@@ -103,9 +127,7 @@ public class AcervoService {
 
     @Transactional
     public void cadastrarExemplar(Long itemId, String adminUsuario) {
-        ItemAcervo item = itemAcervoRepository.buscarPorId(itemId)
-            .orElseThrow(() -> new IllegalStateException("Item não encontrado"));
-        exemplarRepository.salvar(item);
+        cadastrarExemplaresLote(itemId, 1, adminUsuario);
     }
 
     @Transactional
@@ -115,13 +137,24 @@ public class AcervoService {
         }
         ItemAcervo item = itemAcervoRepository.buscarPorId(itemId)
             .orElseThrow(() -> new IllegalStateException("Item não encontrado"));
-        exemplarRepository.salvarLote(item, quantidade);
+        if (!itemAcervoRepository.estaAtivo(itemId)) {
+            throw new IllegalStateException("Material excluído do acervo. Não é possível cadastrar exemplares.");
+        }
+        if (item.getTipo() == TipoMaterial.DIGITAL) {
+            throw new IllegalStateException("Publicações digitais não possuem exemplares físicos.");
+        }
+        exemplarRepository.salvarLote(item, quantidade, prefixoTombamento());
+        auditoriaRepository.registrar(adminUsuario, "CADASTRO_EXEMPLAR", "Acervo", "Material #" + itemId,
+            null, quantidade + " exemplar(es) de " + item.getTitulo(), null);
     }
 
     @Transactional
     public void excluir(Long id, String adminUsuario, String justificativa) {
         ItemAcervo item = itemAcervoRepository.buscarPorId(id)
             .orElseThrow(() -> new IllegalStateException("Item não encontrado"));
+        if (!itemAcervoRepository.estaAtivo(id)) {
+            throw new IllegalStateException("Este material já foi excluído.");
+        }
         if (itemAcervoRepository.existeEmprestimoAtivo(id)) {
             throw new IllegalStateException("Não é possível excluir: existem empréstimos ativos");
         }
@@ -129,6 +162,14 @@ public class AcervoService {
             throw new IllegalStateException("Não é possível excluir: existem reservas pendentes");
         }
         itemAcervoRepository.deletar(id);
+        auditoriaRepository.registrar(adminUsuario, "EXCLUSAO_MATERIAL", "Acervo", "Material #" + id,
+            item.getTitulo(), null, justificativa);
+    }
+
+    private String prefixoTombamento() {
+        ConfiguracaoDTO cfg = configuracaoService.buscar("prefixo_tombamento");
+        String valor = cfg != null && cfg.getValor() != null ? cfg.getValor().trim() : "";
+        return valor.matches("[A-Za-z]{1,10}") ? valor.toUpperCase() : ExemplarRepository.PREFIXO_PADRAO;
     }
 
     private ItemAcervo construirItem(ItemAcervoDTO dto) {
@@ -171,26 +212,28 @@ public class AcervoService {
             pd.setDoi(dto.getDoi());
             pd.setUrlExterna(dto.getUrlExterna());
         }
-        List<Autor> autores = new ArrayList<>();
+        // Mesmo autor digitado de formas diferentes ("Machado", "machado ") é um só: indexa por id.
+        java.util.Map<Long, Autor> autores = new java.util.LinkedHashMap<>();
         if (dto.getAutorIds() != null) {
             for (Long id : dto.getAutorIds()) {
                 Autor a = itemAcervoRepository.buscarAutorPorId(id);
-                if (a != null) autores.add(a);
+                if (a != null) autores.putIfAbsent(a.getId(), a);
             }
         }
         if (dto.getNovosAutores() != null) {
-            dto.getNovosAutores().removeIf(nome -> nome == null || nome.isBlank());
-            for (String nome : dto.getNovosAutores()) {
-                if (nome != null && !nome.isBlank()) {
-                    Autor a = new Autor();
-                    a.setNome(nome.trim());
-                    Long id = itemAcervoRepository.criarOuReutilizarAutor(nome.trim());
-                    a.setId(id);
-                    autores.add(a);
+            for (String bruto : dto.getNovosAutores()) {
+                if (bruto == null || bruto.isBlank()) continue;
+                String nome = bruto.trim().replaceAll("\\s+", " ");
+                if (nome.length() > TAMANHO_MAXIMO_AUTOR) {
+                    throw new IllegalStateException("O nome do autor deve ter no máximo " + TAMANHO_MAXIMO_AUTOR + " caracteres.");
                 }
+                Autor a = new Autor();
+                a.setNome(nome);
+                a.setId(itemAcervoRepository.criarOuReutilizarAutor(nome));
+                autores.putIfAbsent(a.getId(), a);
             }
         }
-        item.setAutores(autores);
+        item.setAutores(new ArrayList<>(autores.values()));
         return item;
     }
 
@@ -211,6 +254,7 @@ public class AcervoService {
         ItemAcervoDTO dto = new ItemAcervoDTO();
         dto.setId(item.getId());
         dto.setTipo(item.getTipo().name());
+        dto.setTipoRotulo(item.getTipo().getLabel());
         dto.setTitulo(item.getTitulo());
         dto.setDescricao(item.getDescricao());
         dto.setEditora(item.getEditora());

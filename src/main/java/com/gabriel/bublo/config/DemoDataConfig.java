@@ -68,15 +68,18 @@ public class DemoDataConfig {
                     u.setAtivo(true);
                     usuarioRepository.criar(u);
                 }
-            } else {
-                // Fallback: criar admin padrão se não houver variáveis de ambiente
-                if (usuarioRepository.buscarPorUsername("admin").isEmpty()) {
-                    Usuario u = new Usuario();
-                    u.setUsername("admin");
-                    u.setSenhaHash(passwordEncoder.encode("admin"));
-                    u.setAtivo(true);
-                    usuarioRepository.criar(u);
-                }
+            } else if (usuarioRepository.buscarPorUsername("admin").isEmpty()) {
+                // Sem ADMIN_USERNAME/ADMIN_PASSWORD: nunca criar credencial previsível. Gera uma senha
+                // aleatória, mostrada uma única vez no log da primeira inicialização.
+                String senhaInicial = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16) + "a1";
+                Usuario u = new Usuario();
+                u.setUsername("admin");
+                u.setSenhaHash(passwordEncoder.encode(senhaInicial));
+                u.setAtivo(true);
+                usuarioRepository.criar(u);
+                org.slf4j.LoggerFactory.getLogger(DemoDataConfig.class).warn(
+                    "ADMIN_USERNAME/ADMIN_PASSWORD não definidos. Usuário 'admin' criado com senha temporária: {} "
+                    + "(troque em Conta > Alterar senha).", senhaInicial);
             }
 
             if (!demoEnabled) return;
@@ -134,6 +137,7 @@ public class DemoDataConfig {
             Categoria multimidia = criarCategoria(itemAcervoRepository, "Multimídia");
             Categoria digital = criarCategoria(itemAcervoRepository, "Publicações digitais");
             int indice = 0;
+            int numeroMaterial = 0;
             for (ItemAcervo m : materiais) {
                 m.setCategoria(switch (m.getTipo()) {
                     case LIVRO -> indice++ < 2 ? literatura : tecnologia;
@@ -143,7 +147,7 @@ public class DemoDataConfig {
                 });
                 itemAcervoRepository.salvar(m);
                 if (m.getTipo() != com.gabriel.bublo.model.TipoMaterial.DIGITAL) {
-                    int qtd = 1 + (int)(Math.random() * 2);
+                    int qtd = 1 + (numeroMaterial++ % 2);
                     exemplarRepository.salvarLote(m, qtd);
                 }
             }

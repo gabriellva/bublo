@@ -49,7 +49,7 @@ public class MultaController {
             redirect.addFlashAttribute("erro", "Multa não encontrada.");
             return "redirect:/multas";
         }
-        model.addAttribute("multa", dto);
+        carregarTela(model, dto);
         return "multas/pagar";
     }
 
@@ -63,11 +63,30 @@ public class MultaController {
             multaService.pagar(id, parseValor(valor), forma, AuthUtil.usuarioAtual());
         } catch (IllegalStateException e) {
             model.addAttribute("erro", e.getMessage());
-            model.addAttribute("multa", multaService.buscarDTO(id));
+            carregarTela(model, multaService.buscarDTO(id));
             return "multas/pagar";
         }
         redirect.addFlashAttribute("sucesso", "Pagamento registrado com sucesso.");
         return "redirect:/multas";
+    }
+
+    @PostMapping("/{id}/pagamentos/{pagamentoId}/estornar")
+    public String estornar(@PathVariable Long id,
+                           @PathVariable Long pagamentoId,
+                           @RequestParam(required = false) String justificativa,
+                           RedirectAttributes redirect) {
+        try {
+            multaService.estornar(pagamentoId, justificativa, AuthUtil.usuarioAtual());
+            redirect.addFlashAttribute("sucesso", "Pagamento estornado. O saldo da multa foi recalculado.");
+        } catch (IllegalStateException e) {
+            redirect.addFlashAttribute("erro", e.getMessage());
+        }
+        return "redirect:/multas/" + id + "/pagar";
+    }
+
+    private void carregarTela(Model model, com.gabriel.bublo.dto.MultaDTO multa) {
+        model.addAttribute("multa", multa);
+        model.addAttribute("pagamentos", multa != null ? multaService.listarPagamentos(multa.getId()) : java.util.List.of());
     }
 
     @GetMapping("/leitor/{leitorId}/saldo")

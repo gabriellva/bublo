@@ -102,7 +102,7 @@ public class EmprestimoRepository {
             args.add(t); args.add(t); args.add(t);
         }
         if ("ATRASADO".equals(status)) {
-            where.append(" AND e.status = 'ATIVO' AND e.data_prevista_devolucao < NOW()");
+            where.append(" AND e.status = 'ATIVO' AND e.data_prevista_devolucao::date < CURRENT_DATE");
         } else if (status != null && !status.isBlank()) {
             where.append(" AND e.status = ?"); args.add(status);
         }
@@ -131,7 +131,7 @@ public class EmprestimoRepository {
 
     public List<Emprestimo> listarAtrasados() {
         List<Emprestimo> lista = jdbc.query(
-            "SELECT * FROM emprestimos WHERE status = 'ATIVO' AND data_prevista_devolucao < NOW() ORDER BY data_prevista_devolucao ASC",
+            "SELECT * FROM emprestimos WHERE status = 'ATIVO' AND data_prevista_devolucao::date < CURRENT_DATE ORDER BY data_prevista_devolucao ASC",
             MAPPER);
         lista.forEach(this::vincular);
         return lista;
@@ -142,26 +142,45 @@ public class EmprestimoRepository {
     }
 
     public long contarAtrasados() {
-        return jdbc.queryForObject("SELECT COUNT(*) FROM emprestimos WHERE status = 'ATIVO' AND data_prevista_devolucao < NOW()", Long.class);
+        return jdbc.queryForObject("SELECT COUNT(*) FROM emprestimos WHERE status = 'ATIVO' AND data_prevista_devolucao::date < CURRENT_DATE", Long.class);
     }
 
-    public void devolver(Long emprestimoId) {
+    /**
+     * Registra a devolução somente se o empréstimo ainda estiver ativo.
+     * @return false quando outra requisição já devolveu/cancelou (evita multa em duplicidade)
+     */
+    public boolean devolver(Long emprestimoId) {
         Emprestimo e = buscarPorId(emprestimoId)
             .orElseThrow(() -> new IllegalStateException("Empréstimo não encontrado"));
-        jdbc.update("UPDATE emprestimos SET status = 'DEVOLVIDO', data_devolucao_real = NOW() WHERE id = ?", emprestimoId);
+        int linhas = jdbc.update(
+            "UPDATE emprestimos SET status = 'DEVOLVIDO', data_devolucao_real = NOW() WHERE id = ? AND status = 'ATIVO'",
+            emprestimoId);
+        if (linhas == 0) return false;
         exemplarRepository.definirDisponibilidade(e.getExemplar().getId(), true);
+        return true;
     }
 
-    public void cancelar(Long emprestimoId) {
+    public boolean cancelar(Long emprestimoId) {
         Emprestimo e = buscarPorId(emprestimoId)
             .orElseThrow(() -> new IllegalStateException("Empréstimo não encontrado"));
-        jdbc.update("UPDATE emprestimos SET status = 'CANCELADO' WHERE id = ?", emprestimoId);
+        int linhas = jdbc.update("UPDATE emprestimos SET status = 'CANCELADO' WHERE id = ? AND status = 'ATIVO'", emprestimoId);
+        if (linhas == 0) return false;
         exemplarRepository.definirDisponibilidade(e.getExemplar().getId(), true);
+        return true;
     }
 
-    public void renovar(Long emprestimoId, LocalDateTime novaPrevista) {
-        jdbc.update("UPDATE emprestimos SET renovacoes = renovacoes + 1, data_prevista_devolucao = ? WHERE id = ?",
-            novaPrevista, emprestimoId);
+    public boolean renovar(Long emprestimoId, LocalDateTime novaPrevista, int maximoRenovacoes) {
+        return jdbc.update(
+            "UPDATE emprestimos SET renovacoes = renovacoes + 1, data_prevista_devolucao = ? " +
+            "WHERE id = ? AND status = 'ATIVO' AND renovacoes < ?",
+            novaPrevista, emprestimoId, maximoRenovacoes) == 1;
+    }
+
+    public boolean leitorTemEmprestimoAtivoDoItem(Long leitorId, Long itemId) {
+        Integer c = jdbc.queryForObject(
+            "SELECT COUNT(*) FROM emprestimos e JOIN exemplares ex ON ex.id = e.exemplar_id " +
+            "WHERE e.leitor_id = ? AND ex.item_acervo_id = ? AND e.status = 'ATIVO'", Integer.class, leitorId, itemId);
+        return c != null && c > 0;
     }
 
     private void vincular(Emprestimo e) {
@@ -173,11 +192,14 @@ public class EmprestimoRepository {
     }
 
     public List<Object[]> contarPorMes(int meses) {
+        // generate_series garante todos os meses do período, inclusive os sem empréstimo (total 0).
         return jdbc.query(
-            "SELECT to_char(date_trunc('month', data_emprestimo), 'MM/YYYY') AS mes, COUNT(*) AS total " +
-            "FROM emprestimos WHERE data_emprestimo >= date_trunc('month', NOW()) - make_interval(months => ?) " +
-            "GROUP BY date_trunc('month', data_emprestimo) ORDER BY date_trunc('month', data_emprestimo)",
-            (rs, rowNum) -> new Object[] {rs.getString("mes"), rs.getLong("total")}, meses - 1);
+            "SELECT to_char(m.mes, 'MM/YYYY') AS rotulo, COUNT(e.id) AS total " +
+            "FROM generate_series(date_trunc('month', LOCALTIMESTAMP) - make_interval(months => ?), " +
+            "date_trunc('month', LOCALTIMESTAMP), interval '1 month') AS m(mes) " +
+            "LEFT JOIN emprestimos e ON date_trunc('month', e.data_emprestimo) = m.mes " +
+            "GROUP BY m.mes ORDER BY m.mes",
+            (rs, rowNum) -> new Object[] {rs.getString("rotulo"), rs.getLong("total")}, meses - 1);
     }
 
     private Long insertReturnId(String sql, Object... args) {

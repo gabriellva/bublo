@@ -34,7 +34,7 @@ public class LeitorController {
 
     private static final String MODELO_CSV =
         "Tipo,Nome,Email,CPF,Endereco,Telefone,CursoDepartamento\n"
-        + "ALUNO,Joao Silva,joao@email.com,111.222.333-44,Rua A,11999999999,Engenharia\n"
+        + "ALUNO,Joao Silva,joao@email.com,529.982.247-25,Rua A,11999999999,Engenharia\n"
         + "PROFESSOR,Maria Souza,maria@email.com,,Rua B,11988888888,Matematica\n";
 
     private final LeitorService leitorService;
@@ -97,7 +97,14 @@ public class LeitorController {
         try {
             leitorService.salvar(leitor, AuthUtil.usuarioAtual());
         } catch (IllegalStateException e) {
-            result.rejectValue("email", "duplicado", e.getMessage());
+            String mensagem = e.getMessage() == null ? "" : e.getMessage();
+            if (mensagem.toLowerCase().contains("e-mail")) {
+                result.rejectValue("email", "invalido", mensagem);
+            } else if (mensagem.contains("CPF")) {
+                result.rejectValue("cpf", "invalido", mensagem);
+            } else if (mensagem.contains("elefone")) {
+                result.rejectValue("telefone", "invalido", mensagem);
+            }
             model.addAttribute("erro", e.getMessage());
             return "leitores/formulario";
         }

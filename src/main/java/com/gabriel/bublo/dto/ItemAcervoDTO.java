@@ -1,6 +1,9 @@
 package com.gabriel.bublo.dto;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -23,10 +26,14 @@ public class ItemAcervoDTO {
     @Size(max = 150)
     private String editora;
 
+    @Min(value = 1000, message = "Ano inválido")
+    @Max(value = 2100, message = "Ano inválido")
     private Integer ano;
 
     private String dataPublicacao;
 
+    @Min(value = 1, message = "Informe um número de páginas maior que zero")
+    @Max(value = 100000, message = "Número de páginas inválido")
     private Integer paginas;
 
     @Size(max = 50)
@@ -35,18 +42,26 @@ public class ItemAcervoDTO {
     private Long categoriaId;
 
     @Size(max = 50)
+    @Pattern(regexp = "^[0-9Xx\\- ]*$", message = "ISBN deve conter apenas números, hífens e X")
     private String isbn;
 
     @Size(max = 50)
+    @Pattern(regexp = "^[0-9Xx\\- ]*$", message = "ISSN deve conter apenas números, hífens e X")
     private String issn;
 
+    @Min(value = 1, message = "A duração deve ser maior que zero")
+    @Max(value = 10000, message = "Duração inválida")
     private Integer duracaoMinutos;
+
+    @Min(value = 1, message = "O volume deve ser maior que zero")
+    @Max(value = 100000, message = "Volume inválido")
     private Integer volume;
 
     @Size(max = 200)
     private String doi;
 
     @Size(max = 500)
+    @Pattern(regexp = "^(https?://.+)?$", message = "A URL deve começar com http:// ou https://")
     private String urlExterna;
 
     // IDs de autores (novos ou existentes)
@@ -58,6 +73,7 @@ public class ItemAcervoDTO {
     private String categoriaNome;
     private java.util.List<String> autoresNomes = new java.util.ArrayList<>();
     private long totalExemplares;
+    private String tipoRotulo;
     private long exemplaresDisponiveis;
 
     // Getters e setters
@@ -65,6 +81,8 @@ public class ItemAcervoDTO {
     public void setCategoriaNome(String categoriaNome) { this.categoriaNome = categoriaNome; }
     public java.util.List<String> getAutoresNomes() { return autoresNomes; }
     public void setAutoresNomes(java.util.List<String> autoresNomes) { this.autoresNomes = autoresNomes; }
+    public String getTipoRotulo() { return tipoRotulo; }
+    public void setTipoRotulo(String tipoRotulo) { this.tipoRotulo = tipoRotulo; }
     public long getTotalExemplares() { return totalExemplares; }
     public void setTotalExemplares(long totalExemplares) { this.totalExemplares = totalExemplares; }
     public long getExemplaresDisponiveis() { return exemplaresDisponiveis; }

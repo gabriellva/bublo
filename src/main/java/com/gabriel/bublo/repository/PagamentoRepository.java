@@ -29,6 +29,10 @@ public class PagamentoRepository {
         p.setFormaPagamento(rs.getString("forma_pagamento"));
         p.setDataPagamento(rs.getObject("data_pagamento", LocalDateTime.class));
         p.setResponsavel(rs.getString("responsavel"));
+        p.setEstornado(rs.getBoolean("estornado"));
+        p.setEstornadoEm(rs.getObject("estornado_em", LocalDateTime.class));
+        p.setEstornadoPor(rs.getString("estornado_por"));
+        p.setEstornoJustificativa(rs.getString("estorno_justificativa"));
         return p;
     };
 
@@ -48,6 +52,14 @@ public class PagamentoRepository {
 
     public List<Pagamento> listarPorMulta(Long multaId) {
         return jdbc.query("SELECT * FROM pagamentos WHERE multa_id = ? ORDER BY data_pagamento DESC", MAPPER, multaId);
+    }
+
+    /** Marca o pagamento como estornado apenas se ainda não foi; retorna false se já estava estornado. */
+    public boolean marcarEstornado(Long id, String usuario, String justificativa) {
+        return jdbc.update(
+            "UPDATE pagamentos SET estornado = TRUE, estornado_em = NOW(), estornado_por = ?, " +
+            "estorno_justificativa = ? WHERE id = ? AND estornado = FALSE",
+            usuario, justificativa, id) == 1;
     }
 
     public Pagamento buscarPorId(Long id) {
