@@ -132,7 +132,7 @@ class ReservaServiceTest {
 
         assertThatThrownBy(() -> service.criar(1L, 2L, LocalDateTime.now().plusDays(3), "admin"))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("não possui exemplares");
+            .hasMessageContaining("não tem exemplares cadastrados");
     }
 
     @Test
@@ -141,5 +141,31 @@ class ReservaServiceTest {
         assertThatThrownBy(() -> service.criar(1L, 2L, LocalDateTime.now().plusDays(31), "admin"))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("30 dias");
+    }
+
+    @Test
+    @DisplayName("Mensagem explica que só se reserva quando todos os exemplares estão emprestados")
+    void mensagemDeExemplarDisponivelEhClara() {
+        when(exemplarRepository.buscarDisponiveisPorItem(2L)).thenReturn(List.of(new Exemplar()));
+
+        assertThatThrownBy(() -> service.criar(1L, 2L, LocalDateTime.now().plusDays(3), "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("todos os exemplares estão emprestados")
+            .hasMessageContaining("empréstimo");
+    }
+
+    @Test
+    @DisplayName("Mensagem de publicação digital explica o motivo")
+    void mensagemDeDigitalEhClara() {
+        com.gabriel.bublo.model.PublicacaoDigital digital = new com.gabriel.bublo.model.PublicacaoDigital();
+        digital.setId(9L);
+        digital.setTipo(com.gabriel.bublo.model.TipoMaterial.DIGITAL);
+        when(itemAcervoRepository.buscarPorId(9L)).thenReturn(Optional.of(digital));
+        when(itemAcervoRepository.estaAtivo(9L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.criar(1L, 9L, LocalDateTime.now().plusDays(3), "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("digitais não podem ser reservadas")
+            .hasMessageContaining("apenas para consulta");
     }
 }

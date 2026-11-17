@@ -81,7 +81,7 @@ public class ReservaService {
             throw new IllegalStateException("Material excluído do acervo. Não é possível reservar.");
         }
         if (item.getTipo() == com.gabriel.bublo.model.TipoMaterial.DIGITAL) {
-            throw new IllegalStateException("Publicações digitais não podem ser reservadas.");
+            throw new IllegalStateException("Publicações digitais não podem ser reservadas: são apenas para consulta e não têm exemplares físicos.");
         }
         if (prazoRetirada == null || prazoRetirada.toLocalDate().isBefore(java.time.LocalDate.now())) {
             throw new IllegalStateException("O prazo de retirada não pode ser anterior a hoje.");
@@ -90,16 +90,16 @@ public class ReservaService {
             throw new IllegalStateException("O prazo de retirada não pode passar de " + PRAZO_RETIRADA_MAXIMO_DIAS + " dias.");
         }
         if (emprestimoRepository.leitorTemEmprestimoAtivoDoItem(leitorId, itemId)) {
-            throw new IllegalStateException("O leitor já está com um exemplar deste material emprestado.");
+            throw new IllegalStateException("Este leitor já está com um exemplar deste material emprestado; não precisa reservar.");
         }
         if (exemplarRepository.contarPorItem(itemId) == 0) {
-            throw new IllegalStateException("Este material não possui exemplares cadastrados. Cadastre um exemplar antes de reservar.");
+            throw new IllegalStateException("Este material não tem exemplares cadastrados, então não há o que reservar. Cadastre um exemplar na página do material primeiro.");
         }
         // Exemplares livres já comprometidos com a fila não contam como disponíveis para novas reservas.
         int livres = exemplarRepository.buscarDisponiveisPorItem(itemId).size();
         int naFila = reservaRepository.listarPendentesPorItem(itemId).size();
         if (livres > naFila) {
-            throw new IllegalStateException("Este material possui exemplares disponíveis. Registre um empréstimo em vez de uma reserva.");
+            throw new IllegalStateException("Este material ainda tem exemplares disponíveis. Só é possível reservar quando todos os exemplares estão emprestados — registre um empréstimo.");
         }
         Reserva r = reservaRepository.criar(leitorId, itemId, prazoRetirada);
         notificacaoRepository.salvar(new com.gabriel.bublo.model.Notificacao(
