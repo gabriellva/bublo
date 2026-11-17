@@ -228,12 +228,6 @@ a:hover { color: var(--bublo-ouro); }
 }
 .sidebar .nav-item .icone { width: 1.35rem; text-align: center; margin-right: 0.6rem; }
 
-.sidebar .rodape {
-  padding: 1rem 1.25rem;
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.6);
-  border-top: 1px solid rgba(255,255,255,0.12);
-}
 
 .topbar {
   position: sticky; top: 0;
@@ -273,7 +267,11 @@ a:hover { color: var(--bublo-ouro); }
   font-weight: 600;
   font-size: 0.9rem;
   color: var(--bublo-destaque);
+  padding: 0.25rem 0.5rem; border-radius: 10px;
+  min-width: 0;
 }
+.topbar .usuario:hover { background: var(--bublo-hover-linha); color: var(--bublo-destaque); }
+.topbar .usuario span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9rem; }
 .topbar .usuario i { font-size: 1.4rem; }
 .notificacoes-wrap { position: relative; }
 .btn-toggle-tema { position: relative; }
@@ -579,7 +577,6 @@ body.menu-aberto { overflow: hidden; }
   main.conteudo { padding: 1rem; }
   .topbar { padding: 0 1rem; }
   .btn-toggle-tema.btn-menu { display: flex; }
-  .topbar .usuario span, .topbar .btn-contorno:not([type=submit]) { display: none; }
   .dropdown-notificacoes { position: fixed; right: 0.5rem; left: 0.5rem; width: auto; top: 64px; }
 
   /* Alvos de toque de 44 px e campos de 16 px (abaixo disso o iPhone dá zoom ao focar). */
@@ -629,9 +626,13 @@ body.menu-aberto { overflow: hidden; }
   table.tabela-cartoes tr:hover td { background: transparent; }
 }
 
+@media (max-width: 400px) {
+  .topbar .usuario span { display: none; }
+}
+
 @media (max-width: 576px) {
   .login-card { padding: 1.75rem 1.25rem; }
-  .topbar .usuario { display: none; }
+  .topbar .usuario span { max-width: 5.5rem; }
   .topbar .actions { gap: 0.4rem; }
   .topbar .btn-sair .rotulo-sair { display: none; }
   .btn-sair { padding-left: 0.6rem; padding-right: 0.6rem; }
