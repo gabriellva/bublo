@@ -148,6 +148,38 @@ public class AcervoService {
             null, quantidade + " exemplar(es) de " + item.getTitulo(), null);
     }
 
+    /**
+     * Exclui um exemplar. Sem histórico de empréstimos ele é apagado; com histórico recebe baixa
+     * (some das listas, o histórico fica). Exemplar emprestado não pode sair do acervo.
+     * @return true se foi apagado de vez, false se recebeu baixa
+     */
+    @Transactional
+    public boolean excluirExemplar(Long exemplarId, String adminUsuario) {
+        Exemplar ex = exemplarRepository.buscarPorId(exemplarId)
+            .orElseThrow(() -> new IllegalStateException("Exemplar não encontrado"));
+        if (ex.isBaixado()) {
+            throw new IllegalStateException("Este exemplar já foi excluído do acervo.");
+        }
+        if (!Boolean.TRUE.equals(ex.getDisponivel())) {
+            throw new IllegalStateException("O exemplar " + ex.getTombamento()
+                + " está emprestado. Registre a devolução antes de excluí-lo.");
+        }
+        Long itemId = ex.getItemAcervoId();
+        if (exemplarRepository.contarPorItem(itemId) <= 1 && itemAcervoRepository.existeReservaPendente(itemId)) {
+            throw new IllegalStateException("Este é o último exemplar do material e há reservas aguardando. "
+                + "Cancele as reservas antes de excluí-lo.");
+        }
+        boolean apagado = !exemplarRepository.temHistoricoDeEmprestimos(exemplarId);
+        if (apagado) {
+            exemplarRepository.excluir(exemplarId);
+        } else {
+            exemplarRepository.baixar(exemplarId, "Excluído pelo administrador");
+        }
+        auditoriaRepository.registrar(adminUsuario, apagado ? "EXCLUSAO_EXEMPLAR" : "BAIXA_EXEMPLAR", "Acervo",
+            ex.getTombamento(), "disponível", apagado ? "excluído" : "baixado (histórico preservado)", null);
+        return apagado;
+    }
+
     @Transactional
     public void excluir(Long id, String adminUsuario, String justificativa) {
         ItemAcervo item = itemAcervoRepository.buscarPorId(id)

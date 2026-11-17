@@ -57,11 +57,19 @@
         </div>
         <div class="tabela-bloco bloco-cartoes" th:unless="${exemplares.empty}">
           <table class="tabela tabela-cartoes">
-            <thead><tr><th>Tombamento</th><th>Situação</th></tr></thead>
+            <thead><tr><th>Tombamento</th><th>Situação</th><th>Ações</th></tr></thead>
             <tbody>
               <tr th:each="ex : ${exemplares}">
                 <td data-label="Tombamento" th:text="${ex.tombamento}">BA-000001</td>
                 <td data-label="Situação"><span class="badge-bublo" th:classappend="${ex.disponivel} ? 'badge-disponivel' : 'badge-indisponivel'" th:text="${ex.disponivel ? 'Disponível' : 'Emprestado'}">Disponível</span></td>
+                <td class="celula-acoes">
+                  <form th:action="@{/acervo/{id}/exemplares/{ex}/excluir(id=${item.id}, ex=${ex.id})}" method="post" class="form-inline" th:if="${ex.disponivel}"
+                        th:attr="data-confirmar='Excluir o exemplar ' + ${ex.tombamento} + '? Se ele já foi emprestado, o histórico de empréstimos é mantido.'"
+                        data-confirmar-titulo="Excluir exemplar">
+                    <button type="submit" class="btn-bublo btn-acao btn-contorno perigo"><i class="bi bi-trash"></i> Excluir</button>
+                  </form>
+                  <span class="texto-ajuda" th:unless="${ex.disponivel}">Devolva antes de excluir</span>
+                </td>
               </tr>
             </tbody>
           </table>
