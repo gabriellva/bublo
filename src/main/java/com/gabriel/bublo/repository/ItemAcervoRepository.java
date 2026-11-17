@@ -194,11 +194,11 @@ public class ItemAcervoRepository {
         }
         if (disponivel != null) {
             if (disponivel) {
-                where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = TRUE)");
+                where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = TRUE AND e.baixado = FALSE)");
             } else {
                 // Indisponível = tem exemplares, mas nenhum livre (título com 1 de 3 emprestado ainda está disponível).
-                where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id)" +
-                    " AND NOT EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = TRUE)");
+                where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.baixado = FALSE)" +
+                    " AND NOT EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = TRUE AND e.baixado = FALSE)");
             }
         }
 

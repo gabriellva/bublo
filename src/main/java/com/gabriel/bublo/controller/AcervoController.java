@@ -125,6 +125,19 @@ public class AcervoController {
         return "redirect:/acervo/" + id;
     }
 
+    @PostMapping("/{id}/exemplares/{exemplarId}/excluir")
+    public String excluirExemplar(@PathVariable Long id, @PathVariable Long exemplarId, RedirectAttributes redirect) {
+        try {
+            boolean apagado = acervoService.excluirExemplar(exemplarId, AuthUtil.usuarioAtual());
+            redirect.addFlashAttribute("sucesso", apagado
+                ? "Exemplar excluído."
+                : "Exemplar excluído do acervo. Como ele já foi emprestado antes, o histórico foi preservado.");
+        } catch (IllegalStateException e) {
+            redirect.addFlashAttribute("erro", e.getMessage());
+        }
+        return "redirect:/acervo/" + id;
+    }
+
     @PostMapping("/{id}/excluir")
     public String excluir(@PathVariable Long id, RedirectAttributes redirect) {
         try {

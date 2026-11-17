@@ -191,4 +191,76 @@ class AcervoServiceTest {
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("150");
     }
+
+    private com.gabriel.bublo.model.Exemplar exemplar(boolean disponivel, boolean baixado) {
+        com.gabriel.bublo.model.Exemplar ex = new com.gabriel.bublo.model.Exemplar();
+        ex.setId(50L);
+        ex.setItemAcervoId(7L);
+        ex.setTombamento("BA-000050");
+        ex.setDisponivel(disponivel);
+        ex.setBaixado(baixado);
+        when(exemplarRepository.buscarPorId(50L)).thenReturn(java.util.Optional.of(ex));
+        return ex;
+    }
+
+    @Test
+    @DisplayName("Exemplar nunca emprestado é apagado de vez")
+    void excluirExemplarSemHistorico() {
+        exemplar(true, false);
+        when(exemplarRepository.contarPorItem(7L)).thenReturn(3L);
+        when(exemplarRepository.temHistoricoDeEmprestimos(50L)).thenReturn(false);
+
+        boolean apagado = service.excluirExemplar(50L, "admin");
+
+        assertThat(apagado).isTrue();
+        verify(exemplarRepository).excluir(50L);
+        org.mockito.Mockito.verify(exemplarRepository, org.mockito.Mockito.never()).baixar(any(), any());
+    }
+
+    @Test
+    @DisplayName("Exemplar com histórico recebe baixa e o histórico é preservado")
+    void excluirExemplarComHistoricoDaBaixa() {
+        exemplar(true, false);
+        when(exemplarRepository.contarPorItem(7L)).thenReturn(3L);
+        when(exemplarRepository.temHistoricoDeEmprestimos(50L)).thenReturn(true);
+
+        boolean apagado = service.excluirExemplar(50L, "admin");
+
+        assertThat(apagado).isFalse();
+        verify(exemplarRepository).baixar(org.mockito.ArgumentMatchers.eq(50L), any());
+        org.mockito.Mockito.verify(exemplarRepository, org.mockito.Mockito.never()).excluir(any());
+    }
+
+    @Test
+    @DisplayName("Exemplar emprestido não pode ser excluído")
+    void exemplarEmprestidoNaoSai() {
+        exemplar(false, false);
+
+        assertThatThrownBy(() -> service.excluirExemplar(50L, "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("emprestado");
+        org.mockito.Mockito.verify(exemplarRepository, org.mockito.Mockito.never()).excluir(any());
+    }
+
+    @Test
+    @DisplayName("Exemplar já excluído não pode ser excluído de novo")
+    void exemplarJaBaixado() {
+        exemplar(false, true);
+
+        assertThatThrownBy(() -> service.excluirExemplar(50L, "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("já foi excluído");
+    }
+
+    @Test
+    @DisplayName("Último exemplar com reservas aguardando não pode ser excluído")
+    void ultimoExemplarComReservas() {
+        exemplar(true, false);
+        when(exemplarRepository.contarPorItem(7L)).thenReturn(1L);
+        when(itemAcervoRepository.existeReservaPendente(7L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.excluirExemplar(50L, "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("reservas");
+    }
 }
