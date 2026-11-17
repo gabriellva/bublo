@@ -15,7 +15,7 @@
 | `LeitorServiceTest` | E-mail duplicado rejeitado; e-mail disponível permite cadastro com matrícula automática; resultado de importação CSV. |
 | `EmprestimoServiceTest` | Fila de reservas, prazo máximo, digital e material excluído, devolução concorrente, taxa zero, renovação e cancelamento. |
 | `ReservaServiceTest` | Reserva com fila, título já emprestado, material excluído, expiração. |
-| `AcervoServiceTest` | ISBN em branco, digital/excluído sem exemplares, prefixo de tombamento. |
+| `AcervoServiceTest` | ISBN em branco, digital/excluído sem exemplares, prefixo de tombamento, tipo imutável, autor duplicado, exclusão de exemplar (apagado, baixa com histórico, emprestado, já baixado, último com reservas). |
 | `BubloApplicationTests` | Classe da aplicação instanciável. |
 
 ## Execução
@@ -24,7 +24,7 @@
 mvn test
 ```
 
-Resultado esperado: `Tests run: 69, Failures: 0, Errors: 0`.
+Resultado esperado: `Tests run: 91, Failures: 0, Errors: 0`.
 
 ## Cobertura
 
