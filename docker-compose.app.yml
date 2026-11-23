@@ -1,4 +1,7 @@
-# Run with: docker compose -p bublo-work -f docker-compose.app.yml up -d --build
+# Run with: docker compose -f docker-compose.app.yml up -d --build
+# O nome do projeto fica fixo aqui (nao precisa de -p): containers, rede e volume levam o prefixo "bublo".
+name: bublo
+
 services:
   postgres:
     image: postgres:15-alpine
