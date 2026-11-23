@@ -67,6 +67,9 @@
       const graficos = [];
       const css = (nome) => getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
 
+      const semMovimento = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const animacao = semMovimento ? false : { duration: 600, easing: 'easeOutQuart' };
+
       function aplicarTema() {
         Chart.defaults.color = css('--bublo-texto-suave');
         Chart.defaults.borderColor = css('--bublo-borda');
@@ -78,7 +81,7 @@
         graficos.push(new Chart(linha, {
           type: 'line',
           data: { labels: dados.rotulosMes, datasets: [{ label: 'Empréstimos', data: dados.valoresMes, borderColor: '#c9a227', backgroundColor: 'rgba(201,162,39,0.2)', tension: 0.3, fill: true }] },
-          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+          options: { responsive: true, animation: animacao, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
         }));
       }
       const pizza = document.getElementById('graficoPizza');
@@ -86,7 +89,7 @@
         graficos.push(new Chart(pizza, {
           type: 'doughnut',
           data: { labels: dados.rotulosTipo, datasets: [{ data: dados.valoresTipo, backgroundColor: paleta, borderColor: css('--bublo-superficie') }] },
-          options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+          options: { responsive: true, animation: animacao, plugins: { legend: { position: 'bottom' } } }
         }));
       }
       aplicarTema();

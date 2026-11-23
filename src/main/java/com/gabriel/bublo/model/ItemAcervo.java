@@ -18,6 +18,8 @@ public abstract class ItemAcervo {
     private String idioma;
     private Categoria categoria;
     private java.util.List<Autor> autores;
+    private boolean temCapa;
+    private Long capaVersao;
 
     public ItemAcervo() {
         this.autores = new java.util.ArrayList<>();
@@ -101,6 +103,22 @@ public abstract class ItemAcervo {
 
     public void setCategoria(Categoria categoria) {
         this.categoria = categoria;
+    }
+
+    public boolean isTemCapa() {
+        return temCapa;
+    }
+
+    public void setTemCapa(boolean temCapa) {
+        this.temCapa = temCapa;
+    }
+
+    public Long getCapaVersao() {
+        return capaVersao;
+    }
+
+    public void setCapaVersao(Long capaVersao) {
+        this.capaVersao = capaVersao;
     }
 
     public java.util.List<Autor> getAutores() {

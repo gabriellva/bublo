@@ -1,6 +1,5 @@
 package com.gabriel.bublo.service;
 
-import com.gabriel.bublo.dto.ConfiguracaoDTO;
 import com.gabriel.bublo.dto.ItemAcervoDTO;
 import com.gabriel.bublo.dto.Paginacao;
 import com.gabriel.bublo.model.Autor;
@@ -34,19 +33,17 @@ public class AcervoService {
     private static final int QUANTIDADE_MAXIMA_LOTE = 100;
     private static final String IDIOMA_PADRAO = "Português";
     private static final int TAMANHO_MAXIMO_AUTOR = 150;
+    private static final long TAMANHO_MAXIMO_CAPA = 2L * 1024 * 1024;
 
     private final ItemAcervoRepository itemAcervoRepository;
     private final ExemplarRepository exemplarRepository;
-    private final ConfiguracaoService configuracaoService;
     private final AuditoriaRepository auditoriaRepository;
 
     public AcervoService(ItemAcervoRepository itemAcervoRepository,
                          ExemplarRepository exemplarRepository,
-                         ConfiguracaoService configuracaoService,
                          AuditoriaRepository auditoriaRepository) {
         this.itemAcervoRepository = itemAcervoRepository;
         this.exemplarRepository = exemplarRepository;
-        this.configuracaoService = configuracaoService;
         this.auditoriaRepository = auditoriaRepository;
     }
 
@@ -64,7 +61,25 @@ public class AcervoService {
 
     @Transactional
     public ItemAcervoDTO salvar(ItemAcervoDTO dto, String adminUsuario) {
+        return salvar(dto, null, false, adminUsuario);
+    }
+
+    /**
+     * Salva o material e, opcionalmente, a capa: um arquivo novo substitui a capa atual;
+     * {@code removerCapa} apaga a capa atual (ignorado se um arquivo novo foi enviado).
+     */
+    @Transactional
+    public ItemAcervoDTO salvar(ItemAcervoDTO dto, org.springframework.web.multipart.MultipartFile capa,
+                                boolean removerCapa, String adminUsuario) {
         boolean novo = dto.getId() == null;
+        boolean temArquivo = capa != null && !capa.isEmpty();
+        // Valida a imagem antes de gravar qualquer coisa.
+        byte[] dadosCapa = null;
+        String tipoCapa = null;
+        if (temArquivo) {
+            dadosCapa = lerCapa(capa);
+            tipoCapa = tipoDaImagem(dadosCapa);
+        }
         if (!novo) {
             // Trocar o tipo apagaria campos próprios (ISBN, ISSN...) e poderia deixar exemplares em material digital.
             ItemAcervo atual = itemAcervoRepository.buscarPorId(dto.getId())
@@ -83,9 +98,52 @@ public class AcervoService {
             }
             throw e;
         }
+        if (temArquivo) {
+            itemAcervoRepository.salvarCapa(item.getId(), dadosCapa, tipoCapa);
+        } else if (removerCapa && !novo) {
+            itemAcervoRepository.removerCapa(item.getId());
+        }
+        if (temArquivo || removerCapa) {
+            item = itemAcervoRepository.buscarPorId(item.getId()).orElse(item);
+        }
         auditoriaRepository.registrar(adminUsuario, novo ? "CADASTRO_MATERIAL" : "EDICAO_MATERIAL", "Acervo",
-            "Material #" + item.getId(), null, item.getTitulo(), null);
+            "Material #" + item.getId(), null, item.getTitulo() + (temArquivo ? " (capa enviada)" : removerCapa ? " (capa removida)" : ""), null);
         return toDTO(item);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<ItemAcervoRepository.Capa> buscarCapa(Long itemId) {
+        return itemAcervoRepository.buscarCapa(itemId);
+    }
+
+    private byte[] lerCapa(org.springframework.web.multipart.MultipartFile arquivo) {
+        if (arquivo.getSize() > TAMANHO_MAXIMO_CAPA) {
+            throw new IllegalStateException("A capa deve ter no máximo 2 MB.");
+        }
+        try {
+            return arquivo.getBytes();
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Não foi possível ler a imagem da capa.");
+        }
+    }
+
+    /**
+     * Descobre o tipo pelos primeiros bytes do arquivo (e não pelo nome ou pelo Content-Type, que o
+     * cliente controla). Só JPG, PNG e WebP: SVG ficou de fora porque pode carregar script.
+     */
+    static String tipoDaImagem(byte[] b) {
+        if (b.length >= 3 && (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8 && (b[2] & 0xFF) == 0xFF) {
+            return "image/jpeg";
+        }
+        if (b.length >= 8 && (b[0] & 0xFF) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G'
+            && b[4] == 0x0D && b[5] == 0x0A && b[6] == 0x1A && b[7] == 0x0A) {
+            return "image/png";
+        }
+        if (b.length >= 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F'
+            && b[8] == 'W' && b[9] == 'E' && b[10] == 'B' && b[11] == 'P') {
+            return "image/webp";
+        }
+        throw new IllegalStateException("A capa deve ser uma imagem JPG, PNG ou WebP.");
     }
 
     @Transactional(readOnly = true)
@@ -143,7 +201,7 @@ public class AcervoService {
         if (item.getTipo() == TipoMaterial.DIGITAL) {
             throw new IllegalStateException("Publicações digitais não possuem exemplares físicos.");
         }
-        exemplarRepository.salvarLote(item, quantidade, prefixoTombamento());
+        exemplarRepository.salvarLote(item, quantidade);
         auditoriaRepository.registrar(adminUsuario, "CADASTRO_EXEMPLAR", "Acervo", "Material #" + itemId,
             null, quantidade + " exemplar(es) de " + item.getTitulo(), null);
     }
@@ -196,12 +254,6 @@ public class AcervoService {
         itemAcervoRepository.deletar(id);
         auditoriaRepository.registrar(adminUsuario, "EXCLUSAO_MATERIAL", "Acervo", "Material #" + id,
             item.getTitulo(), null, justificativa);
-    }
-
-    private String prefixoTombamento() {
-        ConfiguracaoDTO cfg = configuracaoService.buscar("prefixo_tombamento");
-        String valor = cfg != null && cfg.getValor() != null ? cfg.getValor().trim() : "";
-        return valor.matches("[A-Za-z]{1,10}") ? valor.toUpperCase() : ExemplarRepository.PREFIXO_PADRAO;
     }
 
     private ItemAcervo construirItem(ItemAcervoDTO dto) {
@@ -288,6 +340,8 @@ public class AcervoService {
         dto.setTipo(item.getTipo().name());
         dto.setTipoRotulo(item.getTipo().getLabel());
         dto.setTitulo(item.getTitulo());
+        dto.setTemCapa(item.isTemCapa());
+        dto.setCapaVersao(item.getCapaVersao());
         dto.setDescricao(item.getDescricao());
         dto.setEditora(item.getEditora());
         dto.setAno(item.getAno());

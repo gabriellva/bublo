@@ -12,20 +12,11 @@
     <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1>Configurações</h1>
-        <p class="subtitulo">Empréstimos, multas, reservas e dados da biblioteca</p>
+        <p class="subtitulo">Limites, prazos e taxas aplicados aos empréstimos, multas e reservas</p>
       </div>
 
       <form th:action="@{/configuracoes/salvar}" method="post">
         <div class="form-grid">
-          <div>
-            <label class="form-label" for="nome_instituicao">Nome da instituição</label>
-            <input type="text" id="nome_instituicao" name="nome_instituicao" class="form-control" maxlength="150" th:value="${valores['nome_instituicao']}" required />
-          </div>
-          <div>
-            <label class="form-label" for="prefixo_tombamento">Prefixo dos tombamentos</label>
-            <input type="text" id="prefixo_tombamento" name="prefixo_tombamento" class="form-control" th:value="${valores['prefixo_tombamento']}" required pattern="[A-Za-z]{1,10}" maxlength="10" autocapitalize="characters" />
-            <p class="texto-ajuda">De 1 a 10 letras. Vale para os próximos exemplares; os atuais não mudam.</p>
-          </div>
           <div>
             <label class="form-label" for="limite_alunos">Limite de exemplares por aluno</label>
             <input type="number" id="limite_alunos" name="limite_alunos" class="form-control" min="1" max="50" inputmode="numeric" th:value="${valores['limite_alunos']}" required />

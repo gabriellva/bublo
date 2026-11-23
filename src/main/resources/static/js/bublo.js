@@ -36,8 +36,12 @@ const Bublo = (function () {
       if (icone) icone.className = this.atual() === "escuro" ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
     },
     alternar: function () {
-      document.documentElement.classList.add("tema-animado");
+      const raiz = document.documentElement;
+      raiz.classList.add("tema-animado");
       this.aplicar(this.atual() === "claro" ? "escuro" : "claro", true);
+      // A transição de cores vale só durante a troca; depois não pode interferir nas demais animações.
+      clearTimeout(this.fimTransicao);
+      this.fimTransicao = setTimeout(() => raiz.classList.remove("tema-animado"), 400);
     },
     init: function () {
       const btn = document.getElementById("btn-tema");

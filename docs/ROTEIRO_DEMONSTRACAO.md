@@ -6,7 +6,7 @@ Duração sugerida: 5 a 10 minutos. Ambiente: dados de demonstração carregados
 
 | Passo | Ação | O que demonstrar |
 |-------|------|------------------|
-| 1 | Acessar `http://localhost:8080/login` | Tela dividida, tema vinho, símbolo de livro, nome da instituição configurável |
+| 1 | Acessar `http://localhost:8080/login` | Tela dividida, tema vinho, símbolo de livro, nome da instituição |
 | 2 | Login (admin / senha do .env) | Spring Security, BCrypt, sessão por cookie |
 | 3 | Dashboard | 9 indicadores, gráficos (linha e rosca), alternar tema claro/escuro |
 | 4 | Acervo → buscar | Cards, filtros avançados, paginação, ordenação A–Z |

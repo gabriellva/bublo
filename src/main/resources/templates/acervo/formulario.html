@@ -15,7 +15,7 @@
         <p class="subtitulo">Item do acervo bibliográfico</p>
       </div>
 
-      <form th:action="@{/acervo}" th:object="${item}" method="post" novalidate>
+      <form th:action="@{/acervo}" th:object="${item}" method="post" enctype="multipart/form-data" novalidate>
         <input type="hidden" th:field="*{id}" />
 
         <div class="form-grid">
@@ -102,6 +102,26 @@
           </div>
         </div>
 
+        <div class="mt-4 capa-campo">
+          <div class="capa-previa" id="capaPrevia">
+            <!-- th:replace tem precedência sobre th:if no mesmo elemento; por isso o if fica num bloco externo -->
+            <th:block th:if="${item.id != null}">
+              <th:block th:replace="~{layout/componentes :: capa(${item})}"></th:block>
+            </th:block>
+            <div class="capa" th:if="${item.id == null}">
+              <div class="capa-gerada capa-livro" aria-hidden="true"><i class="bi bi-image"></i><span class="capa-titulo">Sem capa</span></div>
+            </div>
+          </div>
+          <div class="capa-controles">
+            <label class="form-label" for="capa">Foto de capa <span class="texto-ajuda">(opcional)</span></label>
+            <input type="file" id="capa" name="capa" class="form-control" accept="image/jpeg,image/png,image/webp" />
+            <p class="texto-ajuda">JPG, PNG ou WebP, até 2 MB. Sem foto, o sistema mostra uma capa gerada com o título.</p>
+            <label class="opcao-simples" th:if="${item.id != null and item.temCapa}">
+              <input type="checkbox" name="removerCapa" value="true" id="removerCapa" /> Remover a capa atual
+            </label>
+          </div>
+        </div>
+
         <div class="mt-4">
           <label class="form-label" for="novoAutor">Autores</label>
           <p class="texto-ajuda">Digite o nome e pressione Enter ou clique em "Adicionar".</p>
@@ -182,6 +202,38 @@
         entrada.value = '';
         desenharAutores();
       }
+
+      // Capa: confere tipo e tamanho antes de enviar e mostra uma prévia da imagem escolhida.
+      const campoCapa = document.getElementById('capa');
+      const previa = document.getElementById('capaPrevia');
+      const remover = document.getElementById('removerCapa');
+      const previaOriginal = previa.innerHTML;
+      let urlPrevia = null;
+      campoCapa.addEventListener('change', () => {
+        if (urlPrevia) { URL.revokeObjectURL(urlPrevia); urlPrevia = null; }
+        const arquivo = campoCapa.files[0];
+        if (!arquivo) { previa.innerHTML = previaOriginal; return; }
+        const tiposOk = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!tiposOk.includes(arquivo.type)) {
+          Bublo.Toasts.erro('Formato não aceito', 'Use uma imagem JPG, PNG ou WebP.');
+          campoCapa.value = ''; previa.innerHTML = previaOriginal; return;
+        }
+        if (arquivo.size > 2 * 1024 * 1024) {
+          Bublo.Toasts.erro('Imagem muito grande', 'A capa deve ter no máximo 2 MB.');
+          campoCapa.value = ''; previa.innerHTML = previaOriginal; return;
+        }
+        urlPrevia = URL.createObjectURL(arquivo);
+        previa.textContent = '';
+        const quadro = document.createElement('div');
+        quadro.className = 'capa';
+        const img = document.createElement('img');
+        img.className = 'capa-imagem';
+        img.alt = 'Prévia da capa';
+        img.src = urlPrevia;
+        quadro.appendChild(img);
+        previa.appendChild(quadro);
+        if (remover) remover.checked = false;
+      });
 
       document.getElementById('btnAddAutor').addEventListener('click', adicionarAutor);
       entrada.addEventListener('keydown', (e) => {

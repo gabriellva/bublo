@@ -46,7 +46,7 @@ O que o sistema faz:
 | Multas | Cobrar, receber pagamentos (parciais ou totais) e estornar |
 | Relatórios | Exportar CSV/XLSX |
 | Notificações | Avisos persistidos no banco e entregues em tempo real por WebSocket |
-| Configurações | Parâmetros do sistema (limites, prazos, taxa de multa) com justificativa e desfazer |
+| Configurações | Parâmetros numéricos do sistema (limites, prazos, taxa de multa) com justificativa e desfazer |
 | Auditoria | Registro de quem fez o quê e quando |
 | Dashboard | Indicadores e gráficos |
 
@@ -58,7 +58,7 @@ O que o sistema faz:
 - Banco **PostgreSQL**, esquema versionado com **Flyway**.
 - **Herança real** no domínio (`ItemAcervo` → 4 tipos; `Leitor` → 2 tipos).
 - **Concorrência tratada no banco** (`SELECT ... FOR UPDATE`, *advisory lock*, índices únicos parciais).
-- **91 testes unitários** (JUnit 5 + Mockito).
+- **98 testes unitários** (JUnit 5 + Mockito).
 
 ---
 
@@ -217,7 +217,7 @@ bublo/
    │   ├─ db/migration/                V1, V2, V3 (SQL do Flyway)
    │   ├─ templates/                   páginas Thymeleaf
    │   └─ static/                      CSS, JS e bibliotecas locais
-   └─ test/                            91 testes unitários
+   └─ test/                            98 testes unitários
 ```
 
 ### 5.1 Tabela de rotas (URLs)
@@ -226,7 +226,7 @@ bublo/
 |---|---|
 | `AuthController` | `GET /login`, `GET /` (redireciona), `GET /conta`, `POST /troca-senha` |
 | `DashboardController` | `GET /dashboard` |
-| `AcervoController` | `GET /acervo`, `/acervo/novo`, `/acervo/{id}`, `/acervo/{id}/editar`; `POST /acervo`, `/acervo/{id}/exemplar`, `/acervo/{id}/exemplares/{exemplarId}/excluir`, `/acervo/{id}/excluir`; `GET /acervo/sugestoes-autores` (JSON) |
+| `AcervoController` | `GET /acervo`, `/acervo/novo`, `/acervo/{id}`, `/acervo/{id}/editar`; `POST /acervo`, `/acervo/{id}/exemplar`, `/acervo/{id}/exemplares/{exemplarId}/excluir`, `/acervo/{id}/excluir`; `GET /acervo/{id}/capa` (imagem), `GET /acervo/sugestoes-autores` (JSON) |
 | `LeitorController` | `GET /leitores`, `/leitores/novo`, `/leitores/{id}`, `/leitores/{id}/editar`, `/leitores/modelo-csv`; `POST /leitores`, `/leitores/{id}/inativar`, `/leitores/importar` |
 | `EmprestimoController` | `GET /emprestimos`, `/emprestimos/novo`, `/emprestimos/restricao/{leitorId}` (JSON); `POST /emprestimos`, `/emprestimos/{id}/renovar`, `/emprestimos/{id}/cancelar` |
 | `DevolucaoController` | `GET /devolucoes`; `POST /devolucoes/{id}/devolver` |
@@ -278,7 +278,7 @@ public class BubloApplication {
 2. O Spring cria os beans.
 3. O `DemoDataConfig` (um `CommandLineRunner`) roda **uma vez** na partida:
    - cria o administrador, **se não existir**. Se `ADMIN_USERNAME/ADMIN_PASSWORD` não foram definidos, cria o usuário `admin` com uma **senha aleatória** e a imprime **uma única vez no log**;
-   - se `demo.data.enabled=true` **e** o acervo estiver vazio, carrega 13 materiais (10 livros, 1 revista, 1 DVD, 1 publicação digital) com seus exemplares, 15 leitores, 2 empréstimos de exemplo (um deles já atrasado) e as 8 configurações iniciais.
+   - se `demo.data.enabled=true` **e** o acervo estiver vazio, carrega 13 materiais (10 livros, 1 revista, 1 DVD, 1 publicação digital) com seus exemplares, 15 leitores, 2 empréstimos de exemplo (um deles já atrasado) e as 6 configurações iniciais.
 4. O `ReservaScheduler` executa `expirar()` assim que a aplicação fica pronta (`ApplicationReadyEvent`) e depois **a cada hora, no minuto 5** (`@Scheduled(cron = "0 5 * * * *")` — o cron do Spring tem 6 campos: segundo, minuto, hora, dia, mês, dia da semana).
 
 ### 6.4 `ReservaScheduler`
@@ -357,6 +357,7 @@ categorias 1 ───< item_acervo >───< item_acervo_autor >─── aut
 | `V1__schema.sql` | Cria todas as tabelas, restrições e índices. |
 | `V2__estorno_e_indices.sql` | Adiciona colunas de estorno em `pagamentos` e transforma os índices de ISBN/ISSN em parciais (só ativos). |
 | `V3__baixa_de_exemplares.sql` | Adiciona `baixado`, `baixado_em`, `baixa_motivo` em `exemplares`. |
+| `V4__capa_do_item.sql` | Adiciona `capa` (BYTEA), `capa_tipo` e `capa_atualizada_em` em `item_acervo`. |
 
 **Regra de ouro:** uma migration já aplicada **nunca é editada**; mudanças novas viram `V4`, `V5`... O Flyway guarda o histórico em uma tabela própria e compara.
 
@@ -687,6 +688,7 @@ A estrutura (Controller → Service → Repository → Template) é **a mesma**.
 | **Duplicidade de ISBN/ISSN** | O serviço captura `DuplicateKeyException` e, se o índice violado é o de ISBN/ISSN, converte em mensagem amigável. A regra "só vale entre ativos" está no **índice parcial** (V2). |
 | **Exclusão lógica** | `excluir` faz `UPDATE item_acervo SET ativo = FALSE`. Bloqueia se houver empréstimo ativo ou reserva aguardando. |
 | **Validações de DTO** | `ItemAcervoDTO` tem `@Min/@Max` para ano, páginas, duração e volume, e `@Pattern` para ISBN/ISSN. |
+| **Capa (opcional)** | O formulário é `multipart/form-data`. O arquivo vira `byte[]` no serviço, que descobre o tipo pelos **primeiros bytes** (JPG, PNG ou WebP; SVG é recusado porque pode carregar script) e limita a 2 MB. A imagem fica no próprio banco (coluna `BYTEA`) e é servida por `GET /acervo/{id}/capa`; o `?v=` da URL muda quando a capa é trocada, para o navegador não usar a antiga. Sem foto, a tela mostra uma **capa gerada** com o título (cor por tipo). |
 | **Sem matrícula** | O que é gerado automaticamente aqui é o **tombamento** do exemplar (a seguir). |
 
 ### 12.2 Cadastro de exemplares (dentro do acervo)
@@ -694,7 +696,7 @@ A estrutura (Controller → Service → Repository → Template) é **a mesma**.
 | Diferença | Detalhe |
 |---|---|
 | **Em lote** | `POST /acervo/{id}/exemplar?quantidade=N` — de 1 a 100. `salvarLote` cria todos **ou nenhum** (a transação do serviço garante isso). |
-| **Tombamento** | Formato `PREFIXO-000001` (6 dígitos). Sequencial **global** (não por título), **nunca reaproveitado**. O prefixo vem da configuração `prefixo_tombamento` (1–10 letras; se inválido, usa `BA`). |
+| **Tombamento** | Formato `PREFIXO-000001` (6 dígitos). Sequencial **global** (não por título), **nunca reaproveitado**. O prefixo é fixo (`BA`, constante `ExemplarRepository.PREFIXO_PADRAO`); não é mais configurável. |
 | **Lock explícito** | Antes de calcular `MAX + 1`, executa `pg_advisory_xact_lock(7001)`. Sem isso, dois cadastros simultâneos poderiam calcular o mesmo número. |
 | **Material digital não tem exemplares** | O serviço recusa. |
 | **Excluir vs. baixar** | Exemplar **sem** histórico de empréstimos é **apagado** (`DELETE`). Exemplar **com** histórico recebe **baixa** (`baixado = TRUE`): some de listas e contagens, mas o histórico e o tombamento permanecem (a chave estrangeira impediria apagar). Exemplar **emprestado** não pode sair. Não se exclui o último exemplar de um título com reservas aguardando. |
@@ -715,7 +717,7 @@ A estrutura (Controller → Service → Repository → Template) é **a mesma**.
 |---|---|
 | **Modelo chave-valor** | Tabela `configuracoes(chave, valor)`; **não há uma coluna por parâmetro**. |
 | **Justificativa obrigatória** | Toda alteração exige o motivo, que vai para a auditoria. |
-| **Validação por chave** | Inteiros entre 1 e o máximo (limites e prazos até 50/365; retirada de reserva até 30); prefixo com 1–10 letras; taxa ≥ 0, até 2 casas e ≤ R$ 1.000. |
+| **Validação por chave** | Inteiros entre 1 e o máximo (limites e prazos até 50/365; retirada de reserva até 30); taxa ≥ 0, até 2 casas e ≤ R$ 1.000. |
 | **Desfazer a última alteração** | Lê a última linha de auditoria do módulo `Configuracoes`; só reverte se for `ALTERACAO_CONFIGURACAO` com valor "antes". Depois de uma reversão não dá para reverter de novo. |
 | **Upsert** | `INSERT ... ON CONFLICT (chave) DO UPDATE` — insere ou atualiza numa instrução. |
 | **Vale para operações novas** | O valor é lido na hora de cada operação (`buscarInteiro("limite_alunos", 3)`); não altera o que já foi gravado. |
@@ -863,7 +865,7 @@ Pontos a destacar:
 
 - `GlobalExceptionHandler` (`@ControllerAdvice`): `IllegalStateException`/`IllegalArgumentException` → página de erro 400 com a mensagem; `NoResourceFoundException` → 404; arquivo grande → 413; qualquer outra → 500 genérico (e o detalhe vai só para o log).
 - `ErroController` cobre as rotas de erro do próprio contêiner (`/error`).
-- `GlobalModelAdvice` injeta em **todas** as páginas: usuário logado, contagem de notificações não lidas e nome da instituição.
+- `GlobalModelAdvice` injeta em **todas** as páginas: usuário logado, contagem de notificações não lidas e o nome da instituição (fixo: "Biblioteca Acadêmica").
 
 ---
 
@@ -923,7 +925,7 @@ Bootstrap, Bootstrap Icons e Chart.js estão em `static/lib/`. O sistema funcion
 | Arquivo | Testes | O que cobre |
 |---|---|---|
 | `EmprestimoServiceTest` | 19 | multa por atraso, renovação, limites, bloqueio por multa, fila de reservas |
-| `AcervoServiceTest` | 17 | cadastro por tipo, exemplares, exclusão/baixa, ISBN duplicado |
+| `AcervoServiceTest` | 24 | cadastro por tipo, exemplares, exclusão/baixa, ISBN duplicado, validação da capa |
 | `LeitorServiceTest` | 15 | CPF, e-mail, tipo imutável, inativação, importação CSV |
 | `ConfiguracaoServiceTest` | 13 | validação por chave, justificativa, reversão |
 | `MultaServiceTest` | 12 | pagamento integral/parcial, excesso, estorno |
