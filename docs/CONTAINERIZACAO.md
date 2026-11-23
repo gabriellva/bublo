@@ -52,7 +52,7 @@ Build em dois stages:
 Subir (o primeiro build leva cerca de 2,5 minutos):
 
 ```bash
-docker compose -p bublo-work -f docker-compose.app.yml up -d --build
+docker compose -f docker-compose.app.yml up -d --build
 ```
 
 Acessar: <http://localhost:8090> (usuário `admin`, senha `Mudar@1234`).
@@ -60,16 +60,16 @@ Acessar: <http://localhost:8090> (usuário `admin`, senha `Mudar@1234`).
 Derrubar mantendo o banco:
 
 ```bash
-docker compose -p bublo-work -f docker-compose.app.yml down
+docker compose -f docker-compose.app.yml down
 ```
 
 Derrubar apagando também o banco:
 
 ```bash
-docker compose -p bublo-work -f docker-compose.app.yml down -v
+docker compose -f docker-compose.app.yml down -v
 ```
 
-O parâmetro `-p bublo-work` dá um prefixo próprio a containers, rede e volume, evitando colisão com outros projetos Docker na mesma máquina.
+O arquivo define `name: bublo`, então não é preciso passar `-p`: containers, rede e volume levam o prefixo `bublo` e ficam agrupados como um projeto só. Use sempre o mesmo `-f` no `up` e no `down`. Não suba este arquivo junto com o `docker-compose.yml` (só o banco): os dois definem o serviço `postgres` e, se usarem o mesmo nome de projeto, um recria o do outro.
 
 ## Testes
 
