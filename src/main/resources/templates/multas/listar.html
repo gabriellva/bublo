@@ -17,7 +17,7 @@
 
       <th:block th:replace="~{layout/componentes :: abas('/multas', ${aba}, 'Em aberto', 'Histórico')}"></th:block>
 
-      <div class="card-bublo p-3 mb-3">
+      <div class="card-bublo p-3 mb-3 painel-recolhivel" data-rotulo="Pesquisar" data-icone="bi-search">
         <form th:action="@{/multas}" method="get" class="form-grid" style="align-items:end;">
           <input type="hidden" name="aba" th:value="${aba}" />
           <div>

@@ -332,6 +332,54 @@ const Bublo = (function () {
     window.matchMedia("(min-width: 993px)").addEventListener("change", (e) => { if (e.matches) definir(false); });
   }
 
+  // ---------- Painéis recolhíveis: no celular a busca/importação some atrás de um botão ----------
+  function iniciarPaineisRecolhiveis() {
+    const paineis = Array.from(document.querySelectorAll(".painel-recolhivel"));
+    if (!paineis.length) return;
+    const barra = document.createElement("div");
+    barra.className = "barra-paineis";
+    paineis[0].before(barra);
+    const parametros = new URLSearchParams(window.location.search);
+    // Campos que não são filtro de verdade não contam como "filtro aplicado".
+    const ignorados = ["aba", "pagina", "tamanho", "ordenacao"];
+
+    paineis.forEach((painel, i) => {
+      if (!painel.id) painel.id = "painel-recolhivel-" + i;
+      const form = painel.querySelector("form");
+      const filtrado = !!form && Array.from(form.elements).some((el) =>
+        el.name && !ignorados.includes(el.name) && parametros.get(el.name));
+
+      const botao = document.createElement("button");
+      botao.type = "button";
+      botao.className = "btn-bublo btn-contorno btn-painel";
+      botao.setAttribute("aria-expanded", "false");
+      botao.setAttribute("aria-controls", painel.id);
+      const icone = document.createElement("i");
+      icone.className = "bi " + (painel.dataset.icone || "bi-search");
+      icone.setAttribute("aria-hidden", "true");
+      const rotulo = document.createElement("span");
+      rotulo.textContent = painel.dataset.rotulo || "Pesquisar";
+      botao.append(icone, rotulo);
+      if (filtrado) {
+        const ponto = document.createElement("span");
+        ponto.className = "ponto-filtro";
+        ponto.title = "Filtros aplicados";
+        botao.appendChild(ponto);
+      }
+      const seta = document.createElement("i");
+      seta.className = "bi bi-chevron-down seta";
+      seta.setAttribute("aria-hidden", "true");
+      botao.appendChild(seta);
+
+      painel.classList.add("recolhido");
+      botao.addEventListener("click", () => {
+        const aberto = painel.classList.toggle("recolhido") === false;
+        botao.setAttribute("aria-expanded", aberto ? "true" : "false");
+      });
+      barra.appendChild(botao);
+    });
+  }
+
   // ---------- Envio de formulários: feedback e proteção contra duplo clique ----------
   function iniciarEnvios() {
     document.addEventListener("submit", (e) => {
@@ -374,6 +422,7 @@ const Bublo = (function () {
     Confirmacoes.init();
     Notificacoes.init();
     iniciarMenuMobile();
+    iniciarPaineisRecolhiveis();
     iniciarEnvios();
     Toasts.exibirFlash();
   });

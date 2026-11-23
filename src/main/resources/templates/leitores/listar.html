@@ -18,7 +18,7 @@
         <a th:href="@{/leitores/novo}" class="btn-bublo"><i class="bi bi-person-plus"></i> Cadastrar leitor</a>
       </div>
 
-      <div class="card-bublo p-3 mb-3">
+      <div class="card-bublo p-3 mb-3 painel-recolhivel" data-rotulo="Pesquisar" data-icone="bi-search">
         <form th:action="@{/leitores}" method="get" class="form-grid" style="align-items:end;">
           <div>
             <label class="form-label" for="termo">Buscar (nome, e-mail ou matrícula)</label>
@@ -46,7 +46,7 @@
         </form>
       </div>
 
-      <div class="card-bublo p-3 mb-3">
+      <div class="card-bublo p-3 mb-3 painel-recolhivel" data-rotulo="Importar" data-icone="bi-upload">
         <form th:action="@{/leitores/importar}" method="post" enctype="multipart/form-data" class="form-grid" style="align-items:end;">
           <div>
             <label class="form-label" for="arquivo">Importar leitores (CSV, até 2 MB)</label>

@@ -471,15 +471,18 @@ table.tabela th {
   text-transform: uppercase;
   letter-spacing: 0.09em;
   font-weight: 700;
-  padding: 0.9rem 1rem;
+  padding: 0.9rem 0.85rem;
   text-align: left;
   border-bottom: 1px solid var(--bublo-borda);
   white-space: nowrap;
 }
-table.tabela td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--bublo-borda); font-size: 0.92rem; transition: background-color var(--t-rapido) ease; }
+table.tabela td { padding: 0.9rem 0.85rem; border-bottom: 1px solid var(--bublo-borda); font-size: 0.92rem; transition: background-color var(--t-rapido) ease; }
 table.tabela tr:last-child td { border-bottom: none; }
-table.tabela td.celula-acoes { white-space: nowrap; }
-table.tabela td.celula-acoes .acoes-linha { flex-wrap: nowrap; }
+/* Botões de ação: grade de duas colunas, todos do mesmo tamanho (quebram em linhas, nunca estouram a tabela) */
+table.tabela td.celula-acoes .acoes-linha { display: grid; grid-template-columns: repeat(2, minmax(5.4rem, 1fr)); gap: 0.35rem; }
+table.tabela td.celula-acoes .acoes-linha > * { min-width: 0; }
+table.tabela td.celula-acoes .acoes-linha .form-inline { display: block; }
+table.tabela td.celula-acoes .acoes-linha .btn-bublo { width: 100%; justify-content: center; text-align: center; }
 table.tabela tbody tr:hover td { background: var(--bublo-hover-linha); }
 table.tabela tbody tr td:first-child { box-shadow: inset 3px 0 0 transparent; transition: background-color var(--t-rapido) ease, box-shadow var(--t-normal) ease; }
 table.tabela tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--bublo-ouro); }
@@ -810,8 +813,11 @@ body.menu-aberto { overflow: hidden; }
 @media (max-width: 768px) {
   .login-area-editorial { display: none; }
   .login-area-form { flex: 1; }
+}
 
-  /* Tabelas viram cartões: cada linha é um bloco e cada célula mostra o rótulo da coluna (data-label). */
+/* Tabelas viram cartões já em tablet/janela estreita (até 1100px, com a sidebar visível o conteúdo
+   fica com ~700px e sete colunas não cabem): cada linha é um bloco e cada célula mostra o rótulo (data-label). */
+@media (max-width: 1100px) {
   .bloco-cartoes { border: 0; overflow: visible; box-shadow: none; background: transparent; }
   table.tabela-cartoes, table.tabela-cartoes tbody, table.tabela-cartoes tr, table.tabela-cartoes td { display: block; width: 100%; }
   table.tabela-cartoes thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
@@ -839,10 +845,16 @@ body.menu-aberto { overflow: hidden; }
   }
   table.tabela-cartoes td.celula-acoes { display: block; text-align: left; white-space: normal; }
   table.tabela-cartoes td.celula-acoes::before { display: none; }
-  table.tabela-cartoes td.celula-acoes .acoes-linha { flex-wrap: wrap; }
+  table.tabela-cartoes td.celula-acoes .acoes-linha { grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); }
   table.tabela-cartoes td.celula-acoes:not(:has(*)) { display: none; }
   table.tabela-cartoes tr:hover td { background: transparent; }
   table.tabela-cartoes tbody tr td:first-child, table.tabela-cartoes tbody tr:hover td:first-child { box-shadow: none; }
+}
+
+/* Em tablet (cartões com espaço de sobra) os cartões ficam em duas colunas */
+@media (min-width: 769px) and (max-width: 1100px) {
+  table.tabela-cartoes tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; align-items: start; }
+  table.tabela-cartoes tr { margin-bottom: 0; }
 }
 
 @media (max-width: 400px) {
@@ -1011,4 +1023,17 @@ input[type=file].form-control::file-selector-button:hover { background: var(--bu
   .btn-toggle-tema:hover i, .btn-toggle-tema:active, .capa-imagem, .capa-gerada > i { transform: none !important; }
   .toast, .toast:not(.show), .dropdown-notificacoes, .modal-confirmacao.fade .modal-dialog { transform: none !important; }
   .sidebar { transition-duration: 0.01ms !important; }
+}
+
+/* ---------- Painéis recolhíveis (busca/importação no celular) ---------- */
+.barra-paineis { display: none; gap: 0.5rem; margin-bottom: 0.75rem; }
+.btn-painel { position: relative; flex: 1 1 0; justify-content: flex-start; white-space: nowrap; }
+.btn-painel .seta { margin-left: auto; transition: transform var(--t-normal) var(--ease-out); }
+.btn-painel[aria-expanded="true"] { border-color: var(--bublo-destaque); color: var(--bublo-destaque); }
+.btn-painel[aria-expanded="true"] .seta { transform: rotate(180deg); }
+.btn-painel .ponto-filtro { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--bublo-ouro); box-shadow: 0 0 0 2px var(--bublo-superficie); }
+@media (max-width: 768px) {
+  .barra-paineis { display: flex; }
+  .painel-recolhivel.recolhido { display: none; }
+  .painel-recolhivel:not(.recolhido) { animation: entrar 200ms var(--ease-out) both; }
 }
