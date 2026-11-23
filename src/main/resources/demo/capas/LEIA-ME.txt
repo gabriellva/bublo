@@ -1,0 +1,7 @@
+Capas de demonstração (usadas só na carga inicial de dados de exemplo, DEMO_DATA_ENABLED=true).
+
+As imagens vêm do Open Library (https://openlibrary.org/dev/docs/api/covers) e pertencem às respectivas
+editoras e autores. Servem apenas para ilustrar a demonstração do sistema; não as use fora dela.
+
+O nome do arquivo é o título do material sem acentos e com hífens (ex.: "Dom Casmurro" -> dom-casmurro.jpg).
+Material sem arquivo aqui fica sem foto e a tela mostra uma capa gerada com o título.

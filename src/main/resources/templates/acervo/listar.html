@@ -18,7 +18,7 @@
         <a th:href="@{/acervo/novo}" class="btn-bublo"><i class="bi bi-plus-lg"></i> Cadastrar material</a>
       </div>
 
-      <div class="card-bublo p-3 mb-4">
+      <div class="card-bublo p-3 mb-4 painel-recolhivel" data-rotulo="Pesquisar" data-icone="bi-search">
         <form th:action="@{/acervo}" method="get" class="form-grid" style="align-items:end;">
           <div>
             <label class="form-label" for="termo">Buscar (título, ISBN/ISSN)</label>
@@ -64,9 +64,9 @@
         <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
           <div class="col" th:each="item : ${resultado.conteudo}">
             <div class="card-bublo h-100 d-flex flex-column">
-              <div style="height:140px;overflow:hidden;border-radius:10px 10px 0 0;border-bottom:1px solid var(--bublo-borda);">
-                <div class="capa-generica"><i class="bi bi-book"></i></div>
-              </div>
+              <a th:href="@{/acervo/{id}(id=${item.id})}" class="capa-link" tabindex="-1" aria-hidden="true">
+                <th:block th:replace="~{layout/componentes :: capa(${item})}"></th:block>
+              </a>
               <div class="p-3 d-flex flex-column flex-grow-1">
                 <span class="chip align-self-start mb-2" th:text="${item.tipoRotulo}">Livro</span>
                 <h4 th:text="${item.titulo}" style="margin:0 0 0.4rem 0;font-size:1rem;">Título</h4>

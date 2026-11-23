@@ -146,6 +146,7 @@ public class DemoDataConfig {
                     case DIGITAL -> digital;
                 });
                 itemAcervoRepository.salvar(m);
+                carregarCapaDemo(itemAcervoRepository, m);
                 if (m.getTipo() != com.gabriel.bublo.model.TipoMaterial.DIGITAL) {
                     int qtd = 1 + (numeroMaterial++ % 2);
                     exemplarRepository.salvarLote(m, qtd);
@@ -192,8 +193,6 @@ public class DemoDataConfig {
             }
 
             // 6. Configurações iniciais (ON CONFLICT já lida com idempotência)
-            configuracaoService.salvar("nome_instituicao", "Biblioteca Acadêmica", "sistema", "Carga inicial");
-            configuracaoService.salvar("prefixo_tombamento", "BA", "sistema", "Carga inicial");
             configuracaoService.salvar("limite_alunos", "3", "sistema", "Carga inicial");
             configuracaoService.salvar("limite_professores", "5", "sistema", "Carga inicial");
             configuracaoService.salvar("prazo_alunos", "7", "sistema", "Carga inicial");
@@ -202,6 +201,23 @@ public class DemoDataConfig {
             configuracaoService.salvar("prazo_retirada_reserva", "3", "sistema", "Carga inicial");
 
         };
+    }
+
+    /**
+     * Capa de demonstração: usa o arquivo em demo/capas/ cujo nome é o título sem acentos e com hífens
+     * (ex.: "Dom Casmurro" -> dom-casmurro.jpg). Sem o arquivo, o item fica sem foto e a tela mostra a capa gerada.
+     */
+    private void carregarCapaDemo(ItemAcervoRepository repository, ItemAcervo item) {
+        String nome = java.text.Normalizer.normalize(item.getTitulo(), java.text.Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "").toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+        var recurso = new org.springframework.core.io.ClassPathResource("demo/capas/" + nome + ".jpg");
+        if (!recurso.exists()) return;
+        try (var entrada = recurso.getInputStream()) {
+            repository.salvarCapa(item.getId(), entrada.readAllBytes(), "image/jpeg");
+        } catch (java.io.IOException e) {
+            org.slf4j.LoggerFactory.getLogger(DemoDataConfig.class)
+                .warn("Não foi possível carregar a capa de demonstração de '{}': {}", item.getTitulo(), e.getMessage());
+        }
     }
 
     private Categoria criarCategoria(ItemAcervoRepository repository, String nome) {

@@ -38,6 +38,8 @@ Acesse **Acervo → Cadastrar material**. Escolha o tipo (Livro, Revista, DVD, P
 
 Autores podem ser digitados e adicionados; nomes já existentes são reaproveitados automaticamente.
 
+**Foto de capa (opcional):** no mesmo formulário, escolha uma imagem JPG, PNG ou WebP de até 2 MB; uma prévia aparece ao lado. Ao editar o material, é possível trocar a foto ou marcar **Remover a capa atual**. Materiais sem foto mostram uma capa gerada com o título, em cor própria para cada tipo. Os livros dos dados de demonstração já vêm com a capa real.
+
 ### Exemplares
 Em **Detalhes do material**, cadastre exemplares individuais ou em lote. Cada exemplar recebe tombamento automático (`BA-000001`, `BA-000002`…). O tombamento não pode ser editado.
 
@@ -107,7 +109,7 @@ Acesse **Relatórios**. Cada relatório pode ser exportado em **CSV** (UTF-8, de
 
 ## 10. Configurações
 
-**Configurações:** aba com empréstimos, multas, reservas, notificações e dados da biblioteca. Alterações valem apenas para novas operações (não modificam empréstimos/multas/reservas existentes). Toda alteração exige justificativa e é registrada na auditoria. É possível desfazer a última alteração.
+**Configurações:** tela com os limites de exemplares e prazos de devolução (aluno e professor), a taxa diária de multa e o prazo de retirada de reservas. Alterações valem apenas para novas operações (não modificam empréstimos/multas/reservas existentes). Toda alteração exige justificativa e é registrada na auditoria. É possível desfazer a última alteração.
 
 ---
 

@@ -22,15 +22,13 @@ class AcervoServiceTest {
 
     private ItemAcervoRepository itemAcervoRepository;
     private ExemplarRepository exemplarRepository;
-    private ConfiguracaoService configuracaoService;
     private AcervoService service;
 
     @BeforeEach
     void setUp() {
         itemAcervoRepository = mock(ItemAcervoRepository.class);
         exemplarRepository = mock(ExemplarRepository.class);
-        configuracaoService = mock(ConfiguracaoService.class);
-        service = new AcervoService(itemAcervoRepository, exemplarRepository, configuracaoService,
+        service = new AcervoService(itemAcervoRepository, exemplarRepository,
             mock(com.gabriel.bublo.repository.AuditoriaRepository.class));
         when(itemAcervoRepository.salvar(any())).thenAnswer(inv -> {
             ItemAcervo item = inv.getArgument(0);
@@ -127,30 +125,13 @@ class AcervoServiceTest {
     }
 
     @Test
-    @DisplayName("Novos exemplares usam o prefixo de tombamento configurado")
-    void usaPrefixoConfigurado() {
+    @DisplayName("Novos exemplares cadastrados em lote usam o prefixo de tombamento padrão")
+    void usaPrefixoPadrao() {
         ItemAcervo item = itemDoTipo(com.gabriel.bublo.model.TipoMaterial.LIVRO, true);
-        com.gabriel.bublo.dto.ConfiguracaoDTO cfg = new com.gabriel.bublo.dto.ConfiguracaoDTO();
-        cfg.setChave("prefixo_tombamento");
-        cfg.setValor("lib");
-        when(configuracaoService.buscar("prefixo_tombamento")).thenReturn(cfg);
 
         service.cadastrarExemplaresLote(7L, 2, "admin");
 
-        verify(exemplarRepository).salvarLote(item, 2, "LIB");
-    }
-
-    @Test
-    @DisplayName("Prefixo inválido na configuração cai no padrão BA")
-    void prefixoInvalidoUsaPadrao() {
-        ItemAcervo item = itemDoTipo(com.gabriel.bublo.model.TipoMaterial.LIVRO, true);
-        com.gabriel.bublo.dto.ConfiguracaoDTO cfg = new com.gabriel.bublo.dto.ConfiguracaoDTO();
-        cfg.setValor("12!");
-        when(configuracaoService.buscar("prefixo_tombamento")).thenReturn(cfg);
-
-        service.cadastrarExemplaresLote(7L, 1, "admin");
-
-        verify(exemplarRepository).salvarLote(item, 1, "BA");
+        verify(exemplarRepository).salvarLote(item, 2);
     }
 
     @Test
@@ -262,5 +243,97 @@ class AcervoServiceTest {
         assertThatThrownBy(() -> service.excluirExemplar(50L, "admin"))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("reservas");
+    }
+
+    // ---------- Capa ----------
+
+    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0};
+
+    private org.springframework.mock.web.MockMultipartFile arquivo(String nome, String tipo, byte[] dados) {
+        return new org.springframework.mock.web.MockMultipartFile("capa", nome, tipo, dados);
+    }
+
+    @Test
+    @DisplayName("Capa PNG válida é gravada com o tipo detectado pelos bytes")
+    void capaValidaEhGravada() {
+        service.salvar(livro(), arquivo("capa.png", "image/png", PNG), false, "admin");
+
+        verify(itemAcervoRepository).salvarCapa(org.mockito.ArgumentMatchers.eq(1L), any(),
+            org.mockito.ArgumentMatchers.eq("image/png"));
+    }
+
+    @Test
+    @DisplayName("Arquivo que não é imagem é recusado mesmo com nome .png, e nada é gravado")
+    void arquivoQueNaoEImagemEhRecusado() {
+        byte[] texto = "isto nao e uma imagem".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        assertThatThrownBy(() -> service.salvar(livro(), arquivo("capa.png", "image/png", texto), false, "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("JPG, PNG ou WebP");
+        verify(itemAcervoRepository, org.mockito.Mockito.never()).salvar(any());
+        verify(itemAcervoRepository, org.mockito.Mockito.never()).salvarCapa(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("SVG é recusado como capa (pode carregar script)")
+    void svgEhRecusado() {
+        byte[] svg = "<svg xmlns='http://www.w3.org/2000/svg'></svg>".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        assertThatThrownBy(() -> service.salvar(livro(), arquivo("capa.svg", "image/svg+xml", svg), false, "admin"))
+            .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("Capa acima de 2 MB é recusada")
+    void capaGrandeEhRecusada() {
+        byte[] grande = new byte[2 * 1024 * 1024 + 1];
+        System.arraycopy(PNG, 0, grande, 0, PNG.length);
+
+        assertThatThrownBy(() -> service.salvar(livro(), arquivo("capa.png", "image/png", grande), false, "admin"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("2 MB");
+    }
+
+    @Test
+    @DisplayName("Sem arquivo e sem pedido de remoção, a capa atual não é tocada")
+    void semArquivoNaoMexeNaCapa() {
+        service.salvar(livro(), null, false, "admin");
+
+        verify(itemAcervoRepository, org.mockito.Mockito.never()).salvarCapa(any(), any(), any());
+        verify(itemAcervoRepository, org.mockito.Mockito.never()).removerCapa(any());
+    }
+
+    @Test
+    @DisplayName("Remover capa na edição apaga a imagem atual")
+    void removerCapaNaEdicao() {
+        itemDoTipo(com.gabriel.bublo.model.TipoMaterial.LIVRO, true);
+        ItemAcervoDTO dto = livro();
+        dto.setId(7L);
+
+        service.salvar(dto, null, true, "admin");
+
+        verify(itemAcervoRepository).removerCapa(1L);
+    }
+
+    @Test
+    @DisplayName("Arquivo novo vence o pedido de remoção")
+    void arquivoNovoVenceRemocao() {
+        itemDoTipo(com.gabriel.bublo.model.TipoMaterial.LIVRO, true);
+        ItemAcervoDTO dto = livro();
+        dto.setId(7L);
+
+        service.salvar(dto, arquivo("capa.png", "image/png", PNG), true, "admin");
+
+        verify(itemAcervoRepository).salvarCapa(any(), any(), any());
+        verify(itemAcervoRepository, org.mockito.Mockito.never()).removerCapa(any());
+    }
+
+    @Test
+    @DisplayName("Detecção de tipo pelos primeiros bytes: JPEG, PNG e WebP")
+    void deteccaoDeTipo() {
+        assertThat(AcervoService.tipoDaImagem(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0})).isEqualTo("image/jpeg");
+        assertThat(AcervoService.tipoDaImagem(PNG)).isEqualTo("image/png");
+        assertThat(AcervoService.tipoDaImagem("RIFF\0\0\0\0WEBPVP8 ".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1)))
+            .isEqualTo("image/webp");
     }
 }

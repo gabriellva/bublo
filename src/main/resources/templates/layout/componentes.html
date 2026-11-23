@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <body>
+  <!-- Capa do material: a foto enviada ou, sem foto, uma capa gerada com o título (cor por tipo). -->
+  <div th:fragment="capa(item)" class="capa">
+    <img th:if="${item.temCapa}" class="capa-imagem"
+         th:src="@{/acervo/{id}/capa(id=${item.id}, v=${item.capaVersao})}"
+         th:alt="${'Capa de ' + item.titulo}" loading="lazy" decoding="async" />
+    <div th:unless="${item.temCapa}" class="capa-gerada" th:classappend="${'capa-' + #strings.toLowerCase(item.tipo)}" aria-hidden="true">
+      <i class="bi" th:classappend="${item.tipo == 'LIVRO' ? 'bi-book' : item.tipo == 'REVISTA' ? 'bi-journal-text' : item.tipo == 'DVD' ? 'bi-disc' : 'bi-laptop'}"></i>
+      <span class="capa-titulo" th:text="${item.titulo}">Título</span>
+      <span class="capa-autor" th:if="${!item.autoresNomes.empty}" th:text="${item.autoresNomes[0]}">Autor</span>
+    </div>
+  </div>
+
   <!-- Abas "Em andamento" / "Histórico" de uma lista (parâmetro aba). -->
   <nav th:fragment="abas(url, aba, rotuloAndamento, rotuloHistorico)" class="abas" aria-label="Seções da lista">
     <a th:href="@{${url}(aba='andamento')}" th:classappend="${aba == 'andamento'} ? 'ativo'"

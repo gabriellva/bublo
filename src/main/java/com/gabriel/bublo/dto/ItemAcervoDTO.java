@@ -75,8 +75,14 @@ public class ItemAcervoDTO {
     private long totalExemplares;
     private String tipoRotulo;
     private long exemplaresDisponiveis;
+    private boolean temCapa;
+    private Long capaVersao;
 
     // Getters e setters
+    public boolean isTemCapa() { return temCapa; }
+    public void setTemCapa(boolean temCapa) { this.temCapa = temCapa; }
+    public Long getCapaVersao() { return capaVersao; }
+    public void setCapaVersao(Long capaVersao) { this.capaVersao = capaVersao; }
     public String getCategoriaNome() { return categoriaNome; }
     public void setCategoriaNome(String categoriaNome) { this.categoriaNome = categoriaNome; }
     public java.util.List<String> getAutoresNomes() { return autoresNomes; }

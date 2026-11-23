@@ -41,7 +41,7 @@ O Bublo permite ao administrador gerenciar:
 - **Multas e pagamentos:** cálculo automático na devolução, pagamento integral/parcial, estorno com justificativa e auditoria.
 - **Relatórios:** 9 relatórios com exportação CSV e Excel (.xlsx).
 - **Dashboard:** 9 indicadores, 2 gráficos (linha e rosca) e atividades recentes.
-- **Configurações:** empréstimos, multas, reservas, notificações e dados da biblioteca, com auditoria e reversão da última alteração.
+- **Configurações:** limites e prazos de empréstimo (aluno e professor), taxa diária de multa e prazo de retirada de reservas, com auditoria e reversão da última alteração.
 - **Notificações:** central com WebSocket (SockJS fallback), dropdown com contador, leitura e filtros.
 - **Auditoria:** registro cronológico de operações relevantes, somente leitura.
 - **Login:** único tipo de usuário (administrador), senhas com BCrypt, CSRF, sessão por cookie.
@@ -230,7 +230,7 @@ Na primeira execução, o administrador é criado a partir das variáveis de amb
 | Devoluções | `/devolucoes` | Registro de devolução com cálculo de multa |
 | Reservas | `/reservas` | Fila FIFO, cancelamento, expiração |
 | Multas | `/multas` | Pagamento integral/parcial, estorno |
-| Configurações | `/configuracoes` | Empréstimos, multas, reservas, biblioteca |
+| Configurações | `/configuracoes` | Limites, prazos, taxa de multa e prazo de reserva |
 | Notificações | `/notificacoes` | Central, leitura, filtros |
 | Auditoria | `/auditoria` | Log cronológico somente leitura |
 | Relatórios | `/relatorios` | 9 relatórios, exportação CSV e XLSX |

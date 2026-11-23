@@ -20,7 +20,7 @@
 
       <th:block th:replace="~{layout/componentes :: abas('/reservas', ${aba}, 'Aguardando', 'Histórico')}"></th:block>
 
-      <div class="card-bublo p-3 mb-3">
+      <div class="card-bublo p-3 mb-3 painel-recolhivel" data-rotulo="Pesquisar" data-icone="bi-search">
         <form th:action="@{/reservas}" method="get" class="form-grid" style="align-items:end;">
           <input type="hidden" name="aba" th:value="${aba}" />
           <div>

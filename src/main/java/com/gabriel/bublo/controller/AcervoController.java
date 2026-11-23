@@ -7,6 +7,10 @@ import com.gabriel.bublo.model.TipoMaterial;
 import com.gabriel.bublo.security.AuthUtil;
 import com.gabriel.bublo.service.AcervoService;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -94,17 +99,21 @@ public class AcervoController {
     @PostMapping
     public String salvar(@Valid @ModelAttribute("item") ItemAcervoDTO item,
                          BindingResult result,
+                         @RequestParam(value = "capa", required = false) MultipartFile capa,
+                         @RequestParam(value = "removerCapa", defaultValue = "false") boolean removerCapa,
                          Model model,
                          RedirectAttributes redirect) {
         if (result.hasErrors()) {
             model.addAttribute("erro", "Verifique os campos destacados.");
+            recarregarCapaAtual(item);
             carregarFormulario(model);
             return "acervo/formulario";
         }
         try {
-            acervoService.salvar(item, AuthUtil.usuarioAtual());
+            acervoService.salvar(item, capa, removerCapa, AuthUtil.usuarioAtual());
         } catch (IllegalStateException e) {
             model.addAttribute("erro", e.getMessage());
+            recarregarCapaAtual(item);
             carregarFormulario(model);
             return "acervo/formulario";
         }
@@ -150,10 +159,32 @@ public class AcervoController {
         return "redirect:/acervo";
     }
 
+    /** Imagem da capa. 404 quando o item não tem capa (a tela usa então a capa gerada). */
+    @GetMapping("/{id}/capa")
+    public ResponseEntity<byte[]> capa(@PathVariable Long id) {
+        return acervoService.buscarCapa(id)
+            .map(c -> ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(c.tipo()))
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePrivate())
+                .header("X-Content-Type-Options", "nosniff")
+                .body(c.dados()))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/sugestoes-autores")
     @ResponseBody
     public List<String> sugestoesAutores(@RequestParam String termo) {
         return acervoService.sugestoesAutores(termo).stream().map(Autor::getNome).toList();
+    }
+
+    /** Ao reexibir o formulário com erro, o DTO vem do POST e não sabe se o item já tem capa. */
+    private void recarregarCapaAtual(ItemAcervoDTO item) {
+        if (item.getId() == null) return;
+        ItemAcervoDTO atual = acervoService.buscarDTO(item.getId());
+        if (atual != null) {
+            item.setTemCapa(atual.isTemCapa());
+            item.setCapaVersao(atual.getCapaVersao());
+        }
     }
 
     private void carregarFormulario(Model model) {

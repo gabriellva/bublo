@@ -39,6 +39,8 @@ public class ItemAcervoRepository {
     private static final String BASE_SELECT = "SELECT ia.id, ia.tipo, ia.titulo, ia.descricao, ia.editora, " +
         "ia.ano, ia.data_publicacao, ia.paginas, ia.volume, ia.idioma, ia.categoria_id, ia.isbn, ia.issn, " +
         "ia.duracao_minutos, ia.doi, ia.url_externa, " +
+        "(ia.capa IS NOT NULL) AS tem_capa, " +
+        "(EXTRACT(EPOCH FROM ia.capa_atualizada_em) * 1000)::bigint AS capa_versao, " +
         "c.id AS cat_id, c.nome AS cat_nome, c.ativo AS cat_ativo " +
         "FROM item_acervo ia LEFT JOIN categorias c ON ia.categoria_id = c.id";
 
@@ -71,6 +73,8 @@ public class ItemAcervoRepository {
         cat.setNome(rs.getString("cat_nome"));
         cat.setAtivo(rs.getBoolean("cat_ativo"));
         item.setCategoria(cat);
+        item.setTemCapa(rs.getBoolean("tem_capa"));
+        item.setCapaVersao(rs.getObject("capa_versao", Long.class));
 
         if (item instanceof Livro l) l.setIsbn(rs.getString("isbn"));
         if (item instanceof Revista r) {
@@ -128,6 +132,25 @@ public class ItemAcervoRepository {
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
+    }
+
+    /** Imagem de capa já validada pelo serviço (JPG, PNG ou WebP). */
+    public record Capa(byte[] dados, String tipo) {}
+
+    public void salvarCapa(Long id, byte[] dados, String tipo) {
+        jdbc.update("UPDATE item_acervo SET capa = ?, capa_tipo = ?, capa_atualizada_em = NOW() WHERE id = ?",
+            dados, tipo, id);
+    }
+
+    public void removerCapa(Long id) {
+        jdbc.update("UPDATE item_acervo SET capa = NULL, capa_tipo = NULL, capa_atualizada_em = NULL WHERE id = ?", id);
+    }
+
+    public Optional<Capa> buscarCapa(Long id) {
+        List<Capa> lista = jdbc.query(
+            "SELECT capa, capa_tipo FROM item_acervo WHERE id = ? AND ativo = TRUE AND capa IS NOT NULL",
+            (rs, rowNum) -> new Capa(rs.getBytes("capa"), rs.getString("capa_tipo")), id);
+        return lista.stream().findFirst();
     }
 
     public void deletar(Long id) {

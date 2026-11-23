@@ -162,14 +162,14 @@ class ConfiguracaoServiceTest {
     }
 
     @Test
-    @DisplayName("Prefixo de tombamento aceita só letras (1 a 10)")
-    void prefixoSoLetras() {
+    @DisplayName("Nome da instituição e prefixo de tombamento não são mais configuráveis")
+    void textosNaoSaoConfiguraveis() {
         assertThatIllegalArgumentException().isThrownBy(() ->
-            service.salvar("prefixo_tombamento", "B4-", "admin", "teste"));
+            service.salvar("prefixo_tombamento", "LIB", "admin", "teste"))
+            .withMessageContaining("desconhecida");
         assertThatIllegalArgumentException().isThrownBy(() ->
-            service.salvar("prefixo_tombamento", "ABCDEFGHIJK", "admin", "teste"));
-        service.salvar("prefixo_tombamento", "LIB", "admin", "teste");
-        verify(configuracaoRepository).salvar(argThat(c -> c.getValor().equals("LIB")));
+            service.salvar("nome_instituicao", "Outra", "admin", "teste"))
+            .withMessageContaining("desconhecida");
     }
 
     @Test
