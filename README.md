@@ -41,7 +41,7 @@ O Bublo permite ao administrador gerenciar:
 - **Multas e pagamentos:** cálculo automático na devolução, pagamento integral/parcial, estorno com justificativa e auditoria.
 - **Relatórios:** 9 relatórios com exportação CSV e Excel (.xlsx).
 - **Dashboard:** 9 indicadores, 2 gráficos (linha e rosca) e atividades recentes.
-- **Configurações:** empréstimos, multas, reservas, notificações e dados da biblioteca, com auditoria e reversão da última alteração.
+- **Configurações:** limites e prazos de empréstimo (aluno e professor), taxa diária de multa e prazo de retirada de reservas, com auditoria e reversão da última alteração.
 - **Notificações:** central com WebSocket (SockJS fallback), dropdown com contador, leitura e filtros.
 - **Auditoria:** registro cronológico de operações relevantes, somente leitura.
 - **Login:** único tipo de usuário (administrador), senhas com BCrypt, CSRF, sessão por cookie.
@@ -165,8 +165,8 @@ O arquivo `.env` é ignorado pelo Git (`.gitignore`).
 ### Alternativa: app + PostgreSQL 100% em containers
 
 ```bash
-docker compose -p bublo-work -f docker-compose.app.yml up -d --build   # app em http://localhost:8090
-docker compose -p bublo-work -f docker-compose.app.yml down -v         # derruba e apaga o banco
+docker compose -f docker-compose.app.yml up -d --build   # app em http://localhost:8090
+docker compose -f docker-compose.app.yml down -v         # derruba e apaga o banco
 ADMIN_PASSWORD=Mudar@1234 BASE_URL=http://localhost:8090 scripts/smoke-test.sh
 ```
 
@@ -197,7 +197,7 @@ java -jar target/bublo-0.0.1-SNAPSHOT.jar
 - Usuário: valor de `ADMIN_USERNAME` (padrão no exemplo: `admin`)
 - Senha: valor de `ADMIN_PASSWORD`
 
-Na primeira execução, o administrador é criado a partir das variáveis de ambiente e os dados de demonstração são carregados (30 materiais, 15 leitores, empréstimos, multas, reservas, notificações).
+Na primeira execução, o administrador é criado a partir das variáveis de ambiente e os dados de demonstração são carregados (13 materiais, 15 leitores e 2 empréstimos de exemplo).
 
 ---
 
@@ -230,7 +230,7 @@ Na primeira execução, o administrador é criado a partir das variáveis de amb
 | Devoluções | `/devolucoes` | Registro de devolução com cálculo de multa |
 | Reservas | `/reservas` | Fila FIFO, cancelamento, expiração |
 | Multas | `/multas` | Pagamento integral/parcial, estorno |
-| Configurações | `/configuracoes` | Empréstimos, multas, reservas, biblioteca |
+| Configurações | `/configuracoes` | Limites, prazos, taxa de multa e prazo de reserva |
 | Notificações | `/notificacoes` | Central, leitura, filtros |
 | Auditoria | `/auditoria` | Log cronológico somente leitura |
 | Relatórios | `/relatorios` | 9 relatórios, exportação CSV e XLSX |
@@ -261,7 +261,7 @@ Cobertura focada em regras de negócio (`MultaService`, `ConfiguracaoService`, `
 No GitHub Actions, o PostgreSQL é sobe como serviço e os testes de integração validam migrations Flyway e persistência real.
 
 ```
-Tests run: 15, Failures: 0, Errors: 0
+Tests run: 91, Failures: 0, Errors: 0
 ```
 
 ---
@@ -300,11 +300,13 @@ O volume Docker utilizado é `bublo_postgres_data` (definido em `docker-compose.
 ## Dados de demonstração
 
 Na primeira inicialização com `DEMO_DATA_ENABLED=true`, são carregados:
-- ~30 materiais (livros, revistas, DVDs, digitais)
+- 13 materiais (10 livros, 1 revista, 1 DVD, 1 publicação digital)
 - 15 leitores (alunos e professores)
-- Empréstimos, multas, pagamentos, reservas e notificações de exemplo
+- 2 empréstimos de exemplo (um no prazo e um já vencido); multas, pagamentos e reservas são criados pelo uso normal do sistema
 
-**Restauração de demonstração:** opção administrativa para substituir todos os dados pelos fictícios (exige digitação de `RESTAURAR` e confirmação final, registrada na auditoria).
+Para recarregar os dados de demonstração, recrie o banco (`docker compose down -v`) e suba a aplicação novamente. Não há opção de restauração pela interface.
+
+Sem `ADMIN_USERNAME`/`ADMIN_PASSWORD`, o usuário `admin` é criado com uma senha aleatória exibida uma única vez no log da primeira inicialização.
 
 ---
 
@@ -317,7 +319,7 @@ Na primeira inicialização com `DEMO_DATA_ENABLED=true`, são carregados:
 5. **Sem módulo independente de autores:** cadastro e sugestão direto no formulário de materiais, com reutilização por normalização de nome.
 6. **Relatórios:** CSV e XLSX apenas (sem PDF, conforme exigido).
 7. **WebSocket nativo sem STOMP**, com SockJS para reconexão e polling de fallback.
-8. **Fontes e ícones armazenados localmente** (sem CDN); ícones Bootstrap Icons via CSS local.
+8. **Sem CDN:** ícones Bootstrap Icons, Bootstrap e Chart.js são servidos localmente. As fontes Playfair Display e Inter não são empacotadas: se não estiverem instaladas, a interface usa Georgia e a fonte de sistema.
 9. **Sem upload de capas:** capas genéricas locais por tipo de material.
 10. **Relatórios XLSX:** gerados via Apache POI, planilhas com cabeçalhos e colunas dimensionadas.
 

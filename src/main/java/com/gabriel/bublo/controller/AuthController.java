@@ -47,7 +47,8 @@ public class AuthController {
             return "redirect:/dashboard";
         }
         if (error != null) {
-            model.addAttribute("erro", "Usuário ou senha inválidos. Tente novamente.");
+            // Texto fixo acima do cartão de login (não é toast); a mensagem não revela qual dos dois campos errou.
+            model.addAttribute("erroLogin", "Usuário ou senha incorretos.");
         }
         if (logout != null) {
             model.addAttribute("sucesso", "Você saiu do sistema.");
@@ -84,13 +85,7 @@ public class AuthController {
         if (usuario == null) {
             return "redirect:/login";
         }
-        if (!result.hasFieldErrors("senhaAtual") && !passwordEncoder.matches(dto.getSenhaAtual(), usuario.getSenhaHash())) {
-            result.rejectValue("senhaAtual", "invalida", "Senha atual incorreta.");
-        }
-        if (!result.hasFieldErrors("novaSenha") && !senhaForte(dto.getNovaSenha())) {
-            result.rejectValue("novaSenha", "fraca", "A nova senha deve conter letras e números.");
-        }
-        if (!result.hasFieldErrors("confirmaNovaSenha") && !dto.getNovaSenha().equals(dto.getConfirmaNovaSenha())) {
+        if (!result.hasFieldErrors("novaSenha") && !result.hasFieldErrors("confirmaNovaSenha") && !dto.getNovaSenha().equals(dto.getConfirmaNovaSenha())) {
             result.rejectValue("confirmaNovaSenha", "diferente", "A confirmação não coincide com a nova senha.");
         }
         if (result.hasErrors()) {
@@ -101,9 +96,5 @@ public class AuthController {
         authAuditService.registrarAlteracaoSenha(username);
         new SecurityContextLogoutHandler().logout(request, response, authentication);
         return "redirect:/login?senha=alterada";
-    }
-
-    private boolean senhaForte(String senha) {
-        return senha.chars().anyMatch(Character::isLetter) && senha.chars().anyMatch(Character::isDigit);
     }
 }

@@ -20,7 +20,7 @@
 | CU10 | Reserva | Fila FIFO por título, prazo de retirada, cancelamento, expiração |
 | CU11 | Multa | Pagamento integral/parcial, estorno com justificativa |
 | CU12 | Relatório | 9 relatórios, exportação CSV e XLSX |
-| CU13 | Configurações | Empréstimos, multas, reservas, notificações, biblioteca; auditoria + reversão |
+| CU13 | Configurações | Limites, prazos, taxa de multa e prazo de reserva; auditoria + reversão |
 | CU14 | Notificações | Central, leitura, filtros, WebSocket em tempo real |
 | CU15 | Auditoria | Consulta somente leitura de operações |
 | CU16 | Alterar senha | Senha atual + nova + confirmação, política de senhas |

@@ -17,6 +17,11 @@
   </div>
 
   <div class="login-area-form">
+    <div class="login-coluna">
+      <div class="login-erro" role="alert" th:if="${erroLogin}">
+        <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+        <span th:text="${erroLogin}">Usuário ou senha incorretos.</span>
+      </div>
     <div class="login-card">
       <h2>Entrar</h2>
       <p class="subtitulo">Acesso exclusivo do administrador da biblioteca</p>
@@ -24,7 +29,7 @@
       <form th:action="@{/login}" method="post">
         <div class="mb-3">
           <label class="form-label" for="username">Usuário</label>
-          <input type="text" id="username" name="username" class="form-control" autocomplete="username" autofocus required />
+          <input type="text" id="username" name="username" class="form-control" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus required />
         </div>
         <div class="mb-3">
           <label class="form-label" for="password">Senha</label>
@@ -32,10 +37,7 @@
         </div>
         <button type="submit" class="btn-bublo w-100 mt-3">Entrar</button>
       </form>
-      <p class="texto-ajuda mt-3 text-center">
-        Credenciais configuradas pelo administrador via variáveis de ambiente.<br/>
-        <small>Senhas armazenadas com BCrypt.</small>
-      </p>
+    </div>
     </div>
   </div>
 

@@ -19,7 +19,7 @@ Não há login de leitores nem catálogo público. Todo o acesso é restrito ao 
 ## 2. Dashboard
 
 Exibe:
-- **Indicadores:** títulos, exemplares, disponíveis/indisponíveis, empréstimos ativos/atrasados, multas pendentes, valores arrecadados, reservas aguardando, leitores cadastrados.
+- **Indicadores:** títulos, exemplares, disponíveis/indisponíveis, empréstimos ativos/atrasados, multas pendentes, reservas aguardando, leitores cadastrados.
 - **Gráficos:** empréstimos ao longo do tempo e materiais por tipo.
 - **Atividades recentes** e **ações rápidas** (cadastrar material, leitor, empréstimo, devolução, reservas, pagamento de multa, relatórios).
 
@@ -37,6 +37,8 @@ Acesse **Acervo → Cadastrar material**. Escolha o tipo (Livro, Revista, DVD, P
 - Publicação Digital: DOI e URL externa
 
 Autores podem ser digitados e adicionados; nomes já existentes são reaproveitados automaticamente.
+
+**Foto de capa (opcional):** no mesmo formulário, escolha uma imagem JPG, PNG ou WebP de até 2 MB; uma prévia aparece ao lado. Ao editar o material, é possível trocar a foto ou marcar **Remover a capa atual**. Materiais sem foto mostram uma capa gerada com o título, em cor própria para cada tipo. Os livros dos dados de demonstração já vêm com a capa real.
 
 ### Exemplares
 Em **Detalhes do material**, cadastre exemplares individuais ou em lote. Cada exemplar recebe tombamento automático (`BA-000001`, `BA-000002`…). O tombamento não pode ser editado.
@@ -72,6 +74,9 @@ Regras:
 - Professores: até 5 exemplares, prazo 14 dias.
 - Uma renovação por empréstimo.
 - Saldo de multa pendente bloqueia novos empréstimos.
+- A data prevista não pode ultrapassar o prazo do tipo de leitor (7 dias para alunos, 14 para professores, conforme as configurações).
+- Publicações digitais não são emprestadas e não possuem exemplares.
+- Se o material tem fila de reservas, só quem está à frente da fila pode retirá-lo; ao emprestar, a reserva passa a "Atendida".
 
 ---
 
@@ -83,7 +88,7 @@ Regras:
 
 ## 7. Reservas
 
-**Reservas → Nova reserva:** informe leitor, material e prazo de retirada. A reserva entra na fila FIFO. Quando um exemplar é devolvido, o primeiro da fila é atendido. Reservas podem ser canceladas pelo administrador e expiram automaticamente se não retiradas no prazo.
+**Reservas → Nova reserva:** informe leitor, material e prazo de retirada. A reserva entra na fila FIFO. Quando um exemplar é devolvido, o primeiro da fila é atendido. Só é possível reservar materiais em que **todos os exemplares estão emprestados**; se houver exemplar livre, registre um empréstimo. **Publicações digitais não podem ser reservadas** (são apenas para consulta). A tela de nova reserva explica essas regras e desabilita os materiais que não podem ser reservados. Reservas podem ser canceladas pelo administrador e expiram automaticamente ao fim do dia do prazo de retirada (verificação a cada hora). As posições da fila são renumeradas quando uma reserva sai.
 
 ---
 
@@ -92,19 +97,19 @@ Regras:
 Multas são geradas automaticamente na devolução atrasada.
 - **Multas:** lista de pendentes, pagas parciais e pagas.
 - **Pagar:** informe valor (integral ou parcial) e forma (dinheiro ou outro meio). Pagamento parcial não remove o bloqueio enquanto houver saldo.
-- **Estornar:** exige justificativa obrigatória. O pagamento original permanece no histórico, marcado como estornado, e o saldo é recalculado.
+- **Estornar:** na tela da multa (botão **Pagar** ou **Pagamentos**), no histórico de pagamentos, informe a justificativa e clique em **Estornar**. Cada pagamento só pode ser estornado uma vez. O pagamento original permanece no histórico, marcado como estornado, e o saldo é recalculado.
 
 ---
 
 ## 9. Relatórios
 
-Acesse **Relatórios**. Cada relatório pode ser exportado em **CSV** (UTF-8, delimitador vírgula) ou **Excel (.xlsx)**. Os relatórios incluem empréstimos por período, atrasados, multas pendentes, materiais mais emprestados, disponíveis/indisponíveis, leitores cadastrados e reservas.
+Acesse **Relatórios**. Cada relatório pode ser exportado em **CSV** (UTF-8, delimitador ponto e vírgula, para abrir direto no Excel em português) ou **Excel (.xlsx)**. Os relatórios incluem empréstimos por período, atrasados, multas pendentes, materiais mais emprestados, disponíveis/indisponíveis, leitores cadastrados e reservas.
 
 ---
 
 ## 10. Configurações
 
-**Configurações:** aba com empréstimos, multas, reservas, notificações e dados da biblioteca. Alterações valem apenas para novas operações (não modificam empréstimos/multas/reservas existentes). Toda alteração exige justificativa e é registrada na auditoria. É possível desfazer a última alteração.
+**Configurações:** tela com os limites de exemplares e prazos de devolução (aluno e professor), a taxa diária de multa e o prazo de retirada de reservas. Alterações valem apenas para novas operações (não modificam empréstimos/multas/reservas existentes). Toda alteração exige justificativa e é registrada na auditoria. É possível desfazer a última alteração.
 
 ---
 
@@ -122,7 +127,7 @@ O ícone de sino no topo mostra o contador de não lidas. Clique para ver notifi
 
 ## 13. Alterar senha (conta)
 
-Acesse **Minha conta** no topo. Informe senha atual, nova senha (mín. 8 caracteres, letras e números) e confirmação. Após a alteração, você será desconectado e deverá entrar novamente.
+Clique no seu usuário (ex.: **admin**) na barra superior, ou em **Minha conta** no menu. Informe a nova senha (mínimo de 4 caracteres) e repita para confirmar; a senha atual não é pedida. Após a alteração, você será desconectado e deverá entrar novamente.
 
 ---
 
@@ -134,4 +139,13 @@ Clique em **Sair** no topo para encerrar a sessão. A sessão expira ao fechar o
 
 ## 15. Dados de demonstração
 
-A primeira inicialização carrega dados fictícios (~30 materiais, 15 leitores, empréstimos, multas, reservas, notificações) para demonstração imediata. Existe opção administrativa para restaurar esses dados (exige digitar `RESTAURAR`).
+A primeira inicialização carrega dados fictícios (13 materiais, 15 leitores e 2 empréstimos) para demonstração imediata. Para recarregar, recrie o banco de dados.
+
+
+## 14. Excluir exemplares
+
+Na página do material, em **Exemplares**, use **Excluir** na linha do exemplar. Só exemplares **disponíveis** podem ser excluídos (devolva antes, se estiver emprestado). Um exemplar que nunca foi emprestado é apagado; um que já tem histórico de empréstimos recebe **baixa**: deixa de aparecer e de contar no acervo, mas o histórico é preservado e o tombamento nunca é reutilizado. O último exemplar de um material com reservas aguardando não pode ser excluído.
+
+## 15. Abas Em andamento e Histórico
+
+**Empréstimos**, **Reservas** e **Multas** têm duas abas: *Em andamento* (empréstimos ativos, reservas aguardando, multas em aberto) e *Histórico* (devolvidos e cancelados, atendidas/canceladas/expiradas, quitadas). Na página de cada **leitor** há o histórico completo de empréstimos, reservas e multas dele.

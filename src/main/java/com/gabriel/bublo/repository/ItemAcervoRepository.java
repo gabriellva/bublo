@@ -39,6 +39,8 @@ public class ItemAcervoRepository {
     private static final String BASE_SELECT = "SELECT ia.id, ia.tipo, ia.titulo, ia.descricao, ia.editora, " +
         "ia.ano, ia.data_publicacao, ia.paginas, ia.volume, ia.idioma, ia.categoria_id, ia.isbn, ia.issn, " +
         "ia.duracao_minutos, ia.doi, ia.url_externa, " +
+        "(ia.capa IS NOT NULL) AS tem_capa, " +
+        "(EXTRACT(EPOCH FROM ia.capa_atualizada_em) * 1000)::bigint AS capa_versao, " +
         "c.id AS cat_id, c.nome AS cat_nome, c.ativo AS cat_ativo " +
         "FROM item_acervo ia LEFT JOIN categorias c ON ia.categoria_id = c.id";
 
@@ -71,6 +73,8 @@ public class ItemAcervoRepository {
         cat.setNome(rs.getString("cat_nome"));
         cat.setAtivo(rs.getBoolean("cat_ativo"));
         item.setCategoria(cat);
+        item.setTemCapa(rs.getBoolean("tem_capa"));
+        item.setCapaVersao(rs.getObject("capa_versao", Long.class));
 
         if (item instanceof Livro l) l.setIsbn(rs.getString("isbn"));
         if (item instanceof Revista r) {
@@ -130,6 +134,25 @@ public class ItemAcervoRepository {
         }
     }
 
+    /** Imagem de capa já validada pelo serviço (JPG, PNG ou WebP). */
+    public record Capa(byte[] dados, String tipo) {}
+
+    public void salvarCapa(Long id, byte[] dados, String tipo) {
+        jdbc.update("UPDATE item_acervo SET capa = ?, capa_tipo = ?, capa_atualizada_em = NOW() WHERE id = ?",
+            dados, tipo, id);
+    }
+
+    public void removerCapa(Long id) {
+        jdbc.update("UPDATE item_acervo SET capa = NULL, capa_tipo = NULL, capa_atualizada_em = NULL WHERE id = ?", id);
+    }
+
+    public Optional<Capa> buscarCapa(Long id) {
+        List<Capa> lista = jdbc.query(
+            "SELECT capa, capa_tipo FROM item_acervo WHERE id = ? AND ativo = TRUE AND capa IS NOT NULL",
+            (rs, rowNum) -> new Capa(rs.getBytes("capa"), rs.getString("capa_tipo")), id);
+        return lista.stream().findFirst();
+    }
+
     public void deletar(Long id) {
         jdbc.update("UPDATE item_acervo SET ativo = FALSE WHERE id = ?", id);
     }
@@ -183,7 +206,7 @@ public class ItemAcervoRepository {
         StringBuilder where = new StringBuilder("WHERE ia.ativo = TRUE");
         if (termo != null && !termo.isBlank()) {
             where.append(" AND (ia.titulo ILIKE ? OR ia.isbn ILIKE ? OR ia.issn ILIKE ?)");
-            String t = "%" + termo + "%";
+            String t = "%" + termo.trim() + "%";
             args.add(t); args.add(t); args.add(t);
         }
         if (categoriaId != null) {
@@ -193,8 +216,13 @@ public class ItemAcervoRepository {
             where.append(" AND ia.tipo = ?"); args.add(tipo.name());
         }
         if (disponivel != null) {
-            where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = ?)");
-            args.add(disponivel);
+            if (disponivel) {
+                where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = TRUE AND e.baixado = FALSE)");
+            } else {
+                // Indisponível = tem exemplares, mas nenhum livre (título com 1 de 3 emprestado ainda está disponível).
+                where.append(" AND EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.baixado = FALSE)" +
+                    " AND NOT EXISTS (SELECT 1 FROM exemplares e WHERE e.item_acervo_id = ia.id AND e.disponivel = TRUE AND e.baixado = FALSE)");
+            }
         }
 
         String sql = BASE_SELECT + " " + where +
@@ -281,7 +309,7 @@ public class ItemAcervoRepository {
     }
 
     private String normalizar(String s) {
-        return s == null ? "" : s.trim().toLowerCase();
+        return s == null ? "" : s.trim().replaceAll("\\s+", " ").toLowerCase();
     }
 
     private Integer volumeDe(ItemAcervo i) { return i instanceof Revista ? ((Revista) i).getVolume() : null; }

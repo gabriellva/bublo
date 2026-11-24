@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header cabecalho-pagina">
         <div>
           <h1 th:text="${leitor.nome}">Nome do leitor</h1>
@@ -24,7 +24,7 @@
 
       <div class="grid-duas-colunas">
         <div class="card-bublo p-4">
-          <table class="tabela">
+          <table class="tabela tabela-detalhe">
             <tr><th style="width:160px;">Matrícula</th><td th:text="${leitor.matricula}">-</td></tr>
             <tr><th>E-mail</th><td th:text="${leitor.email}">-</td></tr>
             <tr><th>CPF</th><td th:text="${leitor.cpf ?: '-'}">-</td></tr>
@@ -41,6 +41,89 @@
           <span class="badge-bublo" th:classappend="${situacao.bloqueado} ? 'badge-inativo' : 'badge-ativo'" th:text="${situacao.bloqueado} ? 'Bloqueado por multa pendente' : 'Sem pendências'">Sem pendências</span>
         </div>
       </div>
+
+      <section class="card-bublo p-3 mt-4" aria-labelledby="titulo-historico">
+        <h2 id="titulo-historico" class="mt-0" style="font-size:1.25rem;">Histórico</h2>
+        <div class="abas" role="tablist" aria-label="Histórico do leitor">
+          <button type="button" class="active" role="tab" id="aba-emp" data-bs-toggle="tab" data-bs-target="#painel-emp" aria-controls="painel-emp" aria-selected="true">
+            Empréstimos <span class="chip" th:text="${#lists.size(historicoEmprestimos)}">0</span></button>
+          <button type="button" role="tab" id="aba-res" data-bs-toggle="tab" data-bs-target="#painel-res" aria-controls="painel-res" aria-selected="false">
+            Reservas <span class="chip" th:text="${#lists.size(historicoReservas)}">0</span></button>
+          <button type="button" role="tab" id="aba-mul" data-bs-toggle="tab" data-bs-target="#painel-mul" aria-controls="painel-mul" aria-selected="false">
+            Multas <span class="chip" th:text="${#lists.size(historicoMultas)}">0</span></button>
+        </div>
+
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="painel-emp" role="tabpanel" aria-labelledby="aba-emp" tabindex="0">
+            <p class="texto-ajuda" th:if="${historicoEmprestimos.empty}">Este leitor ainda não fez empréstimos.</p>
+            <div class="tabela-bloco bloco-cartoes" th:unless="${historicoEmprestimos.empty}">
+              <table class="tabela tabela-cartoes">
+                <thead><tr><th>#</th><th>Material</th><th>Tombamento</th><th>Data</th><th>Prevista</th><th>Devolvido em</th><th>Situação</th></tr></thead>
+                <tbody>
+                  <tr th:each="e : ${historicoEmprestimos}">
+                    <td data-label="#" th:text="${e.id}">1</td>
+                    <td data-label="Material" th:text="${e.titulo ?: '-'}">Material</td>
+                    <td data-label="Tombamento" th:text="${e.tombamento ?: '-'}">BA-000001</td>
+                    <td data-label="Data" th:text="${#temporals.format(e.dataEmprestimo, 'dd/MM/yyyy')}">-</td>
+                    <td data-label="Prevista" th:text="${#temporals.format(e.dataPrevistaDevolucao, 'dd/MM/yyyy')}">-</td>
+                    <td data-label="Devolvido em" th:text="${e.dataDevolucaoReal != null ? #temporals.format(e.dataDevolucaoReal, 'dd/MM/yyyy') : '-'}">-</td>
+                    <td data-label="Situação">
+                      <span class="badge-bublo"
+                            th:classappend="${e.atrasado} ? 'badge-atrasado' : (${e.status == 'ATIVO'} ? 'badge-ativo' : 'badge-neutro')"
+                            th:text="${e.atrasado} ? 'Em atraso' : (${e.status == 'ATIVO'} ? 'Ativo' : (${e.status == 'DEVOLVIDO'} ? 'Devolvido' : 'Cancelado'))">Ativo</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="painel-res" role="tabpanel" aria-labelledby="aba-res" tabindex="0">
+            <p class="texto-ajuda" th:if="${historicoReservas.empty}">Este leitor ainda não fez reservas.</p>
+            <div class="tabela-bloco bloco-cartoes" th:unless="${historicoReservas.empty}">
+              <table class="tabela tabela-cartoes">
+                <thead><tr><th>#</th><th>Material</th><th>Posição</th><th>Prazo de retirada</th><th>Situação</th></tr></thead>
+                <tbody>
+                  <tr th:each="r : ${historicoReservas}">
+                    <td data-label="#" th:text="${r.id}">1</td>
+                    <td data-label="Material" th:text="${r.itemTitulo ?: '-'}">Material</td>
+                    <td data-label="Posição" th:text="${r.status == 'AGUARDANDO' ? r.posicao : '-'}">1</td>
+                    <td data-label="Prazo de retirada" th:text="${#temporals.format(r.prazoRetirada, 'dd/MM/yyyy')}">-</td>
+                    <td data-label="Situação">
+                      <span class="badge-bublo" th:classappend="${r.status == 'AGUARDANDO'} ? 'badge-pendente' : (${r.status == 'ATENDIDA'} ? 'badge-ativo' : 'badge-neutro')"
+                            th:text="${r.status == 'AGUARDANDO'} ? 'Aguardando' : (${r.status == 'ATENDIDA'} ? 'Atendida' : (${r.status == 'CANCELADA'} ? 'Cancelada' : 'Expirada'))">Aguardando</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="painel-mul" role="tabpanel" aria-labelledby="aba-mul" tabindex="0">
+            <p class="texto-ajuda" th:if="${historicoMultas.empty}">Este leitor não tem multas.</p>
+            <div class="tabela-bloco bloco-cartoes" th:unless="${historicoMultas.empty}">
+              <table class="tabela tabela-cartoes">
+                <thead><tr><th>#</th><th>Gerada em</th><th>Dias</th><th>Valor</th><th>Pago</th><th>Saldo</th><th>Situação</th><th>Ações</th></tr></thead>
+                <tbody>
+                  <tr th:each="m : ${historicoMultas}">
+                    <td data-label="#" th:text="${m.id}">1</td>
+                    <td data-label="Gerada em" th:text="${#temporals.format(m.dataGeracao, 'dd/MM/yyyy')}">-</td>
+                    <td data-label="Dias" th:text="${m.diasAtraso}">-</td>
+                    <td data-label="Valor" th:text="${#numbers.formatCurrency(m.valor)}">R$ 0,00</td>
+                    <td data-label="Pago" th:text="${#numbers.formatCurrency(m.valorPago)}">R$ 0,00</td>
+                    <td data-label="Saldo" th:text="${#numbers.formatCurrency(m.saldoPendente)}">R$ 0,00</td>
+                    <td data-label="Situação">
+                      <span class="badge-bublo" th:classappend="${m.status == 'PAGA'} ? 'badge-paga' : (${m.status == 'PAGA_PARCIAL'} ? 'badge-parcial' : 'badge-pendente')"
+                            th:text="${m.status == 'PAGA'} ? 'Paga' : (${m.status == 'PAGA_PARCIAL'} ? 'Paga parcialmente' : (${m.status == 'CANCELADA'} ? 'Cancelada' : 'Pendente'))">Pendente</span>
+                    </td>
+                    <td class="celula-acoes"><a th:href="@{/multas/{id}/pagar(id=${m.id})}" class="btn-bublo btn-acao btn-contorno">Pagamentos</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 

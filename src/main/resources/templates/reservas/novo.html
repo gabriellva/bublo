@@ -9,10 +9,27 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1>Nova reserva</h1>
         <p class="subtitulo">Reservar material sem exemplares disponíveis</p>
+      </div>
+
+      <div class="alerta-bublo erro" role="alert" th:if="${erroForm}">
+        <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+        <span th:text="${erroForm}">Erro</span>
+      </div>
+
+      <div class="alerta-bublo info" role="note">
+        <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+        <div>
+          <strong>Quando é possível reservar?</strong>
+          <ul class="mb-0 ps-3">
+            <li>Só materiais em que <strong>todos os exemplares estão emprestados</strong>. Se houver exemplar livre, registre um <a th:href="@{/emprestimos/novo}">empréstimo</a>.</li>
+            <li><strong>Publicações digitais não podem ser reservadas</strong> (são só para consulta) e por isso não aparecem na lista.</li>
+            <li>Materiais sem exemplares cadastrados também não podem ser reservados.</li>
+          </ul>
+        </div>
       </div>
 
       <form th:action="@{/reservas}" method="post" novalidate>
@@ -29,13 +46,16 @@
             <label class="form-label" for="itemId">Material</label>
             <select id="itemId" name="itemId" class="form-control" required>
               <option value="">Selecione…</option>
-              <option th:each="a : ${acervo}" th:value="${a.id}" th:text="${a.titulo + ' (' + a.exemplaresDisponiveis + '/' + a.totalExemplares + ' disp.)'}"
+              <option th:each="a : ${acervo}" th:value="${a.id}"
+                      th:disabled="${a.totalExemplares == 0 or a.exemplaresDisponiveis > 0}"
+                      th:text="${a.titulo + (a.totalExemplares == 0 ? ' — sem exemplares cadastrados' : (a.exemplaresDisponiveis > 0 ? ' — há exemplar disponível (faça um empréstimo)' : ' — todos emprestados (' + a.totalExemplares + ')'))}"
                       th:selected="${itemSelecionado != null and itemSelecionado == a.id}">Material</option>
             </select>
           </div>
           <div>
             <label class="form-label" for="prazo">Prazo para retirada</label>
-            <input type="date" id="prazo" name="prazo" class="form-control" required th:min="${hoje}" th:value="${prazoSelecionado}" />
+            <input type="date" id="prazo" name="prazo" class="form-control" required th:min="${hoje}" th:max="${hoje.plusDays(30)}" th:value="${prazoSelecionado}" />
+            <p class="texto-ajuda">No máximo 30 dias a partir de hoje.</p>
           </div>
         </div>
         <div class="acoes-linha mt-4">

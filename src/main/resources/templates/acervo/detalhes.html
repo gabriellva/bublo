@@ -9,11 +9,11 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header cabecalho-pagina">
         <div>
           <h1 th:text="${item.titulo}">Título do material</h1>
-          <p class="subtitulo" th:text="${item.tipo}">Tipo</p>
+          <p class="subtitulo" th:text="${item.tipoRotulo}">Tipo</p>
         </div>
         <div class="acoes-linha">
           <a th:href="@{/acervo/{id}/editar(id=${item.id})}" class="btn-bublo btn-contorno"><i class="bi bi-pencil"></i> Editar</a>
@@ -26,9 +26,12 @@
         </div>
       </div>
 
-      <div class="card-bublo p-4">
-        <table class="tabela">
-          <tr><th style="width:160px;">Tipo</th><td th:text="${item.tipo}">Livro</td></tr>
+      <div class="card-bublo p-4 detalhe-com-capa">
+        <div class="detalhe-capa">
+          <th:block th:replace="~{layout/componentes :: capa(${item})}"></th:block>
+        </div>
+        <table class="tabela tabela-detalhe">
+          <tr><th style="width:160px;">Tipo</th><td th:text="${item.tipoRotulo}">Livro</td></tr>
           <tr><th>Editora</th><td th:text="${item.editora ?: '-'}">-</td></tr>
           <tr><th>Ano</th><td th:text="${item.ano ?: '-'}">-</td></tr>
           <tr><th>Idioma</th><td th:text="${item.idioma ?: '-'}">-</td></tr>
@@ -46,8 +49,8 @@
           <h3 class="m-0">Exemplares <span class="texto-ajuda" th:text="${'(' + item.exemplaresDisponiveis + ' de ' + item.totalExemplares + ' disponíveis)'}"></span></h3>
           <form th:action="@{/acervo/{id}/exemplar(id=${item.id})}" method="post" class="d-flex gap-2 align-items-center" th:unless="${item.tipo == 'DIGITAL'}">
             <label class="sr-only" for="quantidade">Quantidade</label>
-            <input type="number" id="quantidade" name="quantidade" value="1" min="1" max="100" class="form-control" style="width:90px;" />
-            <button type="submit" class="btn-bublo btn-sm">+ Cadastrar exemplar(es)</button>
+            <input type="number" id="quantidade" name="quantidade" value="1" min="1" max="100" class="form-control" style="max-width:6rem;" inputmode="numeric" />
+            <button type="submit" class="btn-bublo btn-sm btn-sem-quebra">Cadastrar exemplar</button>
           </form>
         </div>
         <div class="estado-vazio" style="padding:1.5rem;" th:if="${exemplares.empty}">
@@ -55,13 +58,21 @@
           <h4>Nenhum exemplar cadastrado</h4>
           <p th:text="${item.tipo == 'DIGITAL' ? 'Publicações digitais não possuem exemplares físicos.' : 'Cadastre o primeiro exemplar para permitir empréstimos físicos.'}">Cadastre o primeiro exemplar.</p>
         </div>
-        <div class="tabela-bloco" th:unless="${exemplares.empty}">
-          <table class="tabela">
-            <thead><tr><th>Tombamento</th><th>Situação</th></tr></thead>
+        <div class="tabela-bloco bloco-cartoes" th:unless="${exemplares.empty}">
+          <table class="tabela tabela-cartoes">
+            <thead><tr><th>Tombamento</th><th>Situação</th><th>Ações</th></tr></thead>
             <tbody>
               <tr th:each="ex : ${exemplares}">
-                <td th:text="${ex.tombamento}">BA-000001</td>
-                <td><span class="badge-bublo" th:classappend="${ex.disponivel} ? 'badge-disponivel' : 'badge-indisponivel'" th:text="${ex.disponivel ? 'Disponível' : 'Emprestado'}">Disponível</span></td>
+                <td data-label="Tombamento" th:text="${ex.tombamento}">BA-000001</td>
+                <td data-label="Situação"><span class="badge-bublo" th:classappend="${ex.disponivel} ? 'badge-disponivel' : 'badge-indisponivel'" th:text="${ex.disponivel ? 'Disponível' : 'Emprestado'}">Disponível</span></td>
+                <td class="celula-acoes">
+                  <form th:action="@{/acervo/{id}/exemplares/{ex}/excluir(id=${item.id}, ex=${ex.id})}" method="post" class="form-inline" th:if="${ex.disponivel}"
+                        th:attr="data-confirmar='Excluir o exemplar ' + ${ex.tombamento} + '? Se ele já foi emprestado, o histórico de empréstimos é mantido.'"
+                        data-confirmar-titulo="Excluir exemplar">
+                    <button type="submit" class="btn-bublo btn-acao btn-contorno perigo"><i class="bi bi-trash"></i> Excluir</button>
+                  </form>
+                  <span class="texto-ajuda" th:unless="${ex.disponivel}">Devolva antes de excluir</span>
+                </td>
               </tr>
             </tbody>
           </table>

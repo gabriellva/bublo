@@ -35,6 +35,7 @@ public class ExemplarRepository {
         e.setDisponivel(rs.getBoolean("disponivel"));
         e.setObservacoes(rs.getString("observacoes"));
         e.setDataCadastro(rs.getObject("data_cadastro", LocalDateTime.class));
+        e.setBaixado(rs.getBoolean("baixado"));
         return e;
     };
 
@@ -43,8 +44,14 @@ public class ExemplarRepository {
         this.itemAcervoRepository = itemAcervoRepository;
     }
 
+    public static final String PREFIXO_PADRAO = "BA";
+
     public Exemplar salvar(ItemAcervo item) {
-        String tombamento = proxTombamento();
+        return salvar(item, PREFIXO_PADRAO);
+    }
+
+    public Exemplar salvar(ItemAcervo item, String prefixo) {
+        String tombamento = proxTombamento(prefixo);
         Long id = insertReturnId(
             "INSERT INTO exemplares (item_acervo_id, tombamento, disponivel, observacoes, data_cadastro) " +
             "VALUES (?, ?, TRUE, NULL, NOW())", item.getId(), tombamento);
@@ -57,10 +64,14 @@ public class ExemplarRepository {
     }
 
     public List<Exemplar> salvarLote(ItemAcervo item, int quantidade) {
+        return salvarLote(item, quantidade, PREFIXO_PADRAO);
+    }
+
+    public List<Exemplar> salvarLote(ItemAcervo item, int quantidade, String prefixo) {
         List<Exemplar> criados = new ArrayList<>();
         // Atômico: todos ou nenhum (chamado dentro de transação no Service)
         for (int i = 0; i < quantidade; i++) {
-            criados.add(salvar(item));
+            criados.add(salvar(item, prefixo));
         }
         return criados;
     }
@@ -87,14 +98,14 @@ public class ExemplarRepository {
 
     public List<Exemplar> buscarDisponiveisPorItem(Long itemId) {
         List<Exemplar> lista = jdbc.query(
-            "SELECT * FROM exemplares WHERE item_acervo_id = ? AND disponivel = TRUE ORDER BY tombamento",
+            "SELECT * FROM exemplares WHERE item_acervo_id = ? AND disponivel = TRUE AND baixado = FALSE ORDER BY tombamento",
             MAPPER, itemId);
         lista.forEach(this::vincularItem);
         return lista;
     }
 
     public List<Exemplar> listarPorItem(Long itemId) {
-        List<Exemplar> lista = jdbc.query("SELECT * FROM exemplares WHERE item_acervo_id = ? ORDER BY tombamento", MAPPER, itemId);
+        List<Exemplar> lista = jdbc.query("SELECT * FROM exemplares WHERE item_acervo_id = ? AND baixado = FALSE ORDER BY tombamento", MAPPER, itemId);
         lista.forEach(this::vincularItem);
         return lista;
     }
@@ -103,7 +114,7 @@ public class ExemplarRepository {
         return jdbc.query(
             "SELECT ex.id, ex.tombamento, ia.titulo, ia.tipo FROM exemplares ex " +
             "JOIN item_acervo ia ON ia.id = ex.item_acervo_id " +
-            "WHERE ex.disponivel = TRUE AND ia.ativo = TRUE ORDER BY ia.titulo, ex.tombamento",
+            "WHERE ex.disponivel = TRUE AND ex.baixado = FALSE AND ia.ativo = TRUE AND ia.tipo <> 'DIGITAL' ORDER BY ia.titulo, ex.tombamento",
             (rs, rowNum) -> new com.gabriel.bublo.dto.ExemplarOpcaoDTO(
                 rs.getLong("id"), rs.getString("tombamento"), rs.getString("titulo"), rs.getString("tipo")));
     }
@@ -117,37 +128,61 @@ public class ExemplarRepository {
         jdbc.update("UPDATE exemplares SET disponivel = ? WHERE id = ?", disponivel, exemplarId);
     }
 
+    public boolean temHistoricoDeEmprestimos(Long exemplarId) {
+        Integer c = jdbc.queryForObject("SELECT COUNT(*) FROM emprestimos WHERE exemplar_id = ?", Integer.class, exemplarId);
+        return c != null && c > 0;
+    }
+
+    /** Remove de vez um exemplar que nunca foi emprestado (ex.: cadastro por engano). */
+    public void excluir(Long exemplarId) {
+        jdbc.update("DELETE FROM exemplares WHERE id = ?", exemplarId);
+    }
+
+    /** Dá baixa: some das listas e contagens, mas o histórico de empréstimos e o tombamento permanecem. */
+    public void baixar(Long exemplarId, String motivo) {
+        jdbc.update("UPDATE exemplares SET baixado = TRUE, disponivel = FALSE, baixado_em = NOW(), baixa_motivo = ? WHERE id = ?",
+            motivo, exemplarId);
+    }
+
     public void registrarObservacao(Long exemplarId, String observacoes) {
         jdbc.update("UPDATE exemplares SET observacoes = ? WHERE id = ?", observacoes, exemplarId);
     }
 
     public long contarPorItem(Long itemId) {
-        return jdbc.queryForObject("SELECT COUNT(*) FROM exemplares WHERE item_acervo_id = ?", Long.class, itemId);
+        return jdbc.queryForObject("SELECT COUNT(*) FROM exemplares WHERE item_acervo_id = ? AND baixado = FALSE", Long.class, itemId);
     }
 
     public long contarDisponiveisPorItem(Long itemId) {
         return jdbc.queryForObject(
-            "SELECT COUNT(*) FROM exemplares WHERE item_acervo_id = ? AND disponivel = TRUE", Long.class, itemId);
+            "SELECT COUNT(*) FROM exemplares WHERE item_acervo_id = ? AND disponivel = TRUE AND baixado = FALSE", Long.class, itemId);
     }
 
     public long contarDisponiveis() {
-        return jdbc.queryForObject("SELECT COUNT(*) FROM exemplares WHERE disponivel = TRUE", Long.class);
+        return jdbc.queryForObject(
+            "SELECT COUNT(*) FROM exemplares ex JOIN item_acervo ia ON ia.id = ex.item_acervo_id " +
+            "WHERE ex.disponivel = TRUE AND ex.baixado = FALSE AND ia.ativo = TRUE", Long.class);
     }
 
     public long contarIndisponiveis() {
-        return jdbc.queryForObject("SELECT COUNT(*) FROM exemplares WHERE disponivel = FALSE", Long.class);
+        return jdbc.queryForObject(
+            "SELECT COUNT(*) FROM exemplares ex JOIN item_acervo ia ON ia.id = ex.item_acervo_id " +
+            "WHERE ex.disponivel = FALSE AND ex.baixado = FALSE AND ia.ativo = TRUE", Long.class);
     }
 
     public long totalExemplares() {
-        return jdbc.queryForObject("SELECT COUNT(*) FROM exemplares", Long.class);
+        return jdbc.queryForObject(
+            "SELECT COUNT(*) FROM exemplares ex JOIN item_acervo ia ON ia.id = ex.item_acervo_id WHERE ia.ativo = TRUE AND ex.baixado = FALSE",
+            Long.class);
     }
 
-    private String proxTombamento() {
-        // Prefixo BA-, sequencial com 6 dígitos, nunca reaproveita
+    private String proxTombamento(String prefixo) {
+        // Sequencial global com 6 dígitos, nunca reaproveita (nem ao trocar o prefixo).
+        // O lock (liberado ao fim da transação) impede que duas requisições calculem o mesmo número.
+        jdbc.query("SELECT pg_advisory_xact_lock(7001)", rs -> { });
         Integer prox = jdbc.queryForObject(
             "SELECT COALESCE(MAX(CAST(substring(tombamento from '\\d+') AS INTEGER)), 0) + 1 FROM exemplares",
             Integer.class);
-        return String.format("BA-%06d", prox);
+        return String.format("%s-%06d", prefixo, prox);
     }
 
     private Long insertReturnId(String sql, Object... args) {

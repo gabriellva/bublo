@@ -9,21 +9,23 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1 th:text="${item.id != null} ? 'Editar material' : 'Cadastrar material'">Cadastrar material</h1>
         <p class="subtitulo">Item do acervo bibliográfico</p>
       </div>
 
-      <form th:action="@{/acervo}" th:object="${item}" method="post" novalidate>
+      <form th:action="@{/acervo}" th:object="${item}" method="post" enctype="multipart/form-data" novalidate>
         <input type="hidden" th:field="*{id}" />
 
         <div class="form-grid">
           <div>
             <label class="form-label" for="tipoMaterial">Tipo de material</label>
-            <select th:field="*{tipo}" id="tipoMaterial" class="form-control" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" required>
+            <select th:field="*{tipo}" id="tipoMaterial" class="form-control" th:classappend="${#fields.hasErrors('tipo')} ? 'is-invalid'" th:disabled="*{id != null}" required>
               <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.label}">Livro</option>
             </select>
+            <input type="hidden" name="tipo" th:if="*{id != null}" th:value="*{tipo}" />
+            <small class="texto-ajuda" th:if="*{id != null}">O tipo não pode ser alterado depois do cadastro.</small>
             <small class="erro-campo" th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}">Erro</small>
           </div>
           <div>
@@ -38,7 +40,8 @@
           </div>
           <div>
             <label class="form-label" for="ano">Ano</label>
-            <input type="number" th:field="*{ano}" class="form-control" min="1000" max="2100" />
+            <input type="number" th:field="*{ano}" class="form-control" th:classappend="${#fields.hasErrors('ano')} ? 'is-invalid'" min="1000" max="2100" inputmode="numeric" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('ano')}" th:errors="*{ano}">Erro</small>
           </div>
           <div>
             <label class="form-label" for="idioma">Idioma</label>
@@ -63,7 +66,7 @@
         <div class="form-grid mt-3 campos-tipo" data-tipo="LIVRO">
           <div>
             <label class="form-label" for="isbn">ISBN</label>
-            <input type="text" th:field="*{isbn}" class="form-control" />
+            <input type="text" th:field="*{isbn}" class="form-control" th:classappend="${#fields.hasErrors('isbn')} ? 'is-invalid'" inputmode="text" autocomplete="off" />
             <small class="erro-campo" th:if="${#fields.hasErrors('isbn')}" th:errors="*{isbn}">Erro</small>
           </div>
         </div>
@@ -75,13 +78,15 @@
           </div>
           <div>
             <label class="form-label" for="volume">Volume</label>
-            <input type="number" th:field="*{volume}" class="form-control" min="1" />
+            <input type="number" th:field="*{volume}" class="form-control" th:classappend="${#fields.hasErrors('volume')} ? 'is-invalid'" min="1" inputmode="numeric" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('volume')}" th:errors="*{volume}">Erro</small>
           </div>
         </div>
         <div class="form-grid mt-3 campos-tipo" data-tipo="DVD">
           <div>
             <label class="form-label" for="duracaoMinutos">Duração (min)</label>
-            <input type="number" th:field="*{duracaoMinutos}" class="form-control" min="1" />
+            <input type="number" th:field="*{duracaoMinutos}" class="form-control" th:classappend="${#fields.hasErrors('duracaoMinutos')} ? 'is-invalid'" min="1" inputmode="numeric" />
+            <small class="erro-campo" th:if="${#fields.hasErrors('duracaoMinutos')}" th:errors="*{duracaoMinutos}">Erro</small>
           </div>
         </div>
         <div class="form-grid mt-3 campos-tipo" data-tipo="DIGITAL">
@@ -97,11 +102,31 @@
           </div>
         </div>
 
+        <div class="mt-4 capa-campo">
+          <div class="capa-previa" id="capaPrevia">
+            <!-- th:replace tem precedência sobre th:if no mesmo elemento; por isso o if fica num bloco externo -->
+            <th:block th:if="${item.id != null}">
+              <th:block th:replace="~{layout/componentes :: capa(${item})}"></th:block>
+            </th:block>
+            <div class="capa" th:if="${item.id == null}">
+              <div class="capa-gerada capa-livro" aria-hidden="true"><i class="bi bi-image"></i><span class="capa-titulo">Sem capa</span></div>
+            </div>
+          </div>
+          <div class="capa-controles">
+            <label class="form-label" for="capa">Foto de capa <span class="texto-ajuda">(opcional)</span></label>
+            <input type="file" id="capa" name="capa" class="form-control" accept="image/jpeg,image/png,image/webp" />
+            <p class="texto-ajuda">JPG, PNG ou WebP, até 2 MB. Sem foto, o sistema mostra uma capa gerada com o título.</p>
+            <label class="opcao-simples" th:if="${item.id != null and item.temCapa}">
+              <input type="checkbox" name="removerCapa" value="true" id="removerCapa" /> Remover a capa atual
+            </label>
+          </div>
+        </div>
+
         <div class="mt-4">
           <label class="form-label" for="novoAutor">Autores</label>
           <p class="texto-ajuda">Digite o nome e pressione Enter ou clique em "Adicionar".</p>
-          <div class="d-flex gap-2 mb-2">
-            <input type="text" id="novoAutor" class="form-control" placeholder="Nome do autor" list="sugestoesAutores" autocomplete="off" />
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            <input type="text" id="novoAutor" class="form-control" placeholder="Nome do autor" list="sugestoesAutores" autocomplete="off" maxlength="150" />
             <datalist id="sugestoesAutores"></datalist>
             <button type="button" class="btn-bublo btn-sm" id="btnAddAutor">Adicionar</button>
           </div>
@@ -162,7 +187,13 @@
 
       function adicionarAutor() {
         const nome = entrada.value.trim();
-        if (!nome || nomesAtuais().includes(nome)) return;
+        // Mesmo autor com outra caixa ou espaços extras não entra duas vezes (o servidor trata como um só).
+        const chave = nome.replace(/\s+/g, ' ').toLowerCase();
+        if (!nome || nomesAtuais().some((n) => n.replace(/\s+/g, ' ').toLowerCase() === chave)) {
+          if (nome) Bublo.Toasts.info('Autor já adicionado', nome);
+          entrada.value = '';
+          return;
+        }
         const campo = document.createElement('input');
         campo.type = 'hidden';
         campo.name = 'novosAutores';
@@ -171,6 +202,38 @@
         entrada.value = '';
         desenharAutores();
       }
+
+      // Capa: confere tipo e tamanho antes de enviar e mostra uma prévia da imagem escolhida.
+      const campoCapa = document.getElementById('capa');
+      const previa = document.getElementById('capaPrevia');
+      const remover = document.getElementById('removerCapa');
+      const previaOriginal = previa.innerHTML;
+      let urlPrevia = null;
+      campoCapa.addEventListener('change', () => {
+        if (urlPrevia) { URL.revokeObjectURL(urlPrevia); urlPrevia = null; }
+        const arquivo = campoCapa.files[0];
+        if (!arquivo) { previa.innerHTML = previaOriginal; return; }
+        const tiposOk = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!tiposOk.includes(arquivo.type)) {
+          Bublo.Toasts.erro('Formato não aceito', 'Use uma imagem JPG, PNG ou WebP.');
+          campoCapa.value = ''; previa.innerHTML = previaOriginal; return;
+        }
+        if (arquivo.size > 2 * 1024 * 1024) {
+          Bublo.Toasts.erro('Imagem muito grande', 'A capa deve ter no máximo 2 MB.');
+          campoCapa.value = ''; previa.innerHTML = previaOriginal; return;
+        }
+        urlPrevia = URL.createObjectURL(arquivo);
+        previa.textContent = '';
+        const quadro = document.createElement('div');
+        quadro.className = 'capa';
+        const img = document.createElement('img');
+        img.className = 'capa-imagem';
+        img.alt = 'Prévia da capa';
+        img.src = urlPrevia;
+        quadro.appendChild(img);
+        previa.appendChild(quadro);
+        if (remover) remover.checked = false;
+      });
 
       document.getElementById('btnAddAutor').addEventListener('click', adicionarAutor);
       entrada.addEventListener('keydown', (e) => {

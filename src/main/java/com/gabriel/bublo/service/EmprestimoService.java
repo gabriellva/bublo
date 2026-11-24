@@ -10,12 +10,16 @@ import com.gabriel.bublo.model.Leitor;
 import com.gabriel.bublo.model.Multa;
 import com.gabriel.bublo.model.Notificacao;
 import com.gabriel.bublo.model.Professor;
+import com.gabriel.bublo.model.Reserva;
 import com.gabriel.bublo.repository.EmprestimoRepository;
 import com.gabriel.bublo.repository.LeitorRepository;
 import com.gabriel.bublo.repository.MultaRepository;
 import com.gabriel.bublo.repository.ExemplarRepository;
 import com.gabriel.bublo.repository.NotificacaoRepository;
 import com.gabriel.bublo.repository.ReservaRepository;
+import com.gabriel.bublo.repository.AuditoriaRepository;
+import com.gabriel.bublo.repository.ItemAcervoRepository;
+import com.gabriel.bublo.model.TipoMaterial;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +28,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Serviço de empréstimos: criação, renovação, devolução, regras de negócio.
@@ -46,6 +52,8 @@ public class EmprestimoService {
     private final NotificacaoRepository notificacaoRepository;
     private final ReservaRepository reservaRepository;
     private final ConfiguracaoService configuracaoService;
+    private final ItemAcervoRepository itemAcervoRepository;
+    private final AuditoriaRepository auditoriaRepository;
 
     public EmprestimoService(EmprestimoRepository emprestimoRepository,
                              LeitorRepository leitorRepository,
@@ -53,7 +61,9 @@ public class EmprestimoService {
                              MultaRepository multaRepository,
                              NotificacaoRepository notificacaoRepository,
                              ReservaRepository reservaRepository,
-                             ConfiguracaoService configuracaoService) {
+                             ConfiguracaoService configuracaoService,
+                             ItemAcervoRepository itemAcervoRepository,
+                             AuditoriaRepository auditoriaRepository) {
         this.emprestimoRepository = emprestimoRepository;
         this.leitorRepository = leitorRepository;
         this.exemplarRepository = exemplarRepository;
@@ -61,12 +71,19 @@ public class EmprestimoService {
         this.notificacaoRepository = notificacaoRepository;
         this.reservaRepository = reservaRepository;
         this.configuracaoService = configuracaoService;
+        this.itemAcervoRepository = itemAcervoRepository;
+        this.auditoriaRepository = auditoriaRepository;
     }
 
     @Transactional(readOnly = true)
     public Paginacao<EmprestimoResumoDTO> listar(String termo, String status, int pagina, int tamanho, String ordenacao) {
         return emprestimoRepository.buscar(termo, status, pagina, tamanho, ordenacao)
             .mapConteudo(this::toResumoDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EmprestimoResumoDTO> historicoDoLeitor(Long leitorId) {
+        return emprestimoRepository.listarPorLeitor(leitorId, 100).stream().map(this::toResumoDTO).toList();
     }
 
     @Transactional(readOnly = true)
@@ -101,9 +118,12 @@ public class EmprestimoService {
         List<Emprestimo> ativos = emprestimoRepository.listarAtivosPorLeitor(leitorId);
         BigDecimal saldo = multaRepository.saldoPendentePorLeitor(leitorId);
         boolean bloqueado = saldo.compareTo(BigDecimal.ZERO) > 0;
-        return new LeitorResumoDTO(
+        LeitorResumoDTO resumo = new LeitorResumoDTO(
             leitor.getId(), leitor.getNome(), leitor.getMatricula(), leitor.getTipo().name(),
             ativos.size(), 0, 0, saldo, bloqueado, 0);
+        resumo.setLimiteEmprestimos(limiteDoLeitor(leitor));
+        resumo.setPrazoDias(prazoPadraoEmDias(leitor));
+        return resumo;
     }
 
     @Transactional
@@ -121,6 +141,14 @@ public class EmprestimoService {
         if (dataPrevista == null || dataPrevista.toLocalDate().isBefore(LocalDate.now())) {
             throw new IllegalStateException("A data prevista de devolução não pode ser anterior a hoje.");
         }
+        int prazoMaximo = prazoPadraoEmDias(leitor);
+        if (dataPrevista.toLocalDate().isAfter(LocalDate.now().plusDays(prazoMaximo))) {
+            throw new IllegalStateException("A data prevista não pode ultrapassar o prazo de " + prazoMaximo
+                + " dia(s) permitido para este tipo de leitor.");
+        }
+
+        // Serializa empréstimos simultâneos do mesmo leitor para que o limite não seja ultrapassado.
+        leitorRepository.travar(leitorId);
 
         BigDecimal saldo = multaRepository.saldoPendentePorLeitor(leitorId);
         if (saldo.compareTo(BigDecimal.ZERO) > 0) {
@@ -134,11 +162,48 @@ public class EmprestimoService {
                 + "; o leitor já possui " + ativos + " ativo(s)).");
         }
 
+        // Reservas vencidas não podem mais segurar exemplares da fila.
+        for (var vencida : reservaRepository.listarExpiradasNaoProcessadas()) {
+            reservaRepository.expirar(vencida.getId());
+        }
+
+        Map<Long, Integer> pedidosPorItem = new LinkedHashMap<>();
         for (Long exemplarId : exemplaresUnicos) {
             Exemplar ex = exemplarRepository.buscarPorId(exemplarId)
                 .orElseThrow(() -> new IllegalStateException("Exemplar não encontrado: " + exemplarId));
             if (!Boolean.TRUE.equals(ex.getDisponivel())) {
                 throw new IllegalStateException("Exemplar indisponível: " + ex.getTombamento());
+            }
+            Long itemId = ex.getItemAcervoId();
+            var item = itemAcervoRepository.buscarPorId(itemId)
+                .orElseThrow(() -> new IllegalStateException("Material não encontrado para o exemplar " + ex.getTombamento()));
+            if (!itemAcervoRepository.estaAtivo(itemId)) {
+                throw new IllegalStateException("O material do exemplar " + ex.getTombamento() + " foi excluído do acervo.");
+            }
+            if (item.getTipo() == TipoMaterial.DIGITAL) {
+                throw new IllegalStateException("Publicações digitais não podem ser emprestadas.");
+            }
+            pedidosPorItem.merge(itemId, 1, Integer::sum);
+        }
+
+        // Fila de reservas: quem está à frente do leitor tem prioridade sobre os exemplares livres.
+        Map<Long, Reserva> reservasDoLeitor = new LinkedHashMap<>();
+        for (var entrada : pedidosPorItem.entrySet()) {
+            Long itemId = entrada.getKey();
+            List<Reserva> fila = reservaRepository.listarPendentesPorItem(itemId);
+            int aFrente = fila.size();
+            for (int i = 0; i < fila.size(); i++) {
+                Reserva r = fila.get(i);
+                if (r.getLeitor() != null && leitorId.equals(r.getLeitor().getId())) {
+                    aFrente = i;
+                    reservasDoLeitor.put(itemId, r);
+                    break;
+                }
+            }
+            int livres = exemplarRepository.buscarDisponiveisPorItem(itemId).size() - aFrente;
+            if (entrada.getValue() > livres) {
+                throw new IllegalStateException("Este material está reservado para outros leitores na fila. "
+                    + "Só o primeiro da fila pode retirá-lo.");
             }
         }
 
@@ -147,11 +212,16 @@ public class EmprestimoService {
             Emprestimo e = emprestimoRepository.criar(leitorId, exemplarId, dataPrevista);
             criados.add(toDTO(e));
         }
+        reservasDoLeitor.values().forEach(r -> reservaRepository.atender(r.getId()));
 
         notificacaoRepository.salvar(new Notificacao(
             null, "EMPRESTIMO", "INFORMATIVO", "Novo empréstimo registrado",
             "Empréstimo de " + exemplaresUnicos.size() + " exemplar(es) para " + leitor.getNome(),
             "EMPRESTIMO", criados.get(0).getId()));
+        auditoriaRepository.registrar(adminUsuario, "CRIACAO_EMPRESTIMO", "Emprestimos",
+            "Empréstimo #" + criados.get(0).getId(), null,
+            leitor.getNome() + ": " + exemplaresUnicos.size() + " exemplar(es), devolução até "
+                + dataPrevista.toLocalDate(), null);
 
         return criados.get(0);
     }
@@ -163,29 +233,36 @@ public class EmprestimoService {
         if (!"ATIVO".equals(e.getStatus())) {
             throw new IllegalStateException("Empréstimo não está ativo");
         }
+        // A baixa é condicional ao status ATIVO: se outra requisição já devolveu, nenhuma multa é gerada de novo.
+        if (!emprestimoRepository.devolver(emprestimoId)) {
+            throw new IllegalStateException("Empréstimo não está ativo");
+        }
 
         long diasAtraso = diasDeAtraso(e.getDataPrevistaDevolucao(), LocalDate.now());
         BigDecimal valorMulta = BigDecimal.ZERO;
         if (diasAtraso > 0) {
             BigDecimal taxa = configuracaoService.buscarDecimal("taxa_diaria_multa", TAXA_DIARIA_PADRAO);
             BigDecimal valor = taxa.multiply(BigDecimal.valueOf(diasAtraso));
-            valorMulta = valor;
-            Multa multa = new Multa();
-            multa.setEmprestimoId(e.getId());
-            multa.setLeitorId(e.getLeitor().getId());
-            multa.setValor(valor);
-            multa.setTaxaDiaria(taxa);
-            multa.setDiasAtraso((int) diasAtraso);
-            multa.setStatus("PENDENTE");
-            multaRepository.salvar(multa);
+            if (valor.signum() > 0) {
+                valorMulta = valor;
+                Multa multa = new Multa();
+                multa.setEmprestimoId(e.getId());
+                multa.setLeitorId(e.getLeitor().getId());
+                multa.setValor(valor);
+                multa.setTaxaDiaria(taxa);
+                multa.setDiasAtraso((int) diasAtraso);
+                multa.setStatus("PENDENTE");
+                multaRepository.salvar(multa);
 
-            notificacaoRepository.salvar(new Notificacao(
-                null, "MULTA", "ATENCAO", "Multa gerada por atraso",
-                "Multa de R$ " + valor + " gerada para o empréstimo #" + emprestimoId + " (" + diasAtraso + " dia(s) de atraso)",
-                "MULTA", multa.getId()));
+                notificacaoRepository.salvar(new Notificacao(
+                    null, "MULTA", "ATENCAO", "Multa gerada por atraso",
+                    "Multa de R$ " + valor + " gerada para o empréstimo #" + emprestimoId + " (" + diasAtraso + " dia(s) de atraso)",
+                    "MULTA", multa.getId()));
+            }
         }
 
-        emprestimoRepository.devolver(emprestimoId);
+        auditoriaRepository.registrar(adminUsuario, "DEVOLUCAO", "Emprestimos", "Empréstimo #" + emprestimoId,
+            "ATIVO", "DEVOLVIDO" + (valorMulta.signum() > 0 ? " (multa R$ " + valorMulta + ")" : ""), null);
         avisarPrimeiroDaFila(e);
         return valorMulta;
     }
@@ -208,17 +285,24 @@ public class EmprestimoService {
             throw new IllegalStateException("Há reserva pendente para este material. A renovação não é permitida.");
         }
         LocalDateTime novaPrevista = e.getDataPrevistaDevolucao().plusDays(prazoPadraoEmDias(e.getLeitor()));
-        emprestimoRepository.renovar(emprestimoId, novaPrevista);
+        if (!emprestimoRepository.renovar(emprestimoId, novaPrevista, MAXIMO_RENOVACOES)) {
+            throw new IllegalStateException("Limite de renovações atingido");
+        }
+        auditoriaRepository.registrar(adminUsuario, "RENOVACAO_EMPRESTIMO", "Emprestimos", "Empréstimo #" + emprestimoId,
+            "devolução até " + e.getDataPrevistaDevolucao().toLocalDate(),
+            "devolução até " + novaPrevista.toLocalDate(), null);
     }
 
     @Transactional
     public void cancelar(Long emprestimoId, String adminUsuario) {
         Emprestimo e = emprestimoRepository.buscarPorId(emprestimoId)
             .orElseThrow(() -> new IllegalStateException("Empréstimo não encontrado"));
-        if (!"ATIVO".equals(e.getStatus())) {
+        if (!"ATIVO".equals(e.getStatus()) || !emprestimoRepository.cancelar(emprestimoId)) {
             throw new IllegalStateException("Somente empréstimos ativos podem ser cancelados");
         }
-        emprestimoRepository.cancelar(emprestimoId);
+        auditoriaRepository.registrar(adminUsuario, "CANCELAMENTO_EMPRESTIMO", "Emprestimos",
+            "Empréstimo #" + emprestimoId, "ATIVO", "CANCELADO", null);
+        avisarPrimeiroDaFila(e);
     }
 
     @Transactional(readOnly = true)

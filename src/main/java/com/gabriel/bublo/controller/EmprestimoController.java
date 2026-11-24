@@ -41,15 +41,20 @@ public class EmprestimoController {
     @GetMapping
     public String listar(@RequestParam(required = false) String termo,
                          @RequestParam(required = false) String status,
+                         @RequestParam(defaultValue = "andamento") String aba,
                          @RequestParam(defaultValue = "0") int pagina,
                          @RequestParam(defaultValue = "10") int tamanho,
                          @RequestParam(defaultValue = "data_emprestimo DESC") String ordenacao,
                          Model model) {
-        var resultado = emprestimoService.listar(termo, status, Math.max(pagina, 0),
+        boolean historico = "historico".equals(aba);
+        // Aba "Em andamento" = empréstimos ativos; "Histórico" = devolvidos e cancelados.
+        String filtro = (status == null || status.isBlank()) ? (historico ? "HISTORICO" : "ATIVO") : status;
+        var resultado = emprestimoService.listar(termo, filtro, Math.max(pagina, 0),
             Math.min(Math.max(tamanho, 1), 100), ordenacao);
         model.addAttribute("resultado", resultado);
         model.addAttribute("termo", termo);
         model.addAttribute("status", status);
+        model.addAttribute("aba", historico ? "historico" : "andamento");
         model.addAttribute("ordenacao", ordenacao);
         return "emprestimos/listar";
     }
@@ -111,7 +116,8 @@ public class EmprestimoController {
         var restricao = emprestimoService.restricaoLeitor(leitorId);
         if (restricao == null) return Map.of("encontrado", false, "bloqueado", false);
         return Map.of("encontrado", true, "bloqueado", restricao.isBloqueado(),
-            "ativos", restricao.getEmprestimosAtivos(), "saldo", restricao.getSaldoPendente());
+            "ativos", restricao.getEmprestimosAtivos(), "saldo", restricao.getSaldoPendente(),
+            "limite", restricao.getLimiteEmprestimos(), "prazoDias", restricao.getPrazoDias());
     }
 
     private void carregarFormulario(Model model) {

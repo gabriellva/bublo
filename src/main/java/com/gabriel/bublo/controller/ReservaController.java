@@ -42,14 +42,19 @@ public class ReservaController {
     @GetMapping
     public String listar(@RequestParam(required = false) String termo,
                          @RequestParam(required = false) String status,
+                         @RequestParam(defaultValue = "andamento") String aba,
                          @RequestParam(defaultValue = "0") int pagina,
                          @RequestParam(defaultValue = "10") int tamanho,
                          Model model) {
-        var resultado = reservaService.listar(termo, status, Math.max(pagina, 0),
+        boolean historico = "historico".equals(aba);
+        // Aba "Em andamento" = reservas aguardando; "Histórico" = atendidas, canceladas e expiradas.
+        String filtro = (status == null || status.isBlank()) ? (historico ? "HISTORICO" : "AGUARDANDO") : status;
+        var resultado = reservaService.listar(termo, filtro, Math.max(pagina, 0),
             Math.min(Math.max(tamanho, 1), 100), "data_reserva DESC");
         model.addAttribute("resultado", resultado);
         model.addAttribute("termo", termo);
         model.addAttribute("status", status);
+        model.addAttribute("aba", historico ? "historico" : "andamento");
         return "reservas/listar";
     }
 
@@ -75,7 +80,8 @@ public class ReservaController {
             redirect.addFlashAttribute("sucesso", "Reserva criada. Posição na fila: " + reserva.getPosicao() + ".");
             return "redirect:/reservas";
         } catch (IllegalStateException e) {
-            model.addAttribute("erro", e.getMessage());
+            // Erro fixo no próprio formulário (um toast some em segundos e esta regra precisa ser lida com calma).
+            model.addAttribute("erroForm", e.getMessage());
             model.addAttribute("leitorSelecionado", leitorId);
             model.addAttribute("itemSelecionado", itemId);
             model.addAttribute("prazoSelecionado", prazo);
@@ -97,7 +103,8 @@ public class ReservaController {
 
     private void carregarFormulario(Model model) {
         model.addAttribute("leitores", leitorService.listar(null, null, true, 0, 1000, "nome ASC").getConteudo());
-        model.addAttribute("acervo", acervoService.listarTodos());
+        model.addAttribute("acervo", acervoService.listarTodos().stream()
+            .filter(item -> !"DIGITAL".equals(item.getTipo())).toList());
         model.addAttribute("hoje", LocalDate.now());
     }
 }

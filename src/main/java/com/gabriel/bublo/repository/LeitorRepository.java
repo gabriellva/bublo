@@ -85,6 +85,11 @@ public class LeitorRepository {
         }
     }
 
+    /** Trava a linha do leitor até o fim da transação (serializa empréstimos simultâneos do mesmo leitor). */
+    public void travar(Long id) {
+        jdbc.query("SELECT id FROM leitores WHERE id = ? FOR UPDATE", rs -> { }, id);
+    }
+
     public Optional<Leitor> buscarPorMatricula(String matricula) {
         try {
             return Optional.ofNullable(jdbc.queryForObject("SELECT * FROM leitores WHERE matricula = ?", LEITOR_MAPPER, matricula));
@@ -95,11 +100,19 @@ public class LeitorRepository {
 
     public boolean emailExiste(String email, Long excluirId) {
         String sql = excluirId != null
-            ? "SELECT COUNT(*) FROM leitores WHERE email = ? AND id <> ?"
-            : "SELECT COUNT(*) FROM leitores WHERE email = ?";
+            ? "SELECT COUNT(*) FROM leitores WHERE lower(email) = lower(?) AND id <> ?"
+            : "SELECT COUNT(*) FROM leitores WHERE lower(email) = lower(?)";
         Integer c = excluirId != null
             ? jdbc.queryForObject(sql, Integer.class, email, excluirId)
             : jdbc.queryForObject(sql, Integer.class, email);
+        return c != null && c > 0;
+    }
+
+    /** Compara só os dígitos, para achar o mesmo CPF gravado com ou sem pontuação. */
+    public boolean cpfExiste(String cpfApenasDigitos, Long excluirId) {
+        Integer c = jdbc.queryForObject(
+            "SELECT COUNT(*) FROM leitores WHERE regexp_replace(COALESCE(cpf, ''), '\\D', '', 'g') = ? AND id <> ?",
+            Integer.class, cpfApenasDigitos, excluirId != null ? excluirId : -1L);
         return c != null && c > 0;
     }
 
@@ -113,7 +126,7 @@ public class LeitorRepository {
         StringBuilder where = new StringBuilder("WHERE 1=1");
         if (termo != null && !termo.isBlank()) {
             where.append(" AND (nome ILIKE ? OR email ILIKE ? OR matricula ILIKE ?)");
-            String t = "%" + termo + "%";
+            String t = "%" + termo.trim() + "%";
             args.add(t); args.add(t); args.add(t);
         }
         if (tipo != null) {

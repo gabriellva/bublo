@@ -36,8 +36,12 @@ const Bublo = (function () {
       if (icone) icone.className = this.atual() === "escuro" ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
     },
     alternar: function () {
-      document.documentElement.classList.add("tema-animado");
+      const raiz = document.documentElement;
+      raiz.classList.add("tema-animado");
       this.aplicar(this.atual() === "claro" ? "escuro" : "claro", true);
+      // A transição de cores vale só durante a troca; depois não pode interferir nas demais animações.
+      clearTimeout(this.fimTransicao);
+      this.fimTransicao = setTimeout(() => raiz.classList.remove("tema-animado"), 400);
     },
     init: function () {
       const btn = document.getElementById("btn-tema");
@@ -294,12 +298,121 @@ const Bublo = (function () {
     const btn = document.getElementById("btn-menu");
     const sidebar = document.getElementById("sidebar");
     if (!btn || !sidebar) return;
+    const fundo = document.createElement("div");
+    fundo.className = "sidebar-fundo";
+    document.body.appendChild(fundo);
+    btn.setAttribute("aria-controls", "sidebar");
+    btn.setAttribute("aria-expanded", "false");
+
+    function definir(aberto) {
+      sidebar.classList.toggle("aberta", aberto);
+      fundo.classList.toggle("visivel", aberto);
+      document.body.classList.toggle("menu-aberto", aberto);
+      btn.setAttribute("aria-expanded", aberto ? "true" : "false");
+      btn.setAttribute("aria-label", aberto ? "Fechar menu" : "Abrir menu");
+      if (aberto) {
+        const primeiro = sidebar.querySelector("a");
+        if (primeiro) primeiro.focus();
+      }
+    }
+
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      sidebar.classList.toggle("aberta");
+      definir(!sidebar.classList.contains("aberta"));
     });
-    document.addEventListener("click", (e) => {
-      if (!sidebar.contains(e.target)) sidebar.classList.remove("aberta");
+    fundo.addEventListener("click", () => definir(false));
+    sidebar.addEventListener("click", (e) => { if (e.target.closest("a")) definir(false); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && sidebar.classList.contains("aberta")) {
+        definir(false);
+        btn.focus();
+      }
+    });
+    // Ao voltar para o layout largo, o estado do menu móvel não pode ficar preso.
+    window.matchMedia("(min-width: 993px)").addEventListener("change", (e) => { if (e.matches) definir(false); });
+  }
+
+  // ---------- Painéis recolhíveis: no celular a busca/importação some atrás de um botão ----------
+  function iniciarPaineisRecolhiveis() {
+    const paineis = Array.from(document.querySelectorAll(".painel-recolhivel"));
+    if (!paineis.length) return;
+    const barra = document.createElement("div");
+    barra.className = "barra-paineis";
+    paineis[0].before(barra);
+    const parametros = new URLSearchParams(window.location.search);
+    // Campos que não são filtro de verdade não contam como "filtro aplicado".
+    const ignorados = ["aba", "pagina", "tamanho", "ordenacao"];
+
+    paineis.forEach((painel, i) => {
+      if (!painel.id) painel.id = "painel-recolhivel-" + i;
+      const form = painel.querySelector("form");
+      const filtrado = !!form && Array.from(form.elements).some((el) =>
+        el.name && !ignorados.includes(el.name) && parametros.get(el.name));
+
+      const botao = document.createElement("button");
+      botao.type = "button";
+      botao.className = "btn-bublo btn-contorno btn-painel";
+      botao.setAttribute("aria-expanded", "false");
+      botao.setAttribute("aria-controls", painel.id);
+      const icone = document.createElement("i");
+      icone.className = "bi " + (painel.dataset.icone || "bi-search");
+      icone.setAttribute("aria-hidden", "true");
+      const rotulo = document.createElement("span");
+      rotulo.textContent = painel.dataset.rotulo || "Pesquisar";
+      botao.append(icone, rotulo);
+      if (filtrado) {
+        const ponto = document.createElement("span");
+        ponto.className = "ponto-filtro";
+        ponto.title = "Filtros aplicados";
+        botao.appendChild(ponto);
+      }
+      const seta = document.createElement("i");
+      seta.className = "bi bi-chevron-down seta";
+      seta.setAttribute("aria-hidden", "true");
+      botao.appendChild(seta);
+
+      painel.classList.add("recolhido");
+      botao.addEventListener("click", () => {
+        const aberto = painel.classList.toggle("recolhido") === false;
+        botao.setAttribute("aria-expanded", aberto ? "true" : "false");
+      });
+      barra.appendChild(botao);
+    });
+  }
+
+  // ---------- Envio de formulários: feedback e proteção contra duplo clique ----------
+  function iniciarEnvios() {
+    document.addEventListener("submit", (e) => {
+      const form = e.target;
+      // Confirmações cancelam o envio e reenviam depois; só reage ao envio que realmente segue.
+      if (e.defaultPrevented || !(form instanceof HTMLFormElement)) return;
+      if ((form.method || "get").toLowerCase() !== "post") return;
+      if (form.dataset.enviando) {
+        e.preventDefault();
+        return;
+      }
+      form.dataset.enviando = "1";
+      const botao = e.submitter || form.querySelector('button[type="submit"]');
+      if (botao) {
+        botao.classList.add("carregando");
+        botao.setAttribute("aria-busy", "true");
+      }
+      // Desabilita depois do envio começar (desabilitar antes descartaria o valor do botão).
+      setTimeout(() => {
+        form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = true; });
+      }, 0);
+    });
+    // Voltar pelo histórico (bfcache) não pode deixar o formulário travado.
+    window.addEventListener("pageshow", (e) => {
+      if (!e.persisted) return;
+      document.querySelectorAll("form[data-enviando]").forEach((form) => {
+        delete form.dataset.enviando;
+        form.querySelectorAll('button[type="submit"]').forEach((b) => {
+          b.disabled = false;
+          b.classList.remove("carregando");
+          b.removeAttribute("aria-busy");
+        });
+      });
     });
   }
 
@@ -309,6 +422,8 @@ const Bublo = (function () {
     Confirmacoes.init();
     Notificacoes.init();
     iniciarMenuMobile();
+    iniciarPaineisRecolhiveis();
+    iniciarEnvios();
     Toasts.exibirFlash();
   });
 

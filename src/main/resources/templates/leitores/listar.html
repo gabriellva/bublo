@@ -9,7 +9,7 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header cabecalho-pagina">
         <div>
           <h1>Leitores</h1>
@@ -18,7 +18,7 @@
         <a th:href="@{/leitores/novo}" class="btn-bublo"><i class="bi bi-person-plus"></i> Cadastrar leitor</a>
       </div>
 
-      <div class="card-bublo p-3 mb-3">
+      <div class="card-bublo p-3 mb-3 painel-recolhivel" data-rotulo="Pesquisar" data-icone="bi-search">
         <form th:action="@{/leitores}" method="get" class="form-grid" style="align-items:end;">
           <div>
             <label class="form-label" for="termo">Buscar (nome, e-mail ou matrícula)</label>
@@ -46,12 +46,16 @@
         </form>
       </div>
 
-      <div class="acoes-linha mb-3">
-        <a th:href="@{/leitores/modelo-csv}" class="btn-bublo btn-sm btn-contorno"><i class="bi bi-download"></i> Modelo CSV</a>
-        <form th:action="@{/leitores/importar}" method="post" enctype="multipart/form-data" class="d-flex flex-wrap align-items-center gap-2 m-0">
-          <label class="texto-ajuda m-0" for="arquivo">Importar CSV:</label>
-          <input type="file" id="arquivo" name="arquivo" accept=".csv,text/csv" required style="font-size:0.8rem;" />
-          <button type="submit" class="btn-bublo btn-sm">Importar</button>
+      <div class="card-bublo p-3 mb-3 painel-recolhivel" data-rotulo="Importar" data-icone="bi-upload">
+        <form th:action="@{/leitores/importar}" method="post" enctype="multipart/form-data" class="form-grid" style="align-items:end;">
+          <div>
+            <label class="form-label" for="arquivo">Importar leitores (CSV, até 2 MB)</label>
+            <input type="file" id="arquivo" name="arquivo" accept=".csv,text/csv" required class="form-control" />
+          </div>
+          <div class="acoes-linha">
+            <button type="submit" class="btn-bublo">Importar</button>
+            <a th:href="@{/leitores/modelo-csv}" class="btn-bublo btn-contorno"><i class="bi bi-download"></i> Modelo CSV</a>
+          </div>
         </form>
       </div>
 
@@ -70,20 +74,20 @@
         </div>
       </div>
 
-      <div class="tabela-bloco" th:unless="${resultado.conteudo.empty}">
-        <table class="tabela">
+      <div class="tabela-bloco bloco-cartoes" th:unless="${resultado.conteudo.empty}">
+        <table class="tabela tabela-cartoes">
           <thead>
             <tr><th>Matrícula</th><th>Nome</th><th>Tipo</th><th>E-mail</th><th>Curso/Depto.</th><th>Status</th><th>Ações</th></tr>
           </thead>
           <tbody>
             <tr th:each="l : ${resultado.conteudo}">
-              <td><strong th:text="${l.matricula}">-</strong></td>
-              <td th:text="${l.nome}">Nome</td>
-              <td><span class="badge-bublo badge-neutro" th:text="${l.tipo == 'PROFESSOR' ? 'Professor' : 'Aluno'}">Aluno</span></td>
-              <td th:text="${l.email}">email</td>
-              <td th:text="${l.cursoDepartamento ?: '-'}">-</td>
-              <td><span class="badge-bublo" th:classappend="${l.ativo} ? 'badge-ativo' : 'badge-inativo'" th:text="${l.ativo ? 'Ativo' : 'Inativo'}">Ativo</span></td>
-              <td>
+              <td data-label="Matrícula"><strong th:text="${l.matricula}">-</strong></td>
+              <td data-label="Nome" th:text="${l.nome}">Nome</td>
+              <td data-label="Tipo"><span class="badge-bublo badge-neutro" th:text="${l.tipo == 'PROFESSOR' ? 'Professor' : 'Aluno'}">Aluno</span></td>
+              <td data-label="E-mail" th:text="${l.email}">email</td>
+              <td data-label="Curso/Depto." th:text="${l.cursoDepartamento ?: '-'}">-</td>
+              <td data-label="Status"><span class="badge-bublo" th:classappend="${l.ativo} ? 'badge-ativo' : 'badge-inativo'" th:text="${l.ativo ? 'Ativo' : 'Inativo'}">Ativo</span></td>
+              <td class="celula-acoes">
                 <div class="acoes-linha">
                   <a th:href="@{/leitores/{id}(id=${l.id})}" class="btn-bublo btn-acao">Ver</a>
                   <a th:href="@{/leitores/{id}/editar(id=${l.id})}" class="btn-bublo btn-acao btn-contorno">Editar</a>

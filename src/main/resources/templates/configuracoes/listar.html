@@ -9,45 +9,37 @@
 
   <div class="main">
     <th:block th:replace="~{layout/topbar :: topbar}"></th:block>
-    <main class="conteudo">
+    <main class="conteudo" id="conteudo" tabindex="-1">
       <div class="page-header">
         <h1>Configurações</h1>
-        <p class="subtitulo">Empréstimos, multas, reservas e dados da biblioteca</p>
+        <p class="subtitulo">Limites, prazos e taxas aplicados aos empréstimos, multas e reservas</p>
       </div>
 
       <form th:action="@{/configuracoes/salvar}" method="post">
         <div class="form-grid">
           <div>
-            <label class="form-label" for="nome_instituicao">Nome da instituição</label>
-            <input type="text" id="nome_instituicao" name="nome_instituicao" class="form-control"  th:value="${valores['nome_instituicao']}" required />
-          </div>
-          <div>
-            <label class="form-label" for="prefixo_tombamento">Prefixo dos tombamentos</label>
-            <input type="text" id="prefixo_tombamento" name="prefixo_tombamento" class="form-control"  th:value="${valores['prefixo_tombamento']}" required />
-          </div>
-          <div>
             <label class="form-label" for="limite_alunos">Limite de exemplares por aluno</label>
-            <input type="number" id="limite_alunos" name="limite_alunos" class="form-control" min="1" th:value="${valores['limite_alunos']}" required />
+            <input type="number" id="limite_alunos" name="limite_alunos" class="form-control" min="1" max="50" inputmode="numeric" th:value="${valores['limite_alunos']}" required />
           </div>
           <div>
             <label class="form-label" for="limite_professores">Limite de exemplares por professor</label>
-            <input type="number" id="limite_professores" name="limite_professores" class="form-control" min="1" th:value="${valores['limite_professores']}" required />
+            <input type="number" id="limite_professores" name="limite_professores" class="form-control" min="1" max="50" inputmode="numeric" th:value="${valores['limite_professores']}" required />
           </div>
           <div>
             <label class="form-label" for="prazo_alunos">Prazo de devolução — alunos (dias)</label>
-            <input type="number" id="prazo_alunos" name="prazo_alunos" class="form-control" min="1" th:value="${valores['prazo_alunos']}" required />
+            <input type="number" id="prazo_alunos" name="prazo_alunos" class="form-control" min="1" max="365" inputmode="numeric" th:value="${valores['prazo_alunos']}" required />
           </div>
           <div>
             <label class="form-label" for="prazo_professores">Prazo de devolução — professores (dias)</label>
-            <input type="number" id="prazo_professores" name="prazo_professores" class="form-control" min="1" th:value="${valores['prazo_professores']}" required />
+            <input type="number" id="prazo_professores" name="prazo_professores" class="form-control" min="1" max="365" inputmode="numeric" th:value="${valores['prazo_professores']}" required />
           </div>
           <div>
             <label class="form-label" for="taxa_diaria_multa">Taxa diária de multa (R$)</label>
-            <input type="number" id="taxa_diaria_multa" name="taxa_diaria_multa" class="form-control" min="0" step="0.01" th:value="${valores['taxa_diaria_multa']}" required />
+            <input type="number" id="taxa_diaria_multa" name="taxa_diaria_multa" class="form-control" min="0" max="1000" step="0.01" inputmode="decimal" th:value="${valores['taxa_diaria_multa']}" required />
           </div>
           <div>
             <label class="form-label" for="prazo_retirada_reserva">Prazo de retirada da reserva (dias)</label>
-            <input type="number" id="prazo_retirada_reserva" name="prazo_retirada_reserva" class="form-control" min="1" th:value="${valores['prazo_retirada_reserva']}" required />
+            <input type="number" id="prazo_retirada_reserva" name="prazo_retirada_reserva" class="form-control" min="1" max="30" inputmode="numeric" th:value="${valores['prazo_retirada_reserva']}" required />
           </div>
         </div>
         <div class="mt-3">
@@ -60,6 +52,21 @@
           <a th:href="@{/configuracoes}" class="btn-bublo btn-contorno">Descartar alterações</a>
         </div>
       </form>
+
+      <div class="card-bublo p-3 mt-4" th:if="${reversivel != null}">
+        <h3 class="mt-0">Desfazer a última alteração</h3>
+        <p class="texto-ajuda">
+          Última alteração: <strong th:text="${reversivel.registroAfectado}">chave</strong>
+          — de <strong th:text="${reversivel.valoresAntes}">antes</strong>
+          para <strong th:text="${reversivel.valoresDepois}">depois</strong>.
+          Só a alteração mais recente pode ser desfeita.
+        </p>
+        <form th:action="@{/configuracoes/reverter}" method="post" class="form-inline">
+          <input type="text" name="justificativa" class="form-control" placeholder="Justificativa (obrigatória)" required maxlength="500"
+                 aria-label="Justificativa para desfazer" />
+          <button type="submit" class="btn-bublo btn-contorno perigo">Desfazer alteração</button>
+        </form>
+      </div>
     </main>
   </div>
 

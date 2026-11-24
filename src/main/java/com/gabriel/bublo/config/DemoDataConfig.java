@@ -68,15 +68,18 @@ public class DemoDataConfig {
                     u.setAtivo(true);
                     usuarioRepository.criar(u);
                 }
-            } else {
-                // Fallback: criar admin padrão se não houver variáveis de ambiente
-                if (usuarioRepository.buscarPorUsername("admin").isEmpty()) {
-                    Usuario u = new Usuario();
-                    u.setUsername("admin");
-                    u.setSenhaHash(passwordEncoder.encode("admin"));
-                    u.setAtivo(true);
-                    usuarioRepository.criar(u);
-                }
+            } else if (usuarioRepository.buscarPorUsername("admin").isEmpty()) {
+                // Sem ADMIN_USERNAME/ADMIN_PASSWORD: nunca criar credencial previsível. Gera uma senha
+                // aleatória, mostrada uma única vez no log da primeira inicialização.
+                String senhaInicial = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16) + "a1";
+                Usuario u = new Usuario();
+                u.setUsername("admin");
+                u.setSenhaHash(passwordEncoder.encode(senhaInicial));
+                u.setAtivo(true);
+                usuarioRepository.criar(u);
+                org.slf4j.LoggerFactory.getLogger(DemoDataConfig.class).warn(
+                    "ADMIN_USERNAME/ADMIN_PASSWORD não definidos. Usuário 'admin' criado com senha temporária: {} "
+                    + "(troque em Conta > Alterar senha).", senhaInicial);
             }
 
             if (!demoEnabled) return;
@@ -134,6 +137,7 @@ public class DemoDataConfig {
             Categoria multimidia = criarCategoria(itemAcervoRepository, "Multimídia");
             Categoria digital = criarCategoria(itemAcervoRepository, "Publicações digitais");
             int indice = 0;
+            int numeroMaterial = 0;
             for (ItemAcervo m : materiais) {
                 m.setCategoria(switch (m.getTipo()) {
                     case LIVRO -> indice++ < 2 ? literatura : tecnologia;
@@ -142,8 +146,9 @@ public class DemoDataConfig {
                     case DIGITAL -> digital;
                 });
                 itemAcervoRepository.salvar(m);
+                carregarCapaDemo(itemAcervoRepository, m);
                 if (m.getTipo() != com.gabriel.bublo.model.TipoMaterial.DIGITAL) {
-                    int qtd = 1 + (int)(Math.random() * 2);
+                    int qtd = 1 + (numeroMaterial++ % 2);
                     exemplarRepository.salvarLote(m, qtd);
                 }
             }
@@ -188,8 +193,6 @@ public class DemoDataConfig {
             }
 
             // 6. Configurações iniciais (ON CONFLICT já lida com idempotência)
-            configuracaoService.salvar("nome_instituicao", "Biblioteca Acadêmica", "sistema", "Carga inicial");
-            configuracaoService.salvar("prefixo_tombamento", "BA", "sistema", "Carga inicial");
             configuracaoService.salvar("limite_alunos", "3", "sistema", "Carga inicial");
             configuracaoService.salvar("limite_professores", "5", "sistema", "Carga inicial");
             configuracaoService.salvar("prazo_alunos", "7", "sistema", "Carga inicial");
@@ -198,6 +201,23 @@ public class DemoDataConfig {
             configuracaoService.salvar("prazo_retirada_reserva", "3", "sistema", "Carga inicial");
 
         };
+    }
+
+    /**
+     * Capa de demonstração: usa o arquivo em demo/capas/ cujo nome é o título sem acentos e com hífens
+     * (ex.: "Dom Casmurro" -> dom-casmurro.jpg). Sem o arquivo, o item fica sem foto e a tela mostra a capa gerada.
+     */
+    private void carregarCapaDemo(ItemAcervoRepository repository, ItemAcervo item) {
+        String nome = java.text.Normalizer.normalize(item.getTitulo(), java.text.Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "").toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+        var recurso = new org.springframework.core.io.ClassPathResource("demo/capas/" + nome + ".jpg");
+        if (!recurso.exists()) return;
+        try (var entrada = recurso.getInputStream()) {
+            repository.salvarCapa(item.getId(), entrada.readAllBytes(), "image/jpeg");
+        } catch (java.io.IOException e) {
+            org.slf4j.LoggerFactory.getLogger(DemoDataConfig.class)
+                .warn("Não foi possível carregar a capa de demonstração de '{}': {}", item.getTitulo(), e.getMessage());
+        }
     }
 
     private Categoria criarCategoria(ItemAcervoRepository repository, String nome) {

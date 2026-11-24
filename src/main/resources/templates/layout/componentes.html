@@ -1,12 +1,46 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <body>
-  <nav th:fragment="paginacao(resultado, url)" class="paginacao" th:if="${resultado.totalPaginas gt 1}" aria-label="Paginação">
-    <a th:each="i : ${#numbers.sequence(0, resultado.totalPaginas - 1)}"
-       th:href="@{${url}(pagina=${i}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida})}"
-       th:classappend="${resultado.pagina == i} ? 'ativo'"
-       th:text="${i + 1}">1</a>
+  <!-- Capa do material: a foto enviada ou, sem foto, uma capa gerada com o título (cor por tipo). -->
+  <div th:fragment="capa(item)" class="capa">
+    <img th:if="${item.temCapa}" class="capa-imagem"
+         th:src="@{/acervo/{id}/capa(id=${item.id}, v=${item.capaVersao})}"
+         th:alt="${'Capa de ' + item.titulo}" loading="lazy" decoding="async" />
+    <div th:unless="${item.temCapa}" class="capa-gerada" th:classappend="${'capa-' + #strings.toLowerCase(item.tipo)}" aria-hidden="true">
+      <i class="bi" th:classappend="${item.tipo == 'LIVRO' ? 'bi-book' : item.tipo == 'REVISTA' ? 'bi-journal-text' : item.tipo == 'DVD' ? 'bi-disc' : 'bi-laptop'}"></i>
+      <span class="capa-titulo" th:text="${item.titulo}">Título</span>
+      <span class="capa-autor" th:if="${!item.autoresNomes.empty}" th:text="${item.autoresNomes[0]}">Autor</span>
+    </div>
+  </div>
+
+  <!-- Abas "Em andamento" / "Histórico" de uma lista (parâmetro aba). -->
+  <nav th:fragment="abas(url, aba, rotuloAndamento, rotuloHistorico)" class="abas" aria-label="Seções da lista">
+    <a th:href="@{${url}(aba='andamento')}" th:classappend="${aba == 'andamento'} ? 'ativo'"
+       th:aria-current="${aba == 'andamento'} ? 'page'" th:text="${rotuloAndamento}">Em andamento</a>
+    <a th:href="@{${url}(aba='historico')}" th:classappend="${aba == 'historico'} ? 'ativo'"
+       th:aria-current="${aba == 'historico'} ? 'page'" th:text="${rotuloHistorico}">Histórico</a>
   </nav>
 
+  <!-- Paginação com janela: primeira, atual ±2, última, anterior/próxima e reticências. -->
+  <nav th:fragment="paginacao(resultado, url)" class="paginacao" th:if="${resultado.totalPaginas gt 1}" aria-label="Paginação"
+       th:with="atual=${resultado.pagina}, total=${resultado.totalPaginas},
+                inicio=${resultado.pagina - 2 gt 0 ? resultado.pagina - 2 : 0},
+                fim=${resultado.pagina + 2 lt resultado.totalPaginas - 1 ? resultado.pagina + 2 : resultado.totalPaginas - 1}">
+    <a th:if="${atual gt 0}" aria-label="Página anterior" rel="prev"
+       th:href="@{${url}(pagina=${atual - 1}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida}, aba=${param.aba})}">&lsaquo;</a>
+    <a th:if="${inicio gt 0}" aria-label="Página 1"
+       th:href="@{${url}(pagina=0, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida}, aba=${param.aba})}">1</a>
+    <span class="reticencias" th:if="${inicio gt 1}" aria-hidden="true">&hellip;</span>
+    <a th:each="i : ${#numbers.sequence(inicio, fim)}"
+       th:href="@{${url}(pagina=${i}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida}, aba=${param.aba})}"
+       th:classappend="${atual == i} ? 'ativo'" th:aria-current="${atual == i} ? 'page'"
+       th:aria-label="${'Página ' + (i + 1)}" th:text="${i + 1}">1</a>
+    <span class="reticencias" th:if="${fim lt total - 2}" aria-hidden="true">&hellip;</span>
+    <a th:if="${fim lt total - 1}" th:aria-label="${'Página ' + total}"
+       th:href="@{${url}(pagina=${total - 1}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida}, aba=${param.aba})}"
+       th:text="${total}">10</a>
+    <a th:if="${atual lt total - 1}" aria-label="Próxima página" rel="next"
+       th:href="@{${url}(pagina=${atual + 1}, tamanho=${param.tamanho}, termo=${param.termo}, tipo=${param.tipo}, status=${param.status}, categoria=${param.categoria}, disponivel=${param.disponivel}, ativo=${param.ativo}, modulo=${param.modulo}, tipoOperacao=${param.tipoOperacao}, prioridade=${param.prioridade}, lida=${param.lida}, aba=${param.aba})}">&rsaquo;</a>
+  </nav>
 </body>
 </html>

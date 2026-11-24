@@ -117,4 +117,77 @@ class ConfiguracaoServiceTest {
         assertThat(alteradas).isEqualTo(1);
         verify(configuracaoRepository).salvar(argThat(c -> c.getChave().equals("prazo_alunos") && c.getValor().equals("10")));
     }
+
+    private com.gabriel.bublo.model.Auditoria registro(String tipo, String chave, String antes, String depois) {
+        com.gabriel.bublo.model.Auditoria a = new com.gabriel.bublo.model.Auditoria();
+        a.setTipoOperacao(tipo);
+        a.setRegistroAfectado(chave);
+        a.setValoresAntes(antes);
+        a.setValoresDepois(depois);
+        return a;
+    }
+
+    @Test
+    @DisplayName("Desfazer restaura o valor anterior e registra a reversão")
+    void reverterUltima() {
+        when(auditoriaRepository.ultimaDeConfiguracao())
+            .thenReturn(registro("ALTERACAO_CONFIGURACAO", "prazo_alunos", "7", "14"));
+        Configuracao atual = new Configuracao();
+        atual.setChave("prazo_alunos");
+        atual.setValor("14");
+        when(configuracaoRepository.buscar("prazo_alunos")).thenReturn(Optional.of(atual));
+
+        String chave = service.reverterUltima("admin", "Foi engano");
+
+        assertThat(chave).isEqualTo("prazo_alunos");
+        verify(configuracaoRepository).salvar(argThat(c -> c.getValor().equals("7")));
+        verify(auditoriaRepository).registrar(eq("admin"), eq("REVERSAO_CONFIGURACAO"), eq("Configuracoes"),
+            eq("prazo_alunos"), eq("14"), eq("7"), eq("Foi engano"));
+    }
+
+    @Test
+    @DisplayName("Uma reversão não pode ser desfeita de novo")
+    void naoReverteReversao() {
+        when(auditoriaRepository.ultimaDeConfiguracao())
+            .thenReturn(registro("REVERSAO_CONFIGURACAO", "prazo_alunos", "14", "7"));
+
+        assertThatIllegalArgumentException().isThrownBy(() -> service.reverterUltima("admin", "x"));
+        verify(configuracaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("Desfazer exige justificativa")
+    void reverterExigeJustificativa() {
+        assertThatIllegalArgumentException().isThrownBy(() -> service.reverterUltima("admin", " "));
+    }
+
+    @Test
+    @DisplayName("Nome da instituição e prefixo de tombamento não são mais configuráveis")
+    void textosNaoSaoConfiguraveis() {
+        assertThatIllegalArgumentException().isThrownBy(() ->
+            service.salvar("prefixo_tombamento", "LIB", "admin", "teste"))
+            .withMessageContaining("desconhecida");
+        assertThatIllegalArgumentException().isThrownBy(() ->
+            service.salvar("nome_instituicao", "Outra", "admin", "teste"))
+            .withMessageContaining("desconhecida");
+    }
+
+    @Test
+    @DisplayName("Limites superiores das configurações numéricas")
+    void limitesSuperiores() {
+        assertThatIllegalArgumentException().isThrownBy(() -> service.salvar("limite_alunos", "51", "admin", "x"));
+        assertThatIllegalArgumentException().isThrownBy(() -> service.salvar("prazo_alunos", "366", "admin", "x"));
+        assertThatIllegalArgumentException().isThrownBy(() -> service.salvar("prazo_retirada_reserva", "31", "admin", "x"));
+        assertThatIllegalArgumentException().isThrownBy(() -> service.salvar("limite_alunos", "99999999999", "admin", "x"));
+        service.salvar("limite_alunos", "50", "admin", "x");
+    }
+
+    @Test
+    @DisplayName("Taxa de multa: no máximo 2 casas decimais e até R$ 1.000")
+    void taxaDeMulta() {
+        assertThatIllegalArgumentException().isThrownBy(() -> service.salvar("taxa_diaria_multa", "2.005", "admin", "x"));
+        assertThatIllegalArgumentException().isThrownBy(() -> service.salvar("taxa_diaria_multa", "1000.01", "admin", "x"));
+        service.salvar("taxa_diaria_multa", "2.50", "admin", "x");
+        service.salvar("taxa_diaria_multa", "2.500", "admin", "x");
+    }
 }

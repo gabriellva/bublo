@@ -70,15 +70,28 @@ public class MultaRepository {
         }
     }
 
+    /** Lê a multa travando a linha até o fim da transação (pagamento/estorno concorrentes). */
+    public Optional<Multa> buscarPorIdParaAtualizar(Long id) {
+        try {
+            return Optional.ofNullable(jdbc.queryForObject("SELECT * FROM multas WHERE id = ? FOR UPDATE", MAPPER, id));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
     public Paginacao<Multa> buscar(String termo, String status, int pagina, int tamanho, String ordenacao) {
         List<Object> args = new ArrayList<>();
         StringBuilder where = new StringBuilder("WHERE 1=1");
         if (termo != null && !termo.isBlank()) {
             where.append(" AND m.leitor_id IN (SELECT id FROM leitores WHERE nome ILIKE ? OR matricula ILIKE ?)");
-            String t = "%" + termo + "%";
+            String t = "%" + termo.trim() + "%";
             args.add(t); args.add(t);
         }
-        if (status != null && !status.isBlank()) {
+        if ("ABERTAS".equals(status)) {
+            where.append(" AND m.status IN ('PENDENTE','PAGA_PARCIAL')");
+        } else if ("HISTORICO".equals(status)) {
+            where.append(" AND m.status IN ('PAGA','CANCELADA')");
+        } else if (status != null && !status.isBlank()) {
             where.append(" AND m.status = ?"); args.add(status);
         }
         String sql = "SELECT * FROM multas m " + where +
@@ -93,6 +106,11 @@ public class MultaRepository {
         Long total = jdbc.queryForObject(csql.toString(), Long.class, args.subList(0, args.size() - 2).toArray());
 
         return new Paginacao<>(conteudo, total, pagina, tamanho);
+    }
+
+    public List<Multa> listarPorLeitor(Long leitorId, int limite) {
+        return jdbc.query("SELECT * FROM multas WHERE leitor_id = ? ORDER BY data_geracao DESC, id DESC LIMIT ?",
+            MAPPER, leitorId, limite);
     }
 
     public List<Multa> listarPendentesPorLeitor(Long leitorId) {

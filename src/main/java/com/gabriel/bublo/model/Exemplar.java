@@ -15,6 +15,15 @@ public class Exemplar {
     private Boolean disponivel;
     private String observacoes;
     private LocalDateTime dataCadastro;
+    private boolean baixado;
+
+    public boolean isBaixado() {
+        return baixado;
+    }
+
+    public void setBaixado(boolean baixado) {
+        this.baixado = baixado;
+    }
 
     public Long getId() {
         return id;

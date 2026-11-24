@@ -1,7 +1,6 @@
 package com.gabriel.bublo.controller;
 
 import com.gabriel.bublo.repository.NotificacaoRepository;
-import com.gabriel.bublo.service.ConfiguracaoService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -15,13 +14,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class GlobalModelAdvice {
 
-    private final NotificacaoRepository notificacaoRepository;
-    private final ConfiguracaoService configuracaoService;
+    private static final String NOME_INSTITUICAO = "Biblioteca Acadêmica";
 
-    public GlobalModelAdvice(NotificacaoRepository notificacaoRepository,
-                             ConfiguracaoService configuracaoService) {
+    private final NotificacaoRepository notificacaoRepository;
+
+    public GlobalModelAdvice(NotificacaoRepository notificacaoRepository) {
         this.notificacaoRepository = notificacaoRepository;
-        this.configuracaoService = configuracaoService;
     }
 
     @ModelAttribute
@@ -37,11 +35,6 @@ public class GlobalModelAdvice {
             model.addAttribute("naoLidas", 0);
         }
 
-        try {
-            var ni = configuracaoService.buscar("nome_instituicao");
-            model.addAttribute("nomeInstituicao", ni != null ? ni.getValor() : "Biblioteca Acadêmica");
-        } catch (Exception e) {
-            model.addAttribute("nomeInstituicao", "Biblioteca Acadêmica");
-        }
+        model.addAttribute("nomeInstituicao", NOME_INSTITUICAO);
     }
 }

@@ -7,6 +7,8 @@ import com.gabriel.bublo.model.TipoLeitor;
 import com.gabriel.bublo.security.AuthUtil;
 import com.gabriel.bublo.service.EmprestimoService;
 import com.gabriel.bublo.service.LeitorService;
+import com.gabriel.bublo.service.MultaService;
+import com.gabriel.bublo.service.ReservaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -34,15 +36,20 @@ public class LeitorController {
 
     private static final String MODELO_CSV =
         "Tipo,Nome,Email,CPF,Endereco,Telefone,CursoDepartamento\n"
-        + "ALUNO,Joao Silva,joao@email.com,111.222.333-44,Rua A,11999999999,Engenharia\n"
+        + "ALUNO,Joao Silva,joao@email.com,529.982.247-25,Rua A,11999999999,Engenharia\n"
         + "PROFESSOR,Maria Souza,maria@email.com,,Rua B,11988888888,Matematica\n";
 
     private final LeitorService leitorService;
     private final EmprestimoService emprestimoService;
+    private final ReservaService reservaService;
+    private final MultaService multaService;
 
-    public LeitorController(LeitorService leitorService, EmprestimoService emprestimoService) {
+    public LeitorController(LeitorService leitorService, EmprestimoService emprestimoService,
+                            ReservaService reservaService, MultaService multaService) {
         this.leitorService = leitorService;
         this.emprestimoService = emprestimoService;
+        this.reservaService = reservaService;
+        this.multaService = multaService;
     }
 
     @GetMapping
@@ -82,6 +89,9 @@ public class LeitorController {
         }
         model.addAttribute("leitor", leitor);
         model.addAttribute("situacao", emprestimoService.restricaoLeitor(id));
+        model.addAttribute("historicoEmprestimos", emprestimoService.historicoDoLeitor(id));
+        model.addAttribute("historicoReservas", reservaService.historicoDoLeitor(id));
+        model.addAttribute("historicoMultas", multaService.historicoDoLeitor(id));
         return "leitores/detalhes";
     }
 
@@ -97,7 +107,14 @@ public class LeitorController {
         try {
             leitorService.salvar(leitor, AuthUtil.usuarioAtual());
         } catch (IllegalStateException e) {
-            result.rejectValue("email", "duplicado", e.getMessage());
+            String mensagem = e.getMessage() == null ? "" : e.getMessage();
+            if (mensagem.toLowerCase().contains("e-mail")) {
+                result.rejectValue("email", "invalido", mensagem);
+            } else if (mensagem.contains("CPF")) {
+                result.rejectValue("cpf", "invalido", mensagem);
+            } else if (mensagem.contains("elefone")) {
+                result.rejectValue("telefone", "invalido", mensagem);
+            }
             model.addAttribute("erro", e.getMessage());
             return "leitores/formulario";
         }
