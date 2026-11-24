@@ -84,8 +84,13 @@ public class DemoDataConfig {
 
             if (!demoEnabled) return;
 
-            // 2. Idempotência: se já existem materiais, a demo já foi carregada
-            if (itemAcervoRepository.listarTodos().stream().findAny().isPresent()) {
+            // 2. Idempotência: se já existem materiais, a demo já foi carregada. Bancos criados antes das
+            // capas de demonstração (ex.: deploy antigo) recebem as fotos que faltam, sem recriar nada.
+            List<ItemAcervo> existentes = itemAcervoRepository.listarTodos();
+            if (!existentes.isEmpty()) {
+                existentes.stream()
+                    .filter(item -> !item.isTemCapa())
+                    .forEach(item -> carregarCapaDemo(itemAcervoRepository, item));
                 return;
             }
 
