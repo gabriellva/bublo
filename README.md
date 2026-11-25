@@ -168,7 +168,7 @@ O arquivo `.env` é ignorado pelo Git (`.gitignore`).
 ```bash
 docker compose -f docker-compose.app.yml up -d --build   # app em http://localhost:8090
 docker compose -f docker-compose.app.yml down -v         # derruba e apaga o banco
-ADMIN_PASSWORD=Mudar@1234 BASE_URL=http://localhost:8090 scripts/smoke-test.sh
+ADMIN_USER=admin ADMIN_PASSWORD=admin BASE_URL=http://localhost:8090 scripts/smoke-test.sh
 ```
 
 ### 3. Inicie o PostgreSQL (Docker Compose)
@@ -204,7 +204,7 @@ Na primeira execução, o administrador é criado a partir das variáveis de amb
 
 ## Variáveis de ambiente
 
-| Variável | Descrição | Padrão (exemplo) |
+| Variável | Descrição | Exemplo no `.env.example` |
 |----------|-----------|------------------|
 | `DB_NAME` | Nome do banco | `bublo` |
 | `DB_USERNAME` | Usuário do banco | `bublo` |
@@ -212,11 +212,13 @@ Na primeira execução, o administrador é criado a partir das variáveis de amb
 | `DB_PORT` | Porta do PostgreSQL | `5432` |
 | `DB_URL` | JDBC URL | `jdbc:postgresql://localhost:5432/bublo` |
 | `SERVER_PORT` | Porta da aplicação | `8080` |
-| `ADMIN_USERNAME` | Usuário admin inicial (obrigatório) | — |
-| `ADMIN_PASSWORD` | Senha admin inicial (obrigatório) | — |
+| `ADMIN_USERNAME` | Usuário admin inicial (obrigatório) | `admin` |
+| `ADMIN_PASSWORD` | Senha admin inicial (obrigatório) | `admin` |
 | `DEMO_DATA_ENABLED` | Carregar dados de demonstração | `true` |
 
-**Não defina `ADMIN_USERNAME`/`ADMIN_PASSWORD` com valores fixos em produção real; use variáveis de ambiente seguras.**
+O `application.yaml` não tem valores padrão: todas as variáveis acima vêm do `.env` (ou do ambiente) e o app não sobe se alguma faltar. `SERVER_PORT` é opcional (padrão do Spring: 8080).
+
+**`admin`/`admin` é só para desenvolvimento. Em ambiente público, use credenciais fortes nas variáveis de ambiente.**
 
 ---
 
@@ -307,7 +309,7 @@ Na primeira inicialização com `DEMO_DATA_ENABLED=true`, são carregados:
 
 Para recarregar os dados de demonstração, recrie o banco (`docker compose down -v`) e suba a aplicação novamente. Não há opção de restauração pela interface.
 
-Sem `ADMIN_USERNAME`/`ADMIN_PASSWORD`, o usuário `admin` é criado com uma senha aleatória exibida uma única vez no log da primeira inicialização.
+`ADMIN_USERNAME`/`ADMIN_PASSWORD` são obrigatórios: sem eles a aplicação não inicia.
 
 ---
 

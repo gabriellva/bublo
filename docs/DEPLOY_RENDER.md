@@ -74,22 +74,19 @@ Pontos importantes:
 
 ## 3. Como a configuração chega na aplicação
 
-O `application.yaml` usa a sintaxe `${VARIAVEL:valor_padrao}`:
+O `application.yaml` usa a sintaxe `${VARIAVEL}`, **sem valor padrão**:
 
 ```yaml
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/bublo}
-    username: ${DB_USERNAME:bublo}
-    password: ${DB_PASSWORD:bublo}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 ```
 
-- Se a variável existir no ambiente, o Spring usa o valor dela.
-- Se não existir, usa o padrão depois dos dois-pontos.
-
-Por isso o mesmo código roda localmente (usando os padrões ou o `.env`) e no Render (usando as variáveis do painel), sem nenhuma alteração.
-
-> Atenção: se uma variável estiver com o nome errado ou não existir, o app usa o padrão silenciosamente. Foi o que tornou alguns erros difíceis de enxergar.
+- O valor vem sempre do ambiente: do `.env` localmente e do painel de variáveis no Render. O mesmo código roda nos dois, sem alteração.
+- Nenhum endereço, usuário ou senha fica escrito no código.
+- Se uma variável estiver com o nome errado ou não existir, o app **não sobe** e o log aponta qual faltou (`Could not resolve placeholder 'DB_URL'`). Isso evita o erro silencioso de cair num valor padrão sem perceber.
 
 ---
 
