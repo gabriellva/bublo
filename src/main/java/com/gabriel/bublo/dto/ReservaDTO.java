@@ -15,6 +15,9 @@ public class ReservaDTO {
     public void setItemTitulo(String itemTitulo) { this.itemTitulo = itemTitulo; }
     private java.time.LocalDateTime prazoRetirada;
     private String status;
+    private boolean prontaParaRetirada;
+    public boolean isProntaParaRetirada() { return prontaParaRetirada; }
+    public void setProntaParaRetirada(boolean prontaParaRetirada) { this.prontaParaRetirada = prontaParaRetirada; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getLeitorId() { return leitorId; }
