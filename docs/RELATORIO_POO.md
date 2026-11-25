@@ -50,7 +50,30 @@ Cada subclasse sobrescreve métodos da classe abstrata com comportamento própri
 - `Leitor.getLimiteExemplaresSimultaneos()` retorna 3 (aluno) ou 5 (professor).
 - `Leitor.getPrazoEmprestimoDias()` retorna 7 (aluno) ou 14 (professor).
 
-No serviço de empréstimos (`EmprestimoService`), o limite é determinado dinamicamente pelo tipo do leitor, sem necessidade de `if` sobre classes concretas em todo o sistema.
+No serviço de empréstimos (`EmprestimoService`), o limite e o prazo são obtidos chamando os métodos do próprio leitor, sem `if`/`instanceof` sobre classes concretas:
+
+```java
+private int limiteDoLeitor(Leitor leitor) {
+    return configuracaoService.buscarInteiro(
+        leitor.getChaveConfiguracaoLimite(),        // "limite_alunos" ou "limite_professores"
+        leitor.getLimiteExemplaresSimultaneos());   // padrão do tipo (3 ou 5)
+}
+```
+
+A configuração do administrador sobrepõe o padrão do tipo; se não houver configuração, vale o que a subclasse define.
+
+### 3.1 Sobrescrita (*override*)
+
+A subclasse redefine um método herdado, com a **mesma assinatura** (`@Override`). A versão executada é escolhida pelo **tipo real do objeto**, em execução. Exemplos: `Aluno`/`Professor` sobrescrevem `getLimiteExemplaresSimultaneos()`, `getPrazoEmprestimoDias()`, `getChaveConfiguracaoLimite()` e `getChaveConfiguracaoPrazo()`; `Livro`, `Revista`, `DVD` e `PublicacaoDigital` sobrescrevem `getCapaGenerica()` e `getCampoEspecifico*()`. Teste: `PolimorfismoTest`.
+
+### 3.2 Sobrecarga (*overload*)
+
+Métodos com o **mesmo nome e parâmetros diferentes**, escolhidos pelo compilador conforme os argumentos. Exemplos:
+
+- `EmprestimoService.diasDeAtraso(LocalDateTime prevista)` (usa hoje) e `diasDeAtraso(LocalDateTime prevista, LocalDate hoje)` (data explícita, usada nos testes);
+- `ReservaService.toDTO(Reserva)` e `toDTO(Reserva, Map<Long,Integer>)` (com cache de exemplares livres).
+
+Teste: `EmprestimoServiceTest.diasDeAtrasoSobrecargaUsaHoje`.
 
 ---
 

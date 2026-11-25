@@ -4,6 +4,7 @@ import com.gabriel.bublo.dto.Paginacao;
 import com.gabriel.bublo.dto.EmprestimoDTO;
 import com.gabriel.bublo.dto.EmprestimoResumoDTO;
 import com.gabriel.bublo.dto.LeitorResumoDTO;
+import com.gabriel.bublo.model.Aluno;
 import com.gabriel.bublo.model.Emprestimo;
 import com.gabriel.bublo.model.Exemplar;
 import com.gabriel.bublo.model.Leitor;
@@ -38,10 +39,11 @@ import java.util.Map;
 @Service
 public class EmprestimoService {
 
-    static final int LIMITE_ALUNOS_PADRAO = 3;
-    static final int LIMITE_PROFESSORES_PADRAO = 5;
-    static final int PRAZO_ALUNOS_PADRAO = 7;
-    static final int PRAZO_PROFESSORES_PADRAO = 14;
+    // Padrões vêm das subclasses de Leitor (sobrescrita): fonte única, sem repetir os números aqui.
+    static final int LIMITE_ALUNOS_PADRAO = new Aluno().getLimiteExemplaresSimultaneos();
+    static final int LIMITE_PROFESSORES_PADRAO = new Professor().getLimiteExemplaresSimultaneos();
+    static final int PRAZO_ALUNOS_PADRAO = new Aluno().getPrazoEmprestimoDias();
+    static final int PRAZO_PROFESSORES_PADRAO = new Professor().getPrazoEmprestimoDias();
     static final BigDecimal TAXA_DIARIA_PADRAO = new BigDecimal("2.00");
     static final int MAXIMO_RENOVACOES = 1;
 
@@ -108,7 +110,8 @@ public class EmprestimoService {
     }
 
     private int prazoPadraoEmDias(Leitor leitor) {
-        return leitor instanceof Professor ? prazoProfessoresEmDias() : prazoAlunosEmDias();
+        // Polimorfismo: a própria subclasse diz qual configuração e qual padrão valem para ela.
+        return configuracaoService.buscarInteiro(leitor.getChaveConfiguracaoPrazo(), leitor.getPrazoEmprestimoDias());
     }
 
     @Transactional(readOnly = true)
@@ -238,7 +241,7 @@ public class EmprestimoService {
             throw new IllegalStateException("Empréstimo não está ativo");
         }
 
-        long diasAtraso = diasDeAtraso(e.getDataPrevistaDevolucao(), LocalDate.now());
+        long diasAtraso = diasDeAtraso(e.getDataPrevistaDevolucao());
         BigDecimal valorMulta = BigDecimal.ZERO;
         if (diasAtraso > 0) {
             BigDecimal taxa = configuracaoService.buscarDecimal("taxa_diaria_multa", TAXA_DIARIA_PADRAO);
@@ -277,7 +280,7 @@ public class EmprestimoService {
         if (e.getRenovacoes() >= MAXIMO_RENOVACOES) {
             throw new IllegalStateException("Limite de renovações atingido");
         }
-        if (diasDeAtraso(e.getDataPrevistaDevolucao(), LocalDate.now()) > 0) {
+        if (diasDeAtraso(e.getDataPrevistaDevolucao()) > 0) {
             throw new IllegalStateException("Empréstimo em atraso não pode ser renovado. Registre a devolução.");
         }
         Long itemId = itemDoEmprestimo(e);
@@ -315,15 +318,18 @@ public class EmprestimoService {
         return emprestimoRepository.contarAtrasados();
     }
 
+    /** Sobrecarga: versão sem a data de referência, que usa hoje. */
+    static long diasDeAtraso(LocalDateTime prevista) {
+        return diasDeAtraso(prevista, LocalDate.now());
+    }
+
     static long diasDeAtraso(LocalDateTime prevista, LocalDate hoje) {
         if (prevista == null) return 0;
         return Math.max(0, ChronoUnit.DAYS.between(prevista.toLocalDate(), hoje));
     }
 
     private int limiteDoLeitor(Leitor leitor) {
-        return leitor instanceof Professor
-            ? configuracaoService.buscarInteiro("limite_professores", LIMITE_PROFESSORES_PADRAO)
-            : configuracaoService.buscarInteiro("limite_alunos", LIMITE_ALUNOS_PADRAO);
+        return configuracaoService.buscarInteiro(leitor.getChaveConfiguracaoLimite(), leitor.getLimiteExemplaresSimultaneos());
     }
 
     private Long itemDoEmprestimo(Emprestimo e) {
@@ -363,7 +369,7 @@ public class EmprestimoService {
         dto.setDataPrevistaDevolucao(e.getDataPrevistaDevolucao());
         dto.setDataDevolucaoReal(e.getDataDevolucaoReal());
         dto.setRenovacoes(e.getRenovacoes());
-        dto.setAtrasado("ATIVO".equals(e.getStatus()) && diasDeAtraso(e.getDataPrevistaDevolucao(), LocalDate.now()) > 0);
+        dto.setAtrasado("ATIVO".equals(e.getStatus()) && diasDeAtraso(e.getDataPrevistaDevolucao()) > 0);
         if (e.getLeitor() != null) {
             dto.setLeitorId(e.getLeitor().getId());
             dto.setLeitorNome(e.getLeitor().getNome());

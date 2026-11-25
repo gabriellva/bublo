@@ -224,6 +224,15 @@ class EmprestimoServiceTest {
         assertThat(EmprestimoService.diasDeAtraso(LocalDate.of(2026, 11, 20).atStartOfDay(), hoje)).isZero();
     }
 
+    @Test
+    @DisplayName("Sobrecarga: diasDeAtraso sem data de referência usa hoje")
+    void diasDeAtrasoSobrecargaUsaHoje() {
+        LocalDate hoje = LocalDate.now();
+        assertThat(EmprestimoService.diasDeAtraso(hoje.minusDays(3).atStartOfDay()))
+            .isEqualTo(EmprestimoService.diasDeAtraso(hoje.minusDays(3).atStartOfDay(), hoje))
+            .isEqualTo(3);
+    }
+
     // ---- Regras corrigidas na verificação de lógica (docs/AUDITORIA_LOGICA.md) ----
 
     private Exemplar exemplarDisponivel(long id, long itemId) {
