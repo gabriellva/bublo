@@ -11,4 +11,14 @@ public class Professor extends Leitor {
     public int getPrazoEmprestimoDias() {
         return 14;
     }
+
+    @Override
+    public String getChaveConfiguracaoLimite() {
+        return "limite_professores";
+    }
+
+    @Override
+    public String getChaveConfiguracaoPrazo() {
+        return "prazo_professores";
+    }
 }

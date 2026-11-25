@@ -11,4 +11,14 @@ public class Aluno extends Leitor {
     public int getPrazoEmprestimoDias() {
         return 7;
     }
+
+    @Override
+    public String getChaveConfiguracaoLimite() {
+        return "limite_alunos";
+    }
+
+    @Override
+    public String getChaveConfiguracaoPrazo() {
+        return "prazo_alunos";
+    }
 }

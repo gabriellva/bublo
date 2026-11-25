@@ -26,9 +26,17 @@ public abstract class Leitor {
     private List<Reserva> reservas;
     private List<Multa> multas;
 
+    /** Limite padrão de exemplares simultâneos (cada subclasse sobrescreve; a configuração do sistema pode alterar). */
     public abstract int getLimiteExemplaresSimultaneos();
 
+    /** Prazo padrão de empréstimo em dias (cada subclasse sobrescreve). */
     public abstract int getPrazoEmprestimoDias();
+
+    /** Chave da configuração que substitui o limite padrão deste tipo de leitor. */
+    public abstract String getChaveConfiguracaoLimite();
+
+    /** Chave da configuração que substitui o prazo padrão deste tipo de leitor. */
+    public abstract String getChaveConfiguracaoPrazo();
 
     public Long getId() {
         return id;

@@ -81,7 +81,8 @@ Esta seção existe para que você tenha o vocabulário necessário para ler qua
 | **`final`** | Não pode ser reatribuído (constante, se `static final`). | `private final LeitorRepository leitorRepository;` |
 | **`abstract class`** | Classe que **não pode ser instanciada**; serve de base. | `ItemAcervo`, `Leitor` |
 | **Herança (`extends`)** | A subclasse herda atributos e métodos da superclasse. | `class Livro extends ItemAcervo` |
-| **`@Override`** | Indica que o método redefine um método da superclasse. | `getCapaGenerica()` em `Livro` |
+| **`@Override` (sobrescrita)** | A subclasse redefine um método herdado, **com a mesma assinatura**. Decidido em **execução**, pelo tipo real do objeto. | `getLimiteExemplaresSimultaneos()` em `Aluno` (3) e `Professor` (5) |
+| **Sobrecarga (*overload*)** | Vários métodos com o **mesmo nome e parâmetros diferentes**. Decidido em **compilação**, pelos argumentos. | `diasDeAtraso(prevista)` e `diasDeAtraso(prevista, hoje)` em `EmprestimoService` |
 | **`enum`** | Conjunto fixo de valores nomeados. | `TipoLeitor { ALUNO, PROFESSOR }` |
 | **Generics `<T>`** | Tipo parametrizado. | `List<Leitor>`, `Paginacao<ItemAcervoDTO>` |
 | **`Optional<T>`** | Caixa que pode ou não conter um valor (evita `null`). | `leitorRepository.buscarPorId(id)` retorna `Optional<Leitor>` |
@@ -232,7 +233,7 @@ bublo/
 | `DevolucaoController` | `GET /devolucoes`; `POST /devolucoes/{id}/devolver` |
 | `ReservaController` | `GET /reservas`, `/reservas/novo`; `POST /reservas`, `/reservas/{id}/cancelar` |
 | `MultaController` | `GET /multas`, `/multas/{id}/pagar`, `/multas/leitor/{id}/saldo` (JSON); `POST /multas/{id}/pagar`, `/multas/{id}/pagamentos/{pagamentoId}/estornar` |
-| `NotificacaoController` | `GET /notificacoes`, `/notificacoes/resumo` (JSON); `POST /notificacoes/{id}/ler`, `/notificacoes/ler-todas` |
+| `NotificacaoController` | `GET /notificacoes/resumo` (JSON); `POST /notificacoes/{id}/ler`, `/notificacoes/ler-todas` (JSON; sem página própria: tudo pelo sino) |
 | `ConfiguracaoController` | `GET /configuracoes`; `POST /configuracoes/salvar`, `/configuracoes/reverter` |
 | `AuditoriaController` | `GET /auditoria` |
 | `RelatorioController` / `RelatorioExportController` | `GET /relatorios`; `GET /relatorios/{emprestimos,multas,leitores,reservas,materiais}.csv` e `{emprestimos,multas}.xlsx` |
@@ -403,9 +404,70 @@ E em `Leitor`:
 
 **Encapsulamento.** Atributos `private`, acesso por getters/setters. `Multa` tem ainda um comportamento próprio: `getSaldoPendente()` = `valor − valorPago`.
 
-> ⚠️ **Atenção ao ser questionado:** ver Seção 17, item 2. Em execução, os limites e prazos efetivos vêm das **configurações do banco**, não dos métodos `getLimite...()`/`getPrazo...()` dos modelos, e os métodos `getCapaGenerica`/`getCampoEspecifico*` não são chamados por nenhum template atual. O polimorfismo existe e está correto no modelo, mas você deve saber explicar essa diferença.
+> ✅ **Em uso de verdade:** `EmprestimoService` pergunta ao próprio leitor (`leitor.getLimiteExemplaresSimultaneos()`, `leitor.getPrazoEmprestimoDias()`) qual é o padrão dele, e usa `leitor.getChaveConfiguracaoLimite()`/`getChaveConfiguracaoPrazo()` para achar na tabela `configuracoes` o valor que o administrador definiu. Não há mais `instanceof Professor` nessa regra. Veja a Seção 8.3.
+>
+> ⚠️ **Ainda demonstrativo:** `getCapaGenerica()` e `getCampoEspecifico*()` (materiais) não são chamados por nenhum template atual. Ver Seção 17, item 2.
 
-### 8.3 Onde o polimorfismo é de fato usado
+### 8.3 Sobrecarga e sobrescrita (com exemplos do projeto)
+
+São duas coisas diferentes que costumam ser confundidas:
+
+| | **Sobrescrita** (*override*) | **Sobrecarga** (*overload*) |
+|---|---|---|
+| O que é | A **subclasse** redefine um método que herdou | **Mesmo nome**, parâmetros **diferentes**, na mesma classe |
+| Assinatura | **Igual** à do método herdado | **Diferente** (quantidade ou tipos de parâmetros) |
+| Quem decide qual roda | O **tipo real do objeto**, em **execução** (polimorfismo) | Os **argumentos** da chamada, em **compilação** |
+| Marca no código | `@Override` | Nenhuma (só o mesmo nome) |
+| Precisa de herança? | Sim | Não |
+
+**Sobrescrita no projeto** — `Leitor` declara o contrato e cada subclasse o cumpre do seu jeito:
+
+```java
+// Leitor (abstrata)
+public abstract int getLimiteExemplaresSimultaneos();
+public abstract int getPrazoEmprestimoDias();
+public abstract String getChaveConfiguracaoLimite();
+public abstract String getChaveConfiguracaoPrazo();
+
+// Aluno                                         // Professor
+@Override getLimiteExemplaresSimultaneos() → 3   @Override getLimiteExemplaresSimultaneos() → 5
+@Override getPrazoEmprestimoDias()         → 7   @Override getPrazoEmprestimoDias()         → 14
+@Override getChaveConfiguracaoLimite() → "limite_alunos"   → "limite_professores"
+```
+
+E o serviço usa isso **sem saber** se o leitor é aluno ou professor:
+
+```java
+// EmprestimoService
+private int limiteDoLeitor(Leitor leitor) {
+    return configuracaoService.buscarInteiro(
+        leitor.getChaveConfiguracaoLimite(),        // qual configuração vale para este tipo
+        leitor.getLimiteExemplaresSimultaneos());   // padrão do tipo, se não houver configuração
+}
+```
+
+Se amanhã existir um `Visitante` com limite 1, basta criar a subclasse sobrescrevendo os métodos; o `EmprestimoService` **não muda**. É a vantagem do polimorfismo sobre o `if (leitor instanceof Professor)` que existia antes.
+
+Outras sobrescritas: `Livro`, `Revista`, `DVD` e `PublicacaoDigital` sobrescrevem `getCapaGenerica()`, `getCampoEspecificoLabel()` e `getCampoEspecificoValor()` (ex.: `Revista` devolve `"1234-5678 · Vol. 5"`); `NotificationWebSocketHandler` sobrescreve `afterConnectionEstablished`/`afterConnectionClosed` do Spring; `WebSocketConfig` sobrescreve `registerWebSocketHandlers`.
+
+**Sobrecarga no projeto** — o mesmo nome atende dois jeitos de chamar:
+
+```java
+// EmprestimoService
+static long diasDeAtraso(LocalDateTime prevista) {                    // usa a data de hoje
+    return diasDeAtraso(prevista, LocalDate.now());
+}
+static long diasDeAtraso(LocalDateTime prevista, LocalDate hoje) {    // data de referência explícita
+    if (prevista == null) return 0;
+    return Math.max(0, ChronoUnit.DAYS.between(prevista.toLocalDate(), hoje));
+}
+```
+
+As regras de devolução, renovação e a listagem usam a primeira forma; os testes usam a segunda, com uma data fixa, para não depender do relógio. Outro caso: em `ReservaService`, `toDTO(Reserva)` chama `toDTO(Reserva, Map)`, que recebe um *cache* de exemplares livres por título para não repetir a consulta a cada linha da lista.
+
+> **Para explicar na banca:** "sobrecarga é escolher **pelo que eu passo** (resolvido na compilação); sobrescrita é escolher **por quem eu sou** (resolvido na execução)." Testes: `PolimorfismoTest` (sobrescrita) e `EmprestimoServiceTest.diasDeAtrasoSobrecargaUsaHoje` (sobrecarga).
+
+### 8.4 Onde o polimorfismo também aparece (escolha da subclasse)
 
 O ponto em que o sistema **escolhe a subclasse** é o `RowMapper` (a função que converte uma linha do banco em objeto):
 
@@ -429,7 +491,7 @@ A decisão inversa (objeto → coluna) usa `instanceof`:
 private String isbnDe(ItemAcervo i) { return i instanceof Livro ? ((Livro) i).getIsbn() : null; }
 ```
 
-### 8.4 Enums
+### 8.5 Enums
 
 `TipoLeitor` e `TipoMaterial` têm um `label` legível (`"Revista / Periódico"`). O **nome** (`REVISTA`) vai para o banco; o **rótulo** vai para a tela.
 
@@ -968,7 +1030,7 @@ Esta seção é a mais útil para **não ser pego de surpresa**. São diferença
 | # | Observação | Como responder |
 |---|---|---|
 | 1 | **`BaseRepository` não é usado.** `docs/DOCUMENTACAO_TECNICA.md` diz que "cada repositório estende `BaseRepository`", mas nenhum estende. Cada repositório recebe o `JdbcTemplate` e repete o método `insertReturnId`. | "Existe uma classe base com os utilitários JDBC; os repositórios atuais usam o `JdbcTemplate` diretamente. É uma duplicação que poderia ser removida estendendo a base." |
-| 2 | **Parte do polimorfismo é demonstrativa.** `getLimiteExemplaresSimultaneos()` e `getPrazoEmprestimoDias()` (Aluno 3/7, Professor 5/14) **não são chamados** por nenhuma regra. Os limites/prazos efetivos vêm da tabela `configuracoes` (chaves `limite_*`, `prazo_*`), que o administrador edita. Do mesmo modo, `getCapaGenerica()` e `getCampoEspecifico*()` não são usados em nenhum template atual. | "O modelo expõe o comportamento por tipo; na regra efetiva optamos por configuração para o administrador poder ajustar sem recompilar. Os valores padrão coincidem (3/7 e 5/14)." O polimorfismo **é** usado no *RowMapper*/`construirItem` (escolha da subclasse) e nas rotinas `instanceof`. |
+| 2 | **Parte do polimorfismo ainda é demonstrativa.** `getCapaGenerica()` e `getCampoEspecifico*()` (materiais) **não são chamados** por nenhum template atual. Já `getLimiteExemplaresSimultaneos()`, `getPrazoEmprestimoDias()` e as chaves de configuração (`Leitor` → `Aluno`/`Professor`) **são usados** pelo `EmprestimoService` como valor padrão e para escolher a chave `limite_*`/`prazo_*` na tabela `configuracoes`, que o administrador edita. | "O limite padrão vem da própria subclasse do leitor (sobrescrita) e o administrador pode sobrepô-lo pela configuração, sem recompilar. Na tela de materiais, o tipo é exibido por outros meios; os métodos de capa e campo específico ficam como contrato do modelo." O polimorfismo também é usado no *RowMapper*/`construirItem` (escolha da subclasse). |
 | 3 | **SockJS não é usado.** `docs/DOCUMENTACAO_TECNICA.md` e `docs/DECISOES_TECNICAS.md` mencionam SockJS; o `pom.xml` não o inclui e o `bublo.js` usa `new WebSocket(...)` nativo. | "WebSocket nativo do Spring, sem STOMP e sem SockJS; a reconexão é feita no próprio `bublo.js`." |
 | 4 | **Tratamento do erro por texto da mensagem.** `LeitorController.salvar` decide em qual campo mostrar o erro procurando "e-mail", "CPF" ou "elefone" dentro do texto da exceção. Funciona, mas é frágil: mudar a mensagem muda o comportamento. | "É uma solução prática; a evolução natural seria uma exceção própria que carregue o nome do campo." |
 | 5 | **A matrícula é gerada por `MAX + 1` sem lock** (o tombamento, ao contrário, usa *advisory lock*). A integridade fica por conta da restrição `UNIQUE` em `leitores.matricula`: numa colisão rara, o segundo cadastro falha em vez de duplicar. | "Há dois mecanismos diferentes para o mesmo problema. O tombamento é mais crítico (alto volume em lote), por isso tem lock; a matrícula depende do `UNIQUE`." |
@@ -995,7 +1057,10 @@ Todos os valores vão como parâmetros de `PreparedStatement` (`?`), nunca conca
 `ItemAcervo` (abstrata) é a base de `Livro`, `Revista`, `DVD` e `PublicacaoDigital`; `Leitor` (abstrata) é a base de `Aluno` e `Professor`. No banco, cada hierarquia fica em **uma tabela** com uma coluna `tipo`.
 
 **5. Onde está o polimorfismo?**
-Os métodos abstratos (`getCampoEspecificoLabel`, `getLimiteExemplaresSimultaneos`...) são implementados de forma diferente em cada subclasse; e o repositório escolhe a subclasse certa a partir da coluna `tipo`.
+Os métodos abstratos (`getCampoEspecificoLabel`, `getLimiteExemplaresSimultaneos`...) são implementados de forma diferente em cada subclasse; e o repositório escolhe a subclasse certa a partir da coluna `tipo`. O `EmprestimoService` o usa de verdade: chama `leitor.getLimiteExemplaresSimultaneos()` sem saber se é aluno ou professor.
+
+**5-A. Qual a diferença entre sobrecarga e sobrescrita? Onde estão no projeto?**
+**Sobrescrita** (*override*): a subclasse redefine um método herdado, com a mesma assinatura (`@Override`); o Java escolhe a versão pelo tipo real do objeto, em execução. Ex.: `Aluno` e `Professor` sobrescrevem `getLimiteExemplaresSimultaneos()` (3 e 5). **Sobrecarga** (*overload*): mesmo nome com parâmetros diferentes; o compilador escolhe pelos argumentos. Ex.: `EmprestimoService.diasDeAtraso(prevista)` e `diasDeAtraso(prevista, hoje)`. Detalhes na Seção 8.3.
 
 **6. O que é uma transação e onde ela está?**
 É um conjunto de operações que confirma por inteiro ou desfaz por inteiro. Cada método de escrita dos serviços tem `@Transactional`. Se uma `IllegalStateException` é lançada, tudo o que foi gravado naquele método é desfeito.
