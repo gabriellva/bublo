@@ -1,6 +1,6 @@
 # Relatório de Programação Orientada a Objetos — Bublo
 
-Este relatório explica os conceitos de POO utilizados no código-fonte do Bublo, com exemplos reais extraídos do pacote `com.gabriel.bublo`.
+Este relatório explica os conceitos de POO utilizados no código-fonte do Bublo, com exemplos reais extraídos do pacote `com.gabriel.bublo`. Para exemplos passo a passo (inclusive model × DTO), veja `EXEMPLOS_DE_POO.md`.
 
 ---
 
