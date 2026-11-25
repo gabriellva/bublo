@@ -53,9 +53,9 @@ public class DemoDataConfig {
                                       ReservaRepository reservaRepository,
                                       NotificacaoRepository notificacaoRepository,
                                       ConfiguracaoService configuracaoService,
-                                      @Value("${bublo.admin.username:}") String adminUsername,
-                                      @Value("${bublo.admin.password:}") String adminPassword,
-                                      @Value("${bublo.demo.data.enabled:true}") boolean demoEnabled) {
+                                      @Value("${bublo.admin.username}") String adminUsername,
+                                      @Value("${bublo.admin.password}") String adminPassword,
+                                      @Value("${bublo.demo.data.enabled}") boolean demoEnabled) {
 
         return args -> {
             // 1. Administrador inicial (sempre idempotente)
@@ -68,18 +68,9 @@ public class DemoDataConfig {
                     u.setAtivo(true);
                     usuarioRepository.criar(u);
                 }
-            } else if (usuarioRepository.buscarPorUsername("admin").isEmpty()) {
-                // Sem ADMIN_USERNAME/ADMIN_PASSWORD: nunca criar credencial previsível. Gera uma senha
-                // aleatória, mostrada uma única vez no log da primeira inicialização.
-                String senhaInicial = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16) + "a1";
-                Usuario u = new Usuario();
-                u.setUsername("admin");
-                u.setSenhaHash(passwordEncoder.encode(senhaInicial));
-                u.setAtivo(true);
-                usuarioRepository.criar(u);
-                org.slf4j.LoggerFactory.getLogger(DemoDataConfig.class).warn(
-                    "ADMIN_USERNAME/ADMIN_PASSWORD não definidos. Usuário 'admin' criado com senha temporária: {} "
-                    + "(troque em Conta > Alterar senha).", senhaInicial);
+            } else {
+                throw new IllegalStateException(
+                    "ADMIN_USERNAME e ADMIN_PASSWORD são obrigatórios (defina no .env ou no ambiente).");
             }
 
             if (!demoEnabled) return;

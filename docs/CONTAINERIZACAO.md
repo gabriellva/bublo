@@ -40,12 +40,11 @@ Build em dois stages:
 
 | Variável | Valor no compose | Descrição |
 |---|---|---|
-| `DB_URL` | `jdbc:postgresql://postgres:5432/bublo` | Conexão com o banco |
-| `DB_USERNAME` / `DB_PASSWORD` | `bublo` / `bublo` | Credenciais do banco |
-| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `Mudar@1234` | Administrador inicial |
-| `DEMO_DATA_ENABLED` | `true` | Carrega dados de demonstração |
+| `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` | definidos no `.env` | Banco e credenciais (o compose monta a `DB_URL`) |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `.env` (exemplo: `admin` / `admin`) | Administrador inicial |
+| `DEMO_DATA_ENABLED` | `.env` (exemplo: `true`) | Carrega dados de demonstração |
 
-> As credenciais acima servem apenas para desenvolvimento local. Em qualquer outro ambiente, defina valores próprios e não versione segredos.
+> O compose não tem valores escritos: copie `.env.example` para `.env` antes de subir. Os valores de exemplo servem apenas para desenvolvimento local. Em qualquer outro ambiente, defina valores próprios e não versione segredos.
 
 ## Como usar
 
@@ -55,7 +54,7 @@ Subir (o primeiro build leva cerca de 2,5 minutos):
 docker compose -f docker-compose.app.yml up -d --build
 ```
 
-Acessar: <http://localhost:8090> (usuário `admin`, senha `Mudar@1234`).
+Acessar: <http://localhost:8090> (usuário e senha definidos no `.env`; no exemplo, `admin` / `admin`).
 
 Derrubar mantendo o banco:
 
@@ -84,7 +83,7 @@ docker run --rm --memory 1g -e MAVEN_OPTS=-Xmx512m \
 Com a aplicação rodando, o smoke test valida as rotas:
 
 ```bash
-ADMIN_PASSWORD=Mudar@1234 BASE_URL=http://localhost:8090 scripts/smoke-test.sh
+ADMIN_USER=admin ADMIN_PASSWORD=admin BASE_URL=http://localhost:8090 scripts/smoke-test.sh
 ```
 
 ## Observações

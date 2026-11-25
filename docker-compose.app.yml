@@ -1,21 +1,21 @@
 # Run with: docker compose -f docker-compose.app.yml up -d --build
-# O nome do projeto fica fixo aqui (nao precisa de -p): containers, rede e volume levam o prefixo "bublo".
+# Os valores vêm do arquivo .env (copie de .env.example). O nome do projeto fica fixo aqui (nao precisa de -p): containers, rede e volume levam o prefixo "bublo".
 name: bublo
 
 services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: bublo
-      POSTGRES_USER: bublo
-      POSTGRES_PASSWORD: bublo
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
       - bublo_work_pgdata:/var/lib/postgresql/data
     mem_limit: 256m
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bublo -d bublo"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -26,12 +26,12 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/bublo
-      DB_USERNAME: bublo
-      DB_PASSWORD: bublo
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: Mudar@1234
-      DEMO_DATA_ENABLED: "true"
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      DEMO_DATA_ENABLED: ${DEMO_DATA_ENABLED}
       JAVA_TOOL_OPTIONS: -Xmx384m
     ports:
       - "127.0.0.1:8090:8080"

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Smoke test: logs in, creates data through the real forms and requests every page.
 # Catches template errors and SQL mapping errors that unit tests cannot see.
-# Usage: BASE_URL=http://localhost:8090 ADMIN_USER=admin ADMIN_PASSWORD=... scripts/smoke-test.sh
+# Usage: BASE_URL=http://localhost:8090 ADMIN_USER=... ADMIN_PASSWORD=... scripts/smoke-test.sh
 set -u
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
-ADMIN_USER="${ADMIN_USER:-admin}"
+ADMIN_USER="${ADMIN_USER:?Set ADMIN_USER}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}"
 JAR="$(mktemp)"
 trap 'rm -f "$JAR"' EXIT

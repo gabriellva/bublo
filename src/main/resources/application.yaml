@@ -2,9 +2,9 @@ spring:
   application:
     name: bublo
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/bublo}
-    username: ${DB_USERNAME:bublo}
-    password: ${DB_PASSWORD:bublo}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -32,7 +32,7 @@ spring:
     encoding: UTF-8
 
 server:
-  port: ${SERVER_PORT:8080}
+  # Porta: padrão do Spring (8080); a variável SERVER_PORT, se existir, sobrepõe.
   servlet:
     session:
       cookie:
@@ -41,14 +41,14 @@ server:
         same-site: LAX
       timeout: 60m
 
-# Configurações próprias do Bublo (senhas do administrador via variáveis de ambiente)
+# Configurações próprias do Bublo. Sem valores padrão: tudo vem das variáveis de ambiente (.env).
 bublo:
   admin:
-    username: ${ADMIN_USERNAME:}
-    password: ${ADMIN_PASSWORD:}
+    username: ${ADMIN_USERNAME}
+    password: ${ADMIN_PASSWORD}
   demo:
     data:
-      enabled: ${DEMO_DATA_ENABLED:true}
+      enabled: ${DEMO_DATA_ENABLED}
 
 logging:
   level:

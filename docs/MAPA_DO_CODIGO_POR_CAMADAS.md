@@ -144,7 +144,7 @@ Pacotes de **infraestrutura**: não têm regra de biblioteca, só configuram *co
 | `SecurityConfig` | Define **quem entra**: tudo exige login, exceto `/login` e arquivos estáticos (`/css`, `/js`, `/lib`). Configura o formulário de login, logout, **sessão única** (`maximumSessions(1)`) e senhas com **BCrypt**. Registra no log de auditoria cada login (sucesso e falha). | Tentar abrir `/emprestimos` sem login → redireciona para `/login`. Errar a senha → grava `LOGIN_FALHA` na auditoria. |
 | `WebSocketConfig` | Registra o endereço `/ws/notificacoes`, onde o navegador abre a conexão de tempo real. | O sino da barra superior se conecta aqui. |
 | `ReservaScheduler` | Tarefa agendada: **expira reservas vencidas** na partida do sistema e a cada hora (`@Scheduled(cron = "0 5 * * * *")`). | Reserva com prazo 20/11 vira `EXPIRADA` no dia 21. |
-| `DemoDataConfig` | Na subida, **cria o administrador** (a partir de `ADMIN_USERNAME/ADMIN_PASSWORD`; sem elas, gera uma senha aleatória e mostra uma vez no log) e, se `DEMO_DATA_ENABLED=true`, carrega ~30 materiais, leitores, empréstimos, multas e reservas de exemplo. É **idempotente**: se já existe dado, não recria. | Primeira subida no Render: já abre com acervo para demonstrar. |
+| `DemoDataConfig` | Na subida, **cria o administrador** (a partir de `ADMIN_USERNAME/ADMIN_PASSWORD`; sem elas, o app não sobe; no `.env.example` são `admin`/`admin`) e, se `DEMO_DATA_ENABLED=true`, carrega ~30 materiais, leitores, empréstimos, multas e reservas de exemplo. É **idempotente**: se já existe dado, não recria. | Primeira subida no Render: já abre com acervo para demonstrar. |
 
 ### `security/`
 
