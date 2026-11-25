@@ -352,6 +352,7 @@ Localizada na pasta `docs/`:
 | Diagrama UML (classes) | `docs/UML.md` |
 | Diagrama Entidade-Relacionamento | `docs/DER.md` |
 | Relatório de POO | `docs/RELATORIO_POO.md` |
+| Exemplos de POO (herança, polimorfismo, sobrecarga, sobrescrita, model × DTO) | `docs/EXEMPLOS_DE_POO.md` |
 | Casos de uso e requisitos | `docs/CASOS_DE_USO.md` |
 | Documentação de testes | `docs/TESTES.md` |
 | Roteiro de demonstração | `docs/ROTEIRO_DEMONSTRACAO.md` |
