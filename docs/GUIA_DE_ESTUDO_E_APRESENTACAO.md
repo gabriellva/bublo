@@ -260,7 +260,7 @@ public class BubloApplication {
 
 | Trecho | Significado |
 |---|---|
-| `spring.datasource.url: ${DB_URL:jdbc:postgresql://localhost:5432/bublo}` | Lê a variável de ambiente `DB_URL`; se não existir, usa o valor depois dos `:`. O mesmo vale para usuário e senha. |
+| `spring.datasource.url: ${DB_URL}` | Lê a variável de ambiente `DB_URL`, **sem valor padrão**: se não existir, o app não sobe. O mesmo vale para usuário, senha, `ADMIN_*` e `DEMO_DATA_ENABLED`. Localmente os valores vêm do `.env`. |
 | `hikari.maximum-pool-size: 10` | O pool mantém no máximo 10 conexões abertas com o banco. |
 | `flyway.baseline-on-migrate: true` | Se o banco já existir sem histórico do Flyway, ele adota o estado atual como ponto de partida. |
 | `thymeleaf.cache: false` | Recarrega templates a cada requisição (útil em desenvolvimento). |
@@ -278,7 +278,7 @@ public class BubloApplication {
 1. O **Flyway** executa as migrations pendentes (`V1`, `V2`, `V3`) e cria/atualiza as tabelas.
 2. O Spring cria os beans.
 3. O `DemoDataConfig` (um `CommandLineRunner`) roda **uma vez** na partida:
-   - cria o administrador, **se não existir**. Se `ADMIN_USERNAME/ADMIN_PASSWORD` não foram definidos, cria o usuário `admin` com uma **senha aleatória** e a imprime **uma única vez no log**;
+   - cria o administrador (`ADMIN_USERNAME`/`ADMIN_PASSWORD`, obrigatórios; no `.env.example` são `admin`/`admin`), **se não existir**. Sem essas variáveis o app não sobe;
    - se `demo.data.enabled=true` **e** o acervo estiver vazio, carrega 13 materiais (10 livros, 1 revista, 1 DVD, 1 publicação digital) com seus exemplares, 15 leitores, 2 empréstimos de exemplo (um deles já atrasado) e as 6 configurações iniciais.
 4. O `ReservaScheduler` executa `expirar()` assim que a aplicação fica pronta (`ApplicationReadyEvent`) e depois **a cada hora, no minuto 5** (`@Scheduled(cron = "0 5 * * * *")` — o cron do Spring tem 6 campos: segundo, minuto, hora, dia, mês, dia da semana).
 
@@ -916,7 +916,7 @@ Pontos a destacar:
 | Vazamento de erros | `GlobalExceptionHandler` mostra mensagem amigável e **nunca** o *stack trace* |
 | Enumeração de usuário | Mensagem única "Usuário ou senha incorretos." |
 | Fórmula em planilha | Prefixo `'` nos CSVs |
-| Senha previsível | Sem `ADMIN_*` definido, cria senha **aleatória** mostrada uma vez no log |
+| Credencial no código | Nada de senha ou usuário escrito no código nem valor padrão: tudo vem de variável de ambiente (`.env`, ignorado pelo Git). `admin`/`admin` é só o exemplo de desenvolvimento |
 | Auditoria de segurança | `LOGIN`, `LOGIN_FALHA`, `ALTERACAO_SENHA` registrados |
 
 ### 14.4 Troca de senha
