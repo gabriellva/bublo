@@ -119,7 +119,8 @@ O banco é criado inteiramente por Flyway (`src/main/resources/db/migration/V1__
 O código implementa (sem abstrações artificiais):
 
 - **Herança:** `ItemAcervo` (abstrata) → Livro, Revista, DVD, PublicaçãoDigital; `Leitor` (abstrata) → Aluno, Professor.
-- **Polimorfismo:** `getCapaGenerica()`, `getCampoEspecificoValor()` sobrescritos por cada tipo de material; `getLimiteExemplaresSimultaneos()` e `getPrazoEmprestimoDias()` por tipo de leitor.
+- **Polimorfismo e sobrescrita (`@Override`):** `getCapaGenerica()`, `getCampoEspecificoValor()` sobrescritos por cada tipo de material; `getLimiteExemplaresSimultaneos()`, `getPrazoEmprestimoDias()` e as chaves de configuração sobrescritos por `Aluno` e `Professor`, e usados pelo `EmprestimoService` sem `instanceof`.
+- **Sobrecarga (*overload*):** `EmprestimoService.diasDeAtraso(prevista)` / `diasDeAtraso(prevista, hoje)` e `ReservaService.toDTO(reserva)` / `toDTO(reserva, cache)`.
 - **Encapsulamento:** campos privados com getters/setters; DTOs evitam exposição de entidades.
 - **Abstração:** classes abstratas `ItemAcervo` e `Leitor` com contratos reais.
 - **Interfaces:** `RowMapper`, `Repository` via Spring, `WebSocketHandler`.

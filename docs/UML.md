@@ -61,14 +61,20 @@ Leitor (abstrata)
 - dataCadastro: LocalDateTime
 + getLimiteExemplaresSimultaneos(): int   <<abstrato>>
 + getPrazoEmprestimoDias(): int            <<abstrato>>
++ getChaveConfiguracaoLimite(): String     <<abstrato>>
++ getChaveConfiguracaoPrazo(): String      <<abstrato>>
 
-### Aluno
+### Aluno  (sobrescreve os 4 métodos de Leitor)
 + getLimiteExemplaresSimultaneos(): int = 3
 + getPrazoEmprestimoDias(): int = 7
++ getChaveConfiguracaoLimite(): String = "limite_alunos"
++ getChaveConfiguracaoPrazo(): String = "prazo_alunos"
 
-### Professor
+### Professor  (sobrescreve os 4 métodos de Leitor)
 + getLimiteExemplaresSimultaneos(): int = 5
 + getPrazoEmprestimoDias(): int = 14
++ getChaveConfiguracaoLimite(): String = "limite_professores"
++ getChaveConfiguracaoPrazo(): String = "prazo_professores"
 
 ## Outras entidades
 
