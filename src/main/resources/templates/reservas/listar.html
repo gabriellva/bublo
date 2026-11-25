@@ -56,7 +56,7 @@
               <td data-label="Posição" th:text="${r.posicao}">-</td>
               <td data-label="Prazo retirada" th:text="${#temporals.format(r.prazoRetirada, 'dd/MM/yyyy')}">-</td>
               <td data-label="Situação">
-                <span class="badge-bublo badge-disponivel" th:if="${r.prontaParaRetirada}">Pronta para retirada</span>
+                <span class="badge-bublo badge-disponivel badge-linha-unica" th:if="${r.prontaParaRetirada}" title="Há exemplar disponível: pode ser retirado">Pode retirar</span>
                 <span class="badge-bublo" th:unless="${r.prontaParaRetirada}" th:classappend="${r.status == 'AGUARDANDO'} ? 'badge-pendente' : (${r.status == 'ATENDIDA'} ? 'badge-ativo' : 'badge-neutro')"
                         th:text="${r.status == 'AGUARDANDO'} ? 'Aguardando' : (${r.status == 'ATENDIDA'} ? 'Atendida' : (${r.status == 'CANCELADA'} ? 'Cancelada' : 'Expirada'))">Aguardando</span></td>
               <td class="celula-acoes">

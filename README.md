@@ -106,7 +106,7 @@ O banco é criado inteiramente por Flyway (`src/main/resources/db/migration/V1__
 - `emprestimos` — vinculado a exemplar específico.
 - `reservas` — fila FIFO por item.
 - `multas` e `pagamentos` — cálculo automático, estorno auditável.
-- `notificacoes` — central com prioridades e leitura.
+- `notificacoes` — notificações com prioridades e leitura (sino da barra superior).
 - `auditoria` — registro cronológico somente leitura.
 - `configuracoes` — chave-valor com auditoria.
 
@@ -231,7 +231,7 @@ Na primeira execução, o administrador é criado a partir das variáveis de amb
 | Reservas | `/reservas` | Fila FIFO, cancelamento, expiração |
 | Multas | `/multas` | Pagamento integral/parcial, estorno |
 | Configurações | `/configuracoes` | Limites, prazos, taxa de multa e prazo de reserva |
-| Notificações | `/notificacoes` | Central, leitura, filtros |
+| Notificações | sino da barra superior | Dropdown com as não lidas, check individual e "Marcar todas como lidas" |
 | Auditoria | `/auditoria` | Log cronológico somente leitura |
 | Relatórios | `/relatorios` | 9 relatórios, exportação CSV e XLSX |
 | Conta | `/conta` | Alteração de senha do administrador |

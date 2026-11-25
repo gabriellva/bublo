@@ -265,6 +265,7 @@ main.conteudo > :nth-child(n+6) { animation-delay: 200ms; }
 .badge-inativo, .badge-atrasado, .badge-indisponivel { background: var(--badge-erro-bg); color: var(--badge-erro-fg); }
 .badge-pendente, .badge-parcial { background: var(--badge-aviso-bg); color: var(--badge-aviso-fg); }
 .badge-neutro { background: var(--badge-neutro-bg); color: var(--badge-neutro-fg); }
+.badge-linha-unica { white-space: nowrap; flex-shrink: 0; }
 /* Ponto de status: reforça a leitura pela cor sem depender só dela */
 .badge-ativo::before, .badge-disponivel::before, .badge-paga::before,
 .badge-inativo::before, .badge-atrasado::before, .badge-indisponivel::before,
@@ -753,6 +754,7 @@ table.tabela tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--bub
   transition-delay: 0s;
 }
 .dropdown-notificacoes .cabecalho {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--bublo-borda);
   background: var(--bublo-fundo);
@@ -769,8 +771,22 @@ table.tabela tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--bub
 }
 .dropdown-notificacoes .item:hover { background: var(--bublo-hover-linha); color: var(--bublo-texto); }
 #lista-notificacoes { max-height: 300px; overflow-y: auto; }
+.dropdown-notificacoes .item-notificacao { display: flex; align-items: flex-start; gap: 0.75rem; cursor: default; }
+.dropdown-notificacoes .corpo-notificacao { flex: 1; min-width: 0; }
+.btn-ler-todas {
+  background: none; border: 0; padding: 0.25rem 0.4rem; border-radius: 6px;
+  font-size: 0.78rem; font-weight: 600; color: var(--bublo-destaque); cursor: pointer;
+}
+.btn-ler-todas:hover { background: var(--bublo-hover-linha); }
+.btn-ler-todas[hidden] { display: none; }
+.btn-check-notificacao {
+  flex: none; width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid var(--bublo-borda); border-radius: 50%;
+  color: var(--bublo-texto-suave); cursor: pointer;
+  transition: background-color var(--t-rapido) ease, color var(--t-rapido) ease, border-color var(--t-rapido) ease;
+}
+.btn-check-notificacao:hover { background: var(--badge-ok-bg); color: var(--badge-ok-fg); border-color: var(--badge-ok-fg); }
 .dropdown-notificacoes .item-vazio { color: var(--bublo-texto-suave); font-size: 0.85rem; cursor: default; }
-.dropdown-notificacoes .rodape-dropdown { display: block; padding: 0.65rem 1rem; text-align: center; font-size: 0.85rem; font-weight: 600; border-top: 1px solid var(--bublo-borda); }
 .dropdown-notificacoes .contador {
   background: var(--bublo-vinho);
   color: #fff;
