@@ -16,11 +16,13 @@
           <span id="contador-notificacoes" class="contador" th:text="${naoLidas ?: 0}" th:style="${(naoLidas ?: 0) gt 0} ? '' : 'display:none'">0</span>
         </button>
         <div class="dropdown-notificacoes" id="dropdown-notificacoes">
-          <div class="cabecalho">Notificações</div>
+          <div class="cabecalho">
+            <span>Notificações</span>
+            <button type="button" id="btn-ler-todas" class="btn-ler-todas" hidden>Marcar todas como lidas</button>
+          </div>
           <div id="lista-notificacoes">
             <div class="item item-vazio">Carregando…</div>
           </div>
-          <a class="rodape-dropdown" th:href="@{/notificacoes}">Ver todas</a>
         </div>
       </div>
       <a class="usuario" th:href="@{/conta}" title="Minha conta" th:aria-label="${'Minha conta (' + (usuario ?: 'Administrador') + ')'}">

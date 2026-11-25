@@ -197,6 +197,13 @@ const Bublo = (function () {
       document.addEventListener("click", (e) => {
         if (!this.dropdownEl.contains(e.target)) this.dropdownEl.classList.remove("visivel");
       });
+      const btnTodas = document.getElementById("btn-ler-todas");
+      if (btnTodas) {
+        btnTodas.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.marcar("/notificacoes/ler-todas", () => this.renderizar([]));
+        });
+      }
       this.carregar();
       this.conectarWS();
     },
@@ -217,6 +224,8 @@ const Bublo = (function () {
     renderizar: function (itens) {
       if (!this.listaEl) return;
       this.listaEl.textContent = "";
+      const btnTodas = document.getElementById("btn-ler-todas");
+      if (btnTodas) btnTodas.hidden = !(itens && itens.length);
       const vazio = (texto) => {
         const el = document.createElement("div");
         el.className = "item item-vazio";
@@ -224,22 +233,53 @@ const Bublo = (function () {
         this.listaEl.appendChild(el);
       };
       if (itens === null) return vazio("Não foi possível carregar as notificações.");
-      if (!itens.length) return vazio("Nenhuma notificação.");
+      if (!itens.length) return vazio("Nenhuma notificação nova.");
       itens.forEach((n) => {
-        const a = document.createElement("a");
-        a.className = "item d-block";
-        a.href = "/notificacoes";
+        const el = document.createElement("div");
+        el.className = "item item-notificacao";
+        const corpo = document.createElement("div");
+        corpo.className = "corpo-notificacao";
         const titulo = document.createElement("strong");
         titulo.textContent = n.titulo;
-        a.appendChild(titulo);
+        corpo.appendChild(titulo);
         if (n.mensagem) {
           const msg = document.createElement("div");
           msg.className = "texto-ajuda";
           msg.textContent = n.mensagem;
-          a.appendChild(msg);
+          corpo.appendChild(msg);
         }
-        this.listaEl.appendChild(a);
+        const check = document.createElement("button");
+        check.type = "button";
+        check.className = "btn-check-notificacao";
+        check.title = "Marcar como lida";
+        check.setAttribute("aria-label", "Marcar como lida: " + n.titulo);
+        check.innerHTML = '<i class="bi bi-check-lg" aria-hidden="true"></i>';
+        check.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.marcar("/notificacoes/" + encodeURIComponent(n.id) + "/ler", () => {
+            el.remove();
+            if (!this.listaEl.querySelector(".item-notificacao")) this.renderizar([]);
+          });
+        });
+        el.appendChild(corpo);
+        el.appendChild(check);
+        this.listaEl.appendChild(el);
       });
+    },
+    marcar: function (url, aoConcluir) {
+      const csrf = Utils.csrf();
+      const headers = { Accept: "application/json" };
+      if (csrf) headers[csrf.cabecalho] = csrf.valor;
+      fetch(url, { method: "POST", headers: headers, credentials: "same-origin" })
+        .then((r) => {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then((dados) => {
+          this.atualizarContador(dados.naoLidas);
+          aoConcluir();
+        })
+        .catch(() => Toasts.atencao("Não foi possível atualizar as notificações."));
     },
     conectarWS: function () {
       if (!("WebSocket" in window)) return;
