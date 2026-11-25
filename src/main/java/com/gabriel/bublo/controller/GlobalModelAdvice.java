@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class GlobalModelAdvice {
 
-    private static final String NOME_INSTITUICAO = "Biblioteca Acadêmica";
+    private static final String NOME_INSTITUICAO = "Bublo";
 
     private final NotificacaoRepository notificacaoRepository;
 
