@@ -55,9 +55,13 @@
               <td data-label="Material" th:text="${r.itemTitulo ?: '-'}">Material</td>
               <td data-label="Posição" th:text="${r.posicao}">-</td>
               <td data-label="Prazo retirada" th:text="${#temporals.format(r.prazoRetirada, 'dd/MM/yyyy')}">-</td>
-              <td data-label="Situação"><span class="badge-bublo" th:classappend="${r.status == 'AGUARDANDO'} ? 'badge-pendente' : (${r.status == 'ATENDIDA'} ? 'badge-ativo' : 'badge-neutro')"
+              <td data-label="Situação">
+                <span class="badge-bublo badge-disponivel" th:if="${r.prontaParaRetirada}">Pronta para retirada</span>
+                <span class="badge-bublo" th:unless="${r.prontaParaRetirada}" th:classappend="${r.status == 'AGUARDANDO'} ? 'badge-pendente' : (${r.status == 'ATENDIDA'} ? 'badge-ativo' : 'badge-neutro')"
                         th:text="${r.status == 'AGUARDANDO'} ? 'Aguardando' : (${r.status == 'ATENDIDA'} ? 'Atendida' : (${r.status == 'CANCELADA'} ? 'Cancelada' : 'Expirada'))">Aguardando</span></td>
               <td class="celula-acoes">
+                <a th:if="${r.prontaParaRetirada}" th:href="@{/emprestimos/novo(leitor=${r.leitorId}, item=${r.itemId})}"
+                   class="btn-bublo btn-acao">Emprestar</a>
                 <form th:action="@{/reservas/{id}/cancelar(id=${r.id})}" method="post" class="form-inline" th:if="${r.status == 'AGUARDANDO'}"
                       data-confirmar="Cancelar esta reserva?" data-confirmar-titulo="Cancelar reserva">
                   <button type="submit" class="btn-bublo btn-acao btn-contorno perigo">Cancelar</button>

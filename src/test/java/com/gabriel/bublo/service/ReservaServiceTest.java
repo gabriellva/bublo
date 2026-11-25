@@ -168,4 +168,45 @@ class ReservaServiceTest {
             .hasMessageContaining("digitais não podem ser reservadas")
             .hasMessageContaining("apenas para consulta");
     }
+
+    @Test
+    @DisplayName("Reserva só fica pronta para retirada quando há exemplar livre para a sua posição na fila")
+    void reservaProntaParaRetiradaConformeExemplaresLivres() {
+        Reserva primeira = reserva(10L, 1);
+        Reserva segunda = reserva(11L, 2);
+        when(reservaRepository.buscar(any(), any(), org.mockito.ArgumentMatchers.anyInt(),
+            org.mockito.ArgumentMatchers.anyInt(), any()))
+            .thenReturn(new com.gabriel.bublo.dto.Paginacao<>(List.of(primeira, segunda), 2, 0, 10));
+        when(exemplarRepository.buscarDisponiveisPorItem(2L)).thenReturn(List.of(new Exemplar()));
+
+        var itens = service.listar(null, "AGUARDANDO", 0, 10, "data_reserva DESC").getConteudo();
+
+        org.assertj.core.api.Assertions.assertThat(itens.get(0).isProntaParaRetirada()).isTrue();
+        org.assertj.core.api.Assertions.assertThat(itens.get(1).isProntaParaRetirada()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Reserva aguardando sem exemplar devolvido continua apenas aguardando")
+    void reservaSemExemplarLivreNaoEstaPronta() {
+        var unica = reserva(10L, 1);
+        when(reservaRepository.buscar(any(), any(), org.mockito.ArgumentMatchers.anyInt(),
+            org.mockito.ArgumentMatchers.anyInt(), any()))
+            .thenReturn(new com.gabriel.bublo.dto.Paginacao<>(List.of(unica), 1, 0, 10));
+        when(exemplarRepository.buscarDisponiveisPorItem(2L)).thenReturn(List.of());
+
+        var itens = service.listar(null, "AGUARDANDO", 0, 10, "data_reserva DESC").getConteudo();
+
+        org.assertj.core.api.Assertions.assertThat(itens.get(0).isProntaParaRetirada()).isFalse();
+    }
+
+    private Reserva reserva(Long id, int posicao) {
+        Reserva r = new Reserva();
+        r.setId(id);
+        r.setPosicao(posicao);
+        r.setStatus("AGUARDANDO");
+        Livro livro = new Livro();
+        livro.setId(2L);
+        r.setItemAcervo(livro);
+        return r;
+    }
 }
