@@ -865,7 +865,7 @@ Pontos a destacar:
 
 - `GlobalExceptionHandler` (`@ControllerAdvice`): `IllegalStateException`/`IllegalArgumentException` → página de erro 400 com a mensagem; `NoResourceFoundException` → 404; arquivo grande → 413; qualquer outra → 500 genérico (e o detalhe vai só para o log).
 - `ErroController` cobre as rotas de erro do próprio contêiner (`/error`).
-- `GlobalModelAdvice` injeta em **todas** as páginas: usuário logado, contagem de notificações não lidas e o nome da instituição (fixo: "Biblioteca Acadêmica").
+- `GlobalModelAdvice` injeta em **todas** as páginas: usuário logado, contagem de notificações não lidas e o nome da instituição (fixo: "Bublo").
 
 ---
 
