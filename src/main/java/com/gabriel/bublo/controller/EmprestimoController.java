@@ -60,8 +60,16 @@ public class EmprestimoController {
     }
 
     @GetMapping("/novo")
-    public String novo(@RequestParam(required = false) Long leitor, Model model) {
+    public String novo(@RequestParam(required = false) Long leitor,
+                       @RequestParam(required = false) Long item, Model model) {
         model.addAttribute("leitorId", leitor);
+        // Vindo de uma reserva pronta para retirada: já deixa um exemplar livre do material marcado.
+        if (item != null) {
+            acervoService.listarExemplares(item).stream()
+                .filter(x -> Boolean.TRUE.equals(x.getDisponivel()) && !x.isBaixado())
+                .findFirst()
+                .ifPresent(x -> model.addAttribute("exemplaresSelecionados", List.of(x.getId())));
+        }
         carregarFormulario(model);
         return "emprestimos/novo";
     }

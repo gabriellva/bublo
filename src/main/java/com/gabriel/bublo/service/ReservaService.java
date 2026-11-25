@@ -53,8 +53,9 @@ public class ReservaService {
 
     @Transactional(readOnly = true)
     public Paginacao<ReservaDTO> listar(String termo, String status, int pagina, int tamanho, String ordenacao) {
+        var livresPorItem = new java.util.HashMap<Long, Integer>();
         return reservaRepository.buscar(termo, status, pagina, tamanho, ordenacao)
-            .mapConteudo(this::toDTO);
+            .mapConteudo(r -> toDTO(r, livresPorItem));
     }
 
     @Transactional(readOnly = true)
@@ -160,6 +161,14 @@ public class ReservaService {
     }
 
     private ReservaDTO toDTO(Reserva r) {
+        return toDTO(r, new java.util.HashMap<>());
+    }
+
+    /**
+     * A reserva está pronta para retirada quando há exemplar livre para a sua posição na fila
+     * (exemplares livres são entregues na ordem da fila: a posição N só é atendida se houver N livres).
+     */
+    private ReservaDTO toDTO(Reserva r, java.util.Map<Long, Integer> livresPorItem) {
         ReservaDTO dto = new ReservaDTO();
         dto.setId(r.getId());
         dto.setLeitorId(r.getLeitor() != null ? r.getLeitor().getId() : null);
@@ -169,6 +178,11 @@ public class ReservaService {
         dto.setPosicao(r.getPosicao());
         dto.setPrazoRetirada(r.getPrazoRetirada());
         dto.setStatus(r.getStatus());
+        if ("AGUARDANDO".equals(r.getStatus()) && r.getItemAcervo() != null && r.getPosicao() != null) {
+            int livres = livresPorItem.computeIfAbsent(r.getItemAcervo().getId(),
+                id -> exemplarRepository.buscarDisponiveisPorItem(id).size());
+            dto.setProntaParaRetirada(r.getPosicao() <= livres);
+        }
         return dto;
     }
 }
